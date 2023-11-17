@@ -1,7 +1,7 @@
 package libyears
 
-import VersionDto
-import http.maven.model.api.Doc
+
+import artifact.model.VersionDto
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.*

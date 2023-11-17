@@ -1,4 +1,5 @@
 package http.maven.model.api
+
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

@@ -7,7 +7,7 @@ import nl.adaptivity.xmlutil.serialization.XmlSerialName
 
 @XmlSerialName("metadata")
 @Serializable
-data class MavenMetadata (
+data class MavenMetadata(
     @XmlElement(true) @SerialName("groupId")
     val groupId: String? = null,
 
@@ -29,14 +29,14 @@ data class MavenMetadata (
 
 @XmlSerialName("plugins")
 @Serializable
-data class Plugins (
+data class Plugins(
     @XmlElement(true) @SerialName("plugin")
     val plugin: List<Plugin> = emptyList()
 )
 
 @XmlSerialName("plugin")
 @Serializable
-data class Plugin (
+data class Plugin(
     @XmlElement(true) @SerialName("name")
     val name: String? = null,
     @XmlElement(true) @SerialName("prefix")
@@ -47,7 +47,7 @@ data class Plugin (
 
 @XmlSerialName("versioning")
 @Serializable
-data class Versioning (
+data class Versioning(
     @XmlElement(true)
     @SerialName("latest")
     val latest: String? = null,
@@ -109,7 +109,7 @@ data class SnapshotVersion(
 
 @XmlSerialName("versions")
 @Serializable
-data class Versions (
+data class Versions(
     @XmlElement(true)
     @SerialName("version")
     val version: List<String> = emptyList()

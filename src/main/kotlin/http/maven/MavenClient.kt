@@ -1,7 +1,11 @@
 package http.maven
 
-import ArtifactDto
-import VersionDto
+import artifact.model.ArtifactDto
+import artifact.model.MetadataDto
+import artifact.model.VersionDto
+import http.maven.model.api.MavenApiResponseDto
+import http.maven.model.api.Response
+import http.maven.model.repository.MavenMetadata
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -11,11 +15,6 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.serialization.kotlinx.xml.*
 import kotlinx.serialization.json.Json
-import http.maven.model.api.Doc
-import http.maven.model.api.MavenApiResponseDto
-import http.maven.model.api.Response
-import http.maven.model.repository.MavenMetadata
-import http.model.MetadataDto
 
 
 class MavenClient {
@@ -57,7 +56,7 @@ class MavenClient {
             artifactId = name,
             groupId = namespace,
             versions = mavenApiResponseDto?.docs?.mapNotNull {
-                if(it.v != null && it.timestamp != null) {
+                if (it.v != null && it.timestamp != null) {
                     VersionDto(versionNumber = it.v, releaseDate = it.timestamp)
                 } else {
                     null
@@ -75,7 +74,7 @@ class MavenClient {
 
         val body = response.body<MavenMetadata>()
 
-        return if(body.artifactId != null && body.groupId != null && body.versioning?.versions != null) {
+        return if (body.artifactId != null && body.groupId != null && body.versioning?.versions != null) {
             MetadataDto(
                 artifactId = body.artifactId,
                 groupId = body.groupId,
