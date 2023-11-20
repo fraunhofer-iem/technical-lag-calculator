@@ -33,16 +33,16 @@ class ArtifactService {
         }
     }
 
-    private suspend fun getOrCreateArtifact(mavenMetadata: MetadataDto): ArtifactDto = dbQuery {
+    private suspend fun getOrCreateArtifact(metadataDto: MetadataDto): ArtifactDto = dbQuery {
 
         val artifactQuery = Artifact.find {
-            Artifacts.artifactId eq mavenMetadata.artifactId and (Artifacts.groupId eq mavenMetadata.groupId)
+            Artifacts.artifactId eq metadataDto.artifactId and (Artifacts.groupId eq metadataDto.groupId)
         }.with(Artifact::versions)
 
         val artifactModel = if (artifactQuery.empty()) {
             Artifact.new {
-                artifactId = mavenMetadata.artifactId
-                groupId = mavenMetadata.groupId
+                artifactId = metadataDto.artifactId
+                groupId = metadataDto.groupId
             }
         } else {
             if (artifactQuery.count() > 1) {
@@ -51,7 +51,7 @@ class ArtifactService {
             artifactQuery.first()
         }
 
-        mavenMetadata.versions.forEach { currentVersion ->
+        metadataDto.versions.forEach { currentVersion ->
             if (artifactModel.versions.find { it.versionNumber == currentVersion } == null) {
                 println("Creating new version $currentVersion")
                 Version.new {
@@ -66,8 +66,8 @@ class ArtifactService {
 
         return@dbQuery ArtifactDto(
             dbId = artifactModel.id.value,
-            artifactId = mavenMetadata.artifactId,
-            groupId = mavenMetadata.groupId,
+            artifactId = metadataDto.artifactId,
+            groupId = metadataDto.groupId,
             versions = artifactModel.versions.map {
                 VersionDto(
                     versionNumber = it.versionNumber,
