@@ -52,5 +52,4 @@ class DependencyAnalyzer {
 
         return results.analyzer?.result?.dependencyGraphs ?: emptyMap()
     }
-
 }

@@ -1,6 +1,5 @@
 package http.maven
 
-import artifact.model.ArtifactDto
 import artifact.model.MetadataDto
 import artifact.model.VersionDto
 import http.maven.model.api.MavenApiResponseDto
@@ -30,7 +29,7 @@ class MavenClient {
         }
     }
 
-    suspend fun getVersionsFromSearch(namespace: String, name: String, retry: Int = 5): ArtifactDto {
+    suspend fun getVersionsFromSearch(namespace: String, name: String, retry: Int = 5): List<VersionDto> {
 
         val mavenUrl = "https://search.maven.org/solrsearch/select?q=g:$namespace+AND+a:$name&core=gav&rows=20&wt=json"
         var mavenApiResponseDto: Response? = null
@@ -43,6 +42,7 @@ class MavenClient {
                     println("Maven api response:${currentResponse}")
 
                     if (currentResponse.responseHeader?.status == 0) {
+                        println("successfully got response from maven search query in try $i")
                         mavenApiResponseDto = currentResponse.response
                         break
                     }
@@ -52,17 +52,15 @@ class MavenClient {
             }
         }
 
-        return ArtifactDto(
-            artifactId = name,
-            groupId = namespace,
-            versions = mavenApiResponseDto?.docs?.mapNotNull {
-                if (it.v != null && it.timestamp != null) {
-                    VersionDto(versionNumber = it.v, releaseDate = it.timestamp)
-                } else {
-                    null
-                }
-            } ?: emptyList()
-        )
+        return mavenApiResponseDto?.docs?.mapNotNull {
+            if (it.v != null && it.timestamp != null) {
+                VersionDto(versionNumber = it.v, releaseDate = it.timestamp)
+            } else {
+                println("Insufficient data in maven response to create version dto")
+                println(it)
+                null
+            }
+        } ?: emptyList()
     }
 
 

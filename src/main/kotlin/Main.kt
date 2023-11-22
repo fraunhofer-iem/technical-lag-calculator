@@ -5,9 +5,6 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 import dependencies.DependencyAnalyzer
-import http.maven.MavenClient
-import libyears.LibyearCalculator
-import org.ossreviewtoolkit.model.PackageReference
 import util.initDatabase
 import java.io.File
 
@@ -50,9 +47,6 @@ suspend fun main(args: Array<String>) {
 }
 
 
-
-
-
 suspend fun getLibYears(projectPath: File, dbUrl: String?) {
     if (!dbUrl.isNullOrBlank()) {
         initDatabase(dbUrl)
@@ -60,58 +54,89 @@ suspend fun getLibYears(projectPath: File, dbUrl: String?) {
 
     val dependencyAnalyzer = DependencyAnalyzer()
     val dependencyGraphs = dependencyAnalyzer.getDependencyPackagesForProject(projectPath)
-    // TODO: we want to get a map from scope to a pair<directDependencies, transitiveDependencies>
-    // TODO: we need to identify the different scopes for different package managers (create enums)
-    val allPackages = dependencyGraphs.values.map { it.packages }.flatten()
 
     val artifactService = ArtifactService()
-    val mavenClient = MavenClient()
 
-    dependencyGraphs.map { (packageManager, graph) ->
-        graph.createScopes().map { scope ->
-            val transformedDependencies = scope.dependencies.map { packageRef ->
+    // package manager -> scope -> directDependency ->-> transitiveDependencies
+    val transformedGraph = dependencyGraphs.map { (packageManager, graph) ->
+        val transformedScope = graph.createScopes().associate { scope ->
+
+            val transformedDependencies = scope.dependencies.flatMap { packageRef ->
                 artifactService.getAllTransitiveVersionInformation(
                     rootPackage = packageRef,
-                    scope = scope.name,
                     storeResult = !dbUrl.isNullOrBlank()
                 )
             }
 
-            println("here I am")
-            println(transformedDependencies)
+            scope.name to transformedDependencies
+        }
+        packageManager to transformedScope
+    }.toMap()
+
+    transformedGraph.forEach { (packageManager, scopes) ->
+        println("Libyears for $packageManager")
+        scopes.forEach { (scope, artifacts) ->
+            println("Libyears in scope $scope")
+            val directDependencies = artifacts.sumOf { it.libyear }
+            println(
+                "Direct dependency libyears: $directDependencies Days " +
+                        "(equals to roughly ${directDependencies / 365.25} years)"
+            )
+
+            // Here we loose the
+            val transitiveDependencySum = artifacts.sumOf {
+                it.transitiveDependencies.sumOf { transitive -> calculateTransitiveLibyears(transitive) }
+            }
+            println(
+                "Transitive dependency libyears: $transitiveDependencySum Days " +
+                        "(equals to roughly ${transitiveDependencySum / 365.25} years)"
+            )
         }
     }
 
-
-
-
-    // List of used version of all artifacts mapped to an object storing all versions and their release date
-    // of the same artifact.
-    val artifacts: List<Pair<String, ArtifactDto>> = allPackages.mapIndexedNotNull { idx, pkg ->
-        mavenClient.getAllVersionsFromRepo(
-            namespace = pkg.namespace,
-            name = pkg.name
-        )?.let { mavenMetadata ->
-            val artifact = artifactService.getArtifactFromMetadata(mavenMetadata, storeResult = !dbUrl.isNullOrBlank())
-            println("get artifact done $artifact")
-            val versionsWithoutReleaseDate = artifact.versions.filter { it.releaseDate == -1L }
-
-            return@mapIndexedNotNull if (versionsWithoutReleaseDate.isNotEmpty()) {
-                val artifactDto = mavenClient.getVersionsFromSearch(namespace = pkg.namespace, name = pkg.name)
-                if (!dbUrl.isNullOrBlank()) {
-                    artifactService.updateVersions(artifactDto = artifactDto, versions = versionsWithoutReleaseDate)
+    println("Warnings for dependencies older than 180 days:")
+    transformedGraph.values.forEach {
+        it.values.forEach {
+            it.forEach { artifact ->
+                printLibyearWarning(artifact)
+                if (artifact.libyear < -180) {
+                    println(
+                        "Dependency ${artifact.groupId}/${artifact.artifactId}" +
+                                "is ${artifact.libyear} days old."
+                    )
+                    val newestVersion = artifact.versions.maxByOrNull { it.releaseDate }
+                    println("The used version is ${artifact.usedVersion} and " +
+                            "the newest version ${newestVersion?.versionNumber}")
                 }
-                Pair(pkg.version, artifactDto)
-            } else {
-                Pair(pkg.version, artifact)
             }
         }
-        null
     }
 
+    if (!dbUrl.isNullOrBlank()) {
+        //TODO store
+    }
 
-    val libyearCalculator = LibyearCalculator()
-    val libyears = artifacts.sumOf { libyearCalculator.calculateDifferenceForPackage(it.first, it.second.versions) }
+}
 
-    println("Days behind: $libyears, Years behind: ${libyears / 365.25}")
+fun printLibyearWarning(artifact: ArtifactDto) {
+    if (artifact.libyear < -180) {
+        println(
+            "Dependency ${artifact.groupId}/${artifact.artifactId}" +
+                    "is ${artifact.libyear} days old."
+        )
+        val newestVersion = artifact.versions.maxByOrNull { it.releaseDate }
+        println("The used version is ${artifact.usedVersion} and " +
+                "the newest version ${newestVersion?.versionNumber}")
+    }
+    artifact.transitiveDependencies.forEach { printLibyearWarning(it) }
+}
+
+fun calculateTransitiveLibyears(artifact: ArtifactDto): Long {
+    var sumLibyears = artifact.libyear
+
+    for (dependency in artifact.transitiveDependencies) {
+        sumLibyears += calculateTransitiveLibyears(dependency)
+    }
+
+    return sumLibyears
 }

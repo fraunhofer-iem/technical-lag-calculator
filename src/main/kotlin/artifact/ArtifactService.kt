@@ -4,9 +4,10 @@ import artifact.db.Artifact
 import artifact.db.Artifacts
 import artifact.db.Version
 import artifact.model.ArtifactDto
-import artifact.model.DependencyMetadataDto
+import artifact.model.CreateArtifactDto
 import artifact.model.MetadataDto
 import artifact.model.VersionDto
+
 import http.maven.MavenClient
 import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.and
@@ -16,14 +17,6 @@ import util.dbQuery
 class ArtifactService {
 
     private val mavenClient = MavenClient()
-
-    suspend fun getArtifactFromMetadata(metadataDto: MetadataDto, storeResult: Boolean = false): ArtifactDto {
-        return if (storeResult) {
-            getOrCreateArtifact(metadataDto)
-        } else {
-            metadataToArtifact(metadataDto)
-        }
-    }
 
     suspend fun updateVersions(versions: List<VersionDto>, artifactDto: ArtifactDto) = dbQuery {
         versions.forEach { versionWithoutReleaseDate ->
@@ -40,28 +33,25 @@ class ArtifactService {
 
     suspend fun getAllTransitiveVersionInformation(
         rootPackage: PackageReference,
-        scope: String,
-        storeResult: Boolean = false)
-    : List<Pair<DependencyMetadataDto, ArtifactDto>> {
-        val infoList: MutableList<Pair<DependencyMetadataDto, ArtifactDto>> = mutableListOf()
+        storeResult: Boolean = false
+    ): List<ArtifactDto> {
+        val infoList: MutableList<CreateArtifactDto> = mutableListOf()
 
         getDependencyVersionInformation(
             packageRef = rootPackage,
-            scope = scope,
             storeResult = storeResult,
             infoList = infoList,
             isTransitiveDependency = false
         )
 
-        return infoList
+        return infoList.map { it.toArtifactDto() }
     }
 
-    suspend fun getDependencyVersionInformation(
+    private suspend fun getDependencyVersionInformation(
         packageRef: PackageReference,
-        scope: String,
-        infoList: MutableList<Pair<DependencyMetadataDto, ArtifactDto>>,
+        infoList: MutableList<CreateArtifactDto>,
         storeResult: Boolean = false,
-        isTransitiveDependency:Boolean = true,
+        isTransitiveDependency: Boolean = true,
     ) {
 
         mavenClient.getAllVersionsFromRepo(
@@ -69,99 +59,116 @@ class ArtifactService {
             name = packageRef.id.name
         )?.let { metadataDto ->
 
-            val dependencyMetadata = DependencyMetadataDto(
-                scope = scope,
-                isTransitiveDependency = isTransitiveDependency,
-                usedVersion = packageRef.id.version
-            )
+            val createArtifactDto = metadataToArtifact(metadataDto)
+            createArtifactDto.artifactId = packageRef.id.name
+            createArtifactDto.groupId = packageRef.id.namespace
+            createArtifactDto.usedVersion = packageRef.id.version
+            createArtifactDto.isTopLevelDependency = !isTransitiveDependency
 
-            val artifact = getArtifactFromMetadata(
-                metadataDto,
-                storeResult = storeResult
-            )
-            println("get artifact done $artifact")
-            val versionsWithoutReleaseDate = artifact.versions.filter { it.releaseDate == -1L }
-
-            if (versionsWithoutReleaseDate.isNotEmpty()) {
-                val artifactDto = mavenClient.getVersionsFromSearch(
+            if (storeResult) {
+                val storedVersions = getVersionsForArtifact(
                     namespace = packageRef.id.namespace,
                     name = packageRef.id.name
                 )
 
-                if (storeResult) {
-                    updateVersions(
-                        artifactDto = artifactDto,
-                        versions = versionsWithoutReleaseDate
-                    )
-                }
-                infoList.add(Pair(dependencyMetadata, artifactDto))
-            } else {
-                infoList.add(Pair(dependencyMetadata, artifact))
+                createArtifactDto.addVersions(storedVersions)
             }
-        }
 
-        packageRef.dependencies.forEach {
-            getDependencyVersionInformation(
-                packageRef = it,
-                scope = scope,
-                storeResult = storeResult,
-                infoList = infoList
-            )
+            val versionsWithoutReleaseDate = createArtifactDto.versions.values.filter { it.releaseDate == -1L }
+
+            // If there are any versions without a proper release date we replace the complete database model
+            // with information gathered from the API.
+            if (versionsWithoutReleaseDate.isNotEmpty()) {
+                createArtifactDto.versions = mavenClient.getVersionsFromSearch(
+                    namespace = packageRef.id.namespace,
+                    name = packageRef.id.name
+                ).associateBy { version -> version.versionNumber }.toMutableMap()
+            }
+
+            packageRef.dependencies.forEach {
+                getDependencyVersionInformation(
+                    packageRef = it,
+                    storeResult = storeResult,
+                    infoList = createArtifactDto.transitiveDependencies
+                )
+            }
+
+            infoList.add(createArtifactDto)
         }
     }
 
-    private suspend fun getOrCreateArtifact(metadataDto: MetadataDto): ArtifactDto = dbQuery {
+    //    private suspend fun getOrCreateArtifact(metadataDto: MetadataDto): ArtifactDto = dbQuery {
+//
+//        val artifactQuery = Artifact.find {
+//            Artifacts.artifactId eq metadataDto.artifactId and (Artifacts.groupId eq metadataDto.groupId)
+//        }.with(Artifact::versions)
+//
+//        val artifactModel = if (artifactQuery.empty()) {
+//            Artifact.new {
+//                artifactId = metadataDto.artifactId
+//                groupId = metadataDto.groupId
+//            }
+//        } else {
+//            if (artifactQuery.count() > 1) {
+//                println("WARNING: More than one matching artifact found!")
+//            }
+//            artifactQuery.first()
+//        }
+//
+//        metadataDto.versions.forEach { currentVersion ->
+//            if (artifactModel.versions.find { it.versionNumber == currentVersion } == null) {
+//                println("Creating new version $currentVersion")
+//                Version.new {
+//                    versionNumber = currentVersion
+//                    artifact = artifactModel
+//                }
+//            } else {
+//                println("Version already exists.")
+//            }
+//        }
+//
+//
+//        return@dbQuery ArtifactDto(
+//            dbId = artifactModel.id.value,
+//            artifactId = metadataDto.artifactId,
+//            groupId = metadataDto.groupId,
+//            versions = artifactModel.versions.map {
+//                VersionDto(
+//                    versionNumber = it.versionNumber,
+//                    releaseDate = it.releaseDate,
+//                    dbId = it.id.value
+//                )
+//            }
+//        )
+//    }
+//
+    private fun metadataToArtifact(metadataDto: MetadataDto): CreateArtifactDto {
+        val versions = metadataDto.versions.associateWith {
+            version -> VersionDto(versionNumber = version)
+        }.toMutableMap()
 
-        val artifactQuery = Artifact.find {
-            Artifacts.artifactId eq metadataDto.artifactId and (Artifacts.groupId eq metadataDto.groupId)
-        }.with(Artifact::versions)
-
-        val artifactModel = if (artifactQuery.empty()) {
-            Artifact.new {
-                artifactId = metadataDto.artifactId
-                groupId = metadataDto.groupId
-            }
-        } else {
-            if (artifactQuery.count() > 1) {
-                println("WARNING: More than one matching artifact found!")
-            }
-            artifactQuery.first()
-        }
-
-        metadataDto.versions.forEach { currentVersion ->
-            if (artifactModel.versions.find { it.versionNumber == currentVersion } == null) {
-                println("Creating new version $currentVersion")
-                Version.new {
-                    versionNumber = currentVersion
-                    artifact = artifactModel
-                }
-            } else {
-                println("Version already exists.")
-            }
-        }
-
-
-        return@dbQuery ArtifactDto(
-            dbId = artifactModel.id.value,
+        return CreateArtifactDto(
             artifactId = metadataDto.artifactId,
             groupId = metadataDto.groupId,
-            versions = artifactModel.versions.map {
+            versions = versions
+        )
+    }
+
+    private suspend fun getVersionsForArtifact(name: String, namespace: String): List<VersionDto> = dbQuery {
+        val artifactQuery = Artifact.find {
+            Artifacts.artifactId eq name and (Artifacts.groupId eq namespace)
+        }.with(Artifact::versions)
+
+        return@dbQuery if (!artifactQuery.empty()) {
+            artifactQuery.first().versions.map {
                 VersionDto(
                     versionNumber = it.versionNumber,
                     releaseDate = it.releaseDate,
                     dbId = it.id.value
                 )
             }
-        )
-    }
-
-    private fun metadataToArtifact(metadataDto: MetadataDto): ArtifactDto {
-        return ArtifactDto(
-            artifactId = metadataDto.artifactId,
-            groupId = metadataDto.groupId,
-            versions = metadataDto.versions.map {
-                VersionDto(versionNumber = it)
-            }
-        )
+        } else {
+            emptyList()
+        }
     }
 }
