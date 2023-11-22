@@ -99,23 +99,14 @@ suspend fun getLibYears(projectPath: File, dbUrl: String?) {
         it.values.forEach {
             it.forEach { artifact ->
                 printLibyearWarning(artifact)
-                if (artifact.libyear < -180) {
-                    println(
-                        "Dependency ${artifact.groupId}/${artifact.artifactId}" +
-                                "is ${artifact.libyear} days old."
-                    )
-                    val newestVersion = artifact.versions.maxByOrNull { it.releaseDate }
-                    println("The used version is ${artifact.usedVersion} and " +
-                            "the newest version ${newestVersion?.versionNumber}")
-                }
             }
         }
     }
 
     if (!dbUrl.isNullOrBlank()) {
         //TODO store
-    }
 
+    }
 }
 
 fun printLibyearWarning(artifact: ArtifactDto) {
@@ -125,8 +116,10 @@ fun printLibyearWarning(artifact: ArtifactDto) {
                     "is ${artifact.libyear} days old."
         )
         val newestVersion = artifact.versions.maxByOrNull { it.releaseDate }
-        println("The used version is ${artifact.usedVersion} and " +
-                "the newest version ${newestVersion?.versionNumber}")
+        println(
+            "The used version is ${artifact.usedVersion} and " +
+                    "the newest version ${newestVersion?.versionNumber}"
+        )
     }
     artifact.transitiveDependencies.forEach { printLibyearWarning(it) }
 }

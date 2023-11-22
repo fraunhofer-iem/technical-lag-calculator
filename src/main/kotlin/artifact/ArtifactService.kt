@@ -18,19 +18,6 @@ class ArtifactService {
 
     private val mavenClient = MavenClient()
 
-    suspend fun updateVersions(versions: List<VersionDto>, artifactDto: ArtifactDto) = dbQuery {
-        versions.forEach { versionWithoutReleaseDate ->
-            val releaseDate = artifactDto.versions.find {
-                it.versionNumber == versionWithoutReleaseDate.versionNumber
-            }
-
-            releaseDate?.releaseDate?.let {
-                val version = Version.findById(versionWithoutReleaseDate.dbId)
-                version?.releaseDate = it
-            }
-        }
-    }
-
     suspend fun getAllTransitiveVersionInformation(
         rootPackage: PackageReference,
         storeResult: Boolean = false
@@ -97,7 +84,50 @@ class ArtifactService {
         }
     }
 
-    //    private suspend fun getOrCreateArtifact(metadataDto: MetadataDto): ArtifactDto = dbQuery {
+    private fun metadataToArtifact(metadataDto: MetadataDto): CreateArtifactDto {
+        val versions = metadataDto.versions.associateWith { version ->
+            VersionDto(versionNumber = version)
+        }.toMutableMap()
+
+        return CreateArtifactDto(
+            artifactId = metadataDto.artifactId,
+            groupId = metadataDto.groupId,
+            versions = versions
+        )
+    }
+
+    private suspend fun getVersionsForArtifact(name: String, namespace: String): List<VersionDto> = dbQuery {
+        val artifactQuery = Artifact.find {
+            Artifacts.artifactId eq name and (Artifacts.groupId eq namespace)
+        }.with(Artifact::versions)
+
+        return@dbQuery if (!artifactQuery.empty()) {
+            artifactQuery.first().versions.map {
+                VersionDto(
+                    versionNumber = it.versionNumber,
+                    releaseDate = it.releaseDate
+                )
+            }
+        } else {
+            emptyList()
+        }
+    }
+}
+
+//    suspend fun updateVersions(versions: List<VersionDto>, artifactDto: ArtifactDto) = dbQuery {
+//        versions.forEach { versionWithoutReleaseDate ->
+//            val releaseDate = artifactDto.versions.find {
+//                it.versionNumber == versionWithoutReleaseDate.versionNumber
+//            }
+//
+//            releaseDate?.releaseDate?.let {
+//                val version = Version.findById(versionWithoutReleaseDate.dbId)
+//                version?.releaseDate = it
+//            }
+//        }
+//    }
+
+//    private suspend fun getOrCreateArtifact(metadataDto: MetadataDto): ArtifactDto = dbQuery {
 //
 //        val artifactQuery = Artifact.find {
 //            Artifacts.artifactId eq metadataDto.artifactId and (Artifacts.groupId eq metadataDto.groupId)
@@ -142,33 +172,3 @@ class ArtifactService {
 //        )
 //    }
 //
-    private fun metadataToArtifact(metadataDto: MetadataDto): CreateArtifactDto {
-        val versions = metadataDto.versions.associateWith {
-            version -> VersionDto(versionNumber = version)
-        }.toMutableMap()
-
-        return CreateArtifactDto(
-            artifactId = metadataDto.artifactId,
-            groupId = metadataDto.groupId,
-            versions = versions
-        )
-    }
-
-    private suspend fun getVersionsForArtifact(name: String, namespace: String): List<VersionDto> = dbQuery {
-        val artifactQuery = Artifact.find {
-            Artifacts.artifactId eq name and (Artifacts.groupId eq namespace)
-        }.with(Artifact::versions)
-
-        return@dbQuery if (!artifactQuery.empty()) {
-            artifactQuery.first().versions.map {
-                VersionDto(
-                    versionNumber = it.versionNumber,
-                    releaseDate = it.releaseDate,
-                    dbId = it.id.value
-                )
-            }
-        } else {
-            emptyList()
-        }
-    }
-}
