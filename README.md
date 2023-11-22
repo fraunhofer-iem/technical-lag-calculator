@@ -18,7 +18,8 @@ Path to the analyzed project's root.
 Database path to store version numbers and their release dates.
 Expected format: jdbc:sqlite:identifier.sqlite
 ```
-
+Instead of using the CLI parameters the db url and project path can also be set using the
+environment variables `PROJECT_PATH` and `DB_URL`.
 
 
 ---
