@@ -1,5 +1,8 @@
 package artifact.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class ArtifactDto(
     val artifactId: String,
     val groupId: String,

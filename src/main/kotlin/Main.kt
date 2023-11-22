@@ -1,53 +1,63 @@
 import artifact.ArtifactService
-import artifact.model.ArtifactDto
+import artifact.model.DependencyGraphDto
+import artifact.model.ScopedDependencyDto
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 import dependencies.DependencyAnalyzer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import libyears.LibyearCalculator
 import util.initDatabase
 import java.io.File
+import java.nio.file.Path
+import java.util.*
+import kotlin.io.path.createDirectories
 
 
 class Libyears : CliktCommand() {
     val dbUrl by option(
-        envvar = "DB_URL", help = "Optional database path to store version numbers and their release dates. " +
-                "Expected format: jdbc:sqlite:identifier.sqlite"
-    )
+        envvar = "DB_URL", help = "Optional path to store a file based database which contains" +
+                " version numbers and their release dates." +
+                "This database is used as a cache and the application works seamlessly without it." +
+                "If the path doesn't exist it will be created."
+    ).path(mustExist = false, mustBeReadable = true, mustBeWritable = true, canBeFile = false)
+
     val projectPath by option(envvar = "PROJECT_PATH", help = "Path to the analyzed project's root.")
         .path(mustExist = true, mustBeReadable = true, canBeFile = false)
         .required()
 
+    val outputPath by option(envvar = "OUTPUT_PATH", help = "Path to the folder to store the JSON results" +
+            "of the created dependency graph. If the path doesn't exist it will be created.")
+        .path(mustExist = false, mustBeReadable = true, mustBeWritable = true, canBeFile = false)
     override fun run() {
         echo("Running libyears for project at $projectPath and optional db URL $dbUrl")
-        isValidSQLiteUrl(dbUrl)
-    }
-
-    private fun isValidSQLiteUrl(url: String?): Boolean {
-//        // as the db url is an optional setting it is valid to have a null value here
-//        if (url == null) {
-//            return true
-//        }
-//        return try {
-//            val parsedUrl = java.net.URL(url)
-//            println(parsedUrl)
-//            parsedUrl.protocol == "jdbc" &&
-//                    parsedUrl.path.matches(Regex("^/([a-zA-Z0-9_]+\\.sqlite)$"))
-//        } catch (e: Exception) {
-//            throw Exception("Given db URL is invalid due to exception $e")
-//        }
-        return true
+        dbUrl?.createDirectories()
+        outputPath?.createDirectories()
     }
 }
 
 suspend fun main(args: Array<String>) {
     val libyearCommand = Libyears()
     libyearCommand.main(args)
-    getLibYears(projectPath = libyearCommand.projectPath.toFile(), dbUrl = libyearCommand.dbUrl)
+
+    val dbString = if(libyearCommand.dbUrl != null) {
+        "jdbc:sqlite:${libyearCommand.dbUrl.toString()}versionsCache.sqlite"
+    } else {
+        null
+    }
+
+    getLibYears(
+        projectPath = libyearCommand.projectPath.toFile(),
+        outputPath = libyearCommand.outputPath,
+        dbUrl = dbString
+    )
 }
 
 
-suspend fun getLibYears(projectPath: File, dbUrl: String?) {
+suspend fun getLibYears(projectPath: File, outputPath: Path?, dbUrl: String?) {
     if (!dbUrl.isNullOrBlank()) {
         initDatabase(dbUrl)
     }
@@ -57,6 +67,7 @@ suspend fun getLibYears(projectPath: File, dbUrl: String?) {
 
     val artifactService = ArtifactService()
 
+    //TODO: move this to a better places
     // package manager -> scope -> directDependency ->-> transitiveDependencies
     val transformedGraph = dependencyGraphs.map { (packageManager, graph) ->
         val transformedScope = graph.createScopes().associate { scope ->
@@ -70,38 +81,26 @@ suspend fun getLibYears(projectPath: File, dbUrl: String?) {
 
             scope.name to transformedDependencies
         }
-        packageManager to transformedScope
+
+        packageManager to ScopedDependencyDto(transformedScope)
     }.toMap()
 
-    transformedGraph.forEach { (packageManager, scopes) ->
-        println("Libyears for $packageManager")
-        scopes.forEach { (scope, artifacts) ->
-            println("Libyears in scope $scope")
-            val directDependencies = artifacts.sumOf { it.libyear }
-            println(
-                "Direct dependency libyears: $directDependencies Days " +
-                        "(equals to roughly ${directDependencies / 365.25} years)"
-            )
+    val dependencyGraphDto = DependencyGraphDto(transformedGraph)
 
-            // Here we loose the
-            val transitiveDependencySum = artifacts.sumOf {
-                it.transitiveDependencies.sumOf { transitive -> calculateTransitiveLibyears(transitive) }
-            }
-            println(
-                "Transitive dependency libyears: $transitiveDependencySum Days " +
-                        "(equals to roughly ${transitiveDependencySum / 365.25} years)"
-            )
+    val libyearCalculator = LibyearCalculator()
+    libyearCalculator.printDependencyGraph(dependencyGraphDto)
+
+
+    if(outputPath != null) {
+        val outputFile = outputPath.resolve("${Date().time}-graphResult.json").toFile()
+        withContext(Dispatchers.IO) {
+            outputFile.createNewFile()
+            val json = Json { prettyPrint = false }
+            val jsonString = json.encodeToString(DependencyGraphDto.serializer(), dependencyGraphDto)
+            outputFile.writeText(jsonString)
         }
     }
 
-    println("Warnings for dependencies older than 180 days:")
-    transformedGraph.values.forEach {
-        it.values.forEach {
-            it.forEach { artifact ->
-                printLibyearWarning(artifact)
-            }
-        }
-    }
 
     if (!dbUrl.isNullOrBlank()) {
         //TODO store
@@ -109,27 +108,3 @@ suspend fun getLibYears(projectPath: File, dbUrl: String?) {
     }
 }
 
-fun printLibyearWarning(artifact: ArtifactDto) {
-    if (artifact.libyear < -180) {
-        println(
-            "Dependency ${artifact.groupId}/${artifact.artifactId}" +
-                    "is ${artifact.libyear} days old."
-        )
-        val newestVersion = artifact.versions.maxByOrNull { it.releaseDate }
-        println(
-            "The used version is ${artifact.usedVersion} and " +
-                    "the newest version ${newestVersion?.versionNumber}"
-        )
-    }
-    artifact.transitiveDependencies.forEach { printLibyearWarning(it) }
-}
-
-fun calculateTransitiveLibyears(artifact: ArtifactDto): Long {
-    var sumLibyears = artifact.libyear
-
-    for (dependency in artifact.transitiveDependencies) {
-        sumLibyears += calculateTransitiveLibyears(dependency)
-    }
-
-    return sumLibyears
-}
