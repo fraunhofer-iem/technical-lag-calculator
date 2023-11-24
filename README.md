@@ -21,6 +21,8 @@ Expected format: jdbc:sqlite:identifier.sqlite
 Instead of using the CLI parameters the db url and project path can also be set using the
 environment variables `PROJECT_PATH` and `DB_URL`.
 
+### Maintainer
+* Jan-Niclas Strüwer
 
 ---
 [1] J. Cox, E. Bouwers, M. van Eekelen and J. Visser, Measuring Dependency Freshness in Software
