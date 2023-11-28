@@ -2,12 +2,10 @@ package artifact
 
 import artifact.db.Artifact
 import artifact.db.Artifacts
-import artifact.db.Version
 import artifact.model.ArtifactDto
 import artifact.model.CreateArtifactDto
 import artifact.model.MetadataDto
 import artifact.model.VersionDto
-
 import http.maven.MavenClient
 import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.and
@@ -55,7 +53,7 @@ class ArtifactService(private val storeResults: Boolean = false) {
                     name = packageRef.id.name
                 )
 
-                if(metadataDto.versions.count() == storedVersions.count()) {
+                if (metadataDto.versions.count() == storedVersions.count()) {
                     createArtifactDto.addVersions(storedVersions)
                 }
             }

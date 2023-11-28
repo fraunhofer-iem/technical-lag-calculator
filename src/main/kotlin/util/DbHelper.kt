@@ -1,8 +1,8 @@
 package util
 
 import artifact.db.Artifacts
-import dependencies.db.DependencyGraphs
 import artifact.db.Versions
+import dependencies.db.DependencyGraphs
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -15,6 +15,7 @@ suspend fun <T> dbQuery(block: suspend () -> T): T =
     newSuspendedTransaction(Dispatchers.IO) { block() }
 
 data class DbConfig(val url: String, val userName: String, val password: String)
+
 fun initDatabase(dbConfig: DbConfig) {
 
     Database.connect(

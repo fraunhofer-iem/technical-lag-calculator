@@ -9,8 +9,7 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.json.jsonb
 
 
-
-object DependencyGraphs: IntIdTable() {
+object DependencyGraphs : IntIdTable() {
     val graph = jsonb<DependencyGraphDto>("graphs", Json.Default)
 }
 

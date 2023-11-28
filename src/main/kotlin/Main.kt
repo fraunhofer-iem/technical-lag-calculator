@@ -1,5 +1,7 @@
 import artifact.ArtifactService
-import artifact.db.*
+import artifact.db.Artifact
+import artifact.db.Artifacts
+import artifact.db.Version
 import artifact.model.ArtifactDto
 import artifact.model.DependencyGraphDto
 import com.github.ajalt.clikt.core.CliktCommand
@@ -24,7 +26,7 @@ import java.nio.file.Path
 import java.util.*
 import kotlin.io.path.createDirectories
 
-class DbOptions: OptionGroup() {
+class DbOptions : OptionGroup() {
     val dbUrl by option(
         envvar = "DB_URL", help = "Optional path to store a file based database which contains" +
                 " version numbers and their release dates." +
@@ -50,8 +52,10 @@ class Libyears : CliktCommand() {
         .path(mustExist = false, canBeFile = false)
 
     override fun run() {
-        echo("Running libyears for project at $projectPath and output path $outputPath" +
-                " and db url ${dbOptions?.dbUrl}")
+        echo(
+            "Running libyears for project at $projectPath and output path $outputPath" +
+                    " and db url ${dbOptions?.dbUrl}"
+        )
         outputPath?.createDirectories()
     }
 }
@@ -95,7 +99,8 @@ suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig
         withContext(Dispatchers.IO) {
             outputFile.createNewFile()
             val json = Json { prettyPrint = false }
-            val jsonString = json.encodeToString(DependencyGraphDto.serializer(), dependencyAnalyzerResult.dependencyGraphDto)
+            val jsonString =
+                json.encodeToString(DependencyGraphDto.serializer(), dependencyAnalyzerResult.dependencyGraphDto)
             outputFile.writeText(jsonString)
         }
     }
@@ -163,8 +168,8 @@ suspend fun recursivelyUpdateCache(artifactDto: ArtifactDto) {
             }
         }
     }
-        artifactDto.transitiveDependencies.forEach { transitiveDependency ->
-            recursivelyUpdateCache(artifactDto = transitiveDependency)
-        }
+    artifactDto.transitiveDependencies.forEach { transitiveDependency ->
+        recursivelyUpdateCache(artifactDto = transitiveDependency)
+    }
 
 }
