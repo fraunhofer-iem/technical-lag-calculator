@@ -70,7 +70,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.7.3")
-//    implementation("org.xerial:sqlite-jdbc:3.30.1")
     implementation("io.ktor:ktor-client-core-jvm:2.3.6")
     implementation("io.ktor:ktor-client-cio-jvm:2.3.6")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.6")

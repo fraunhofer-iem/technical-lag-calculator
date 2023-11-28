@@ -1,6 +1,7 @@
 package util
 
 import artifact.db.Artifacts
+import dependencies.db.DependencyGraphs
 import artifact.db.Versions
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.sql.Database
@@ -26,6 +27,6 @@ fun initDatabase(dbConfig: DbConfig) {
 
     transaction {
         addLogger(StdOutSqlLogger)
-        SchemaUtils.create(Artifacts, Versions)
+        SchemaUtils.create(Artifacts, Versions, DependencyGraphs)
     }
 }

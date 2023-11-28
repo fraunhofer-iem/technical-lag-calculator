@@ -1,10 +1,7 @@
 import artifact.ArtifactService
-import artifact.db.Artifact
-import artifact.db.Artifacts
-import artifact.db.Version
+import artifact.db.*
 import artifact.model.ArtifactDto
 import artifact.model.DependencyGraphDto
-import artifact.model.ScopedDependencyDto
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.groups.OptionGroup
 import com.github.ajalt.clikt.parameters.groups.cooccurring
@@ -12,6 +9,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 import dependencies.DependencyAnalyzer
+import dependencies.db.DependencyGraph
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -82,33 +80,14 @@ suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig
         initDatabase(dbConfig!!)
     }
 
-    val dependencyAnalyzer = DependencyAnalyzer()
-    val dependencyGraphs = dependencyAnalyzer.getDependencyPackagesForProject(projectPath)
+    val dependencyAnalyzer = DependencyAnalyzer(
+        ArtifactService(storeResults)
+    )
 
-    val artifactService = ArtifactService()
-
-    //TODO: move this to a better places
-    // package manager -> scope -> directDependency ->-> transitiveDependencies
-    val transformedGraph = dependencyGraphs.map { (packageManager, graph) ->
-        val transformedScope = graph.createScopes().associate { scope ->
-
-            val transformedDependencies = scope.dependencies.flatMap { packageRef ->
-                artifactService.getAllTransitiveVersionInformation(
-                    rootPackage = packageRef,
-                    storeResult = storeResults
-                )
-            }
-
-            scope.name to transformedDependencies
-        }
-
-        packageManager to ScopedDependencyDto(transformedScope)
-    }.toMap()
-
-    val dependencyGraphDto = DependencyGraphDto(transformedGraph)
+    val dependencyAnalyzerResult = dependencyAnalyzer.getDependencyPackagesForProject(projectPath)
 
     val libyearCalculator = LibyearCalculator()
-    libyearCalculator.printDependencyGraph(dependencyGraphDto)
+    libyearCalculator.printDependencyGraph(dependencyAnalyzerResult.dependencyGraphDto)
 
 
     if (outputPath != null) {
@@ -116,14 +95,19 @@ suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig
         withContext(Dispatchers.IO) {
             outputFile.createNewFile()
             val json = Json { prettyPrint = false }
-            val jsonString = json.encodeToString(DependencyGraphDto.serializer(), dependencyGraphDto)
+            val jsonString = json.encodeToString(DependencyGraphDto.serializer(), dependencyAnalyzerResult.dependencyGraphDto)
             outputFile.writeText(jsonString)
         }
     }
 
 
     if (storeResults) {
-        dependencyGraphDto.packageManagerToScopes.values.forEach {
+        dbQuery {
+            DependencyGraph.new {
+                graph = dependencyAnalyzerResult.dependencyGraphDto
+            }
+        }
+        dependencyAnalyzerResult.dependencyGraphDto.packageManagerToScopes.values.forEach {
             it.scopesToDependencies.values.forEach {
                 it.forEach { artifact ->
                     recursivelyUpdateCache(artifact)
@@ -132,7 +116,7 @@ suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig
         }
     }
 
-    return dependencyGraphDto
+    return dependencyAnalyzerResult.dependencyGraphDto
 }
 
 suspend fun recursivelyUpdateCache(artifactDto: ArtifactDto) {

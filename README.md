@@ -11,12 +11,23 @@ the release date information for the new ecosystem.
 ### Usage
 Build the tool using gradle and run with the following command line options:
 ```
---project-path (required)
-Path to the analyzed project's root.
+Options:
+  optional:
+  --db-url=<text>        Optional path to store a file based database which
+                         contains version numbers and their release dates.This
+                         database is used as a cache and the application works
+                         seamlessly without it.If the path doesn't exist it
+                         will be created.
+  --user-name=<text>     Username of database user
+  --password=<text>      Password for given database user
+  --output-path=<path>   Path to the folder to store the JSON resultsof the
+                         created dependency graph. If the path doesn't exist it
+                         will be created.
+  required:                       
+  --project-path=<path>  Path to the analyzed project's root.
+  
 
---db-url (optional)
-Database path to store version numbers and their release dates.
-Expected format: jdbc:sqlite:identifier.sqlite
+  -h, --help             Show this message and exit
 ```
 Instead of using the CLI parameters the db url and project path can also be set using the
 environment variables `PROJECT_PATH` and `DB_URL`.

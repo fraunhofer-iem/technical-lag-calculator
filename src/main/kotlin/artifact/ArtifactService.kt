@@ -14,19 +14,17 @@ import org.jetbrains.exposed.sql.and
 import org.ossreviewtoolkit.model.PackageReference
 import util.dbQuery
 
-class ArtifactService {
+class ArtifactService(private val storeResults: Boolean = false) {
 
     private val mavenClient = MavenClient()
 
     suspend fun getAllTransitiveVersionInformation(
         rootPackage: PackageReference,
-        storeResult: Boolean = false
     ): List<ArtifactDto> {
         val infoList: MutableList<CreateArtifactDto> = mutableListOf()
 
         getDependencyVersionInformation(
             packageRef = rootPackage,
-            storeResult = storeResult,
             infoList = infoList,
             isTransitiveDependency = false
         )
@@ -37,7 +35,6 @@ class ArtifactService {
     private suspend fun getDependencyVersionInformation(
         packageRef: PackageReference,
         infoList: MutableList<CreateArtifactDto>,
-        storeResult: Boolean = false,
         isTransitiveDependency: Boolean = true,
     ) {
 
@@ -52,7 +49,7 @@ class ArtifactService {
             createArtifactDto.usedVersion = packageRef.id.version
             createArtifactDto.isTopLevelDependency = !isTransitiveDependency
 
-            if (storeResult) {
+            if (this.storeResults) {
                 val storedVersions = getVersionsForArtifact(
                     namespace = packageRef.id.namespace,
                     name = packageRef.id.name
@@ -77,7 +74,6 @@ class ArtifactService {
             packageRef.dependencies.forEach {
                 getDependencyVersionInformation(
                     packageRef = it,
-                    storeResult = storeResult,
                     infoList = createArtifactDto.transitiveDependencies
                 )
             }
