@@ -10,8 +10,6 @@ data class CreateArtifactDto(
     var isTopLevelDependency: Boolean? = null,
     val transitiveDependencies: MutableList<CreateArtifactDto> = mutableListOf()
 ) {
-
-    private val libyearCalculator = LibyearCalculator()
     fun toArtifactDto(): ArtifactDto {
         if (artifactId != null &&
             groupId != null &&
@@ -27,7 +25,7 @@ data class CreateArtifactDto(
                 isTopLevelDependency = isTopLevelDependency!!,
                 versions = versionList,
                 transitiveDependencies = transitiveDependencies.map { it.toArtifactDto() },
-                libyear = libyearCalculator.calculateDifferenceForPackage(usedVersion!!, versionList)
+                libyear = LibyearCalculator.calculateDifferenceForPackage(usedVersion!!, versionList)
             )
         }
 

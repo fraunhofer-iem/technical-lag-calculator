@@ -1,8 +1,8 @@
 package dependencies
 
 import artifact.ArtifactService
-import artifact.model.DependencyGraphDto
-import artifact.model.ScopedDependencyDto
+import dependencies.model.DependencyGraphDto
+import dependencies.model.ScopedDependencyDto
 import dependencies.model.AnalyzerResultDto
 import dependencies.model.EnvironmentInfoDto
 import dependencies.model.ProjectDto
@@ -111,7 +111,6 @@ class DependencyAnalyzer(private val artifactService: ArtifactService = Artifact
         val analyzerConfiguration = ortConfig.analyzer
         val repositoryConfiguration = RepositoryConfiguration()
         val enabledPackageManagers = analyzerConfiguration.determineEnabledPackageManagers()
-
 
         val enabledCurationProviders = buildList {
             val repositoryPackageCurations = repositoryConfiguration.curations.packages

@@ -1,6 +1,6 @@
 package dependencies.db
 
-import artifact.model.DependencyGraphDto
+import dependencies.model.DependencyGraphDto
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass

@@ -1,5 +1,6 @@
-package artifact.model
+package dependencies.model
 
+import artifact.model.ArtifactDto
 import kotlinx.serialization.Serializable
 
 @Serializable

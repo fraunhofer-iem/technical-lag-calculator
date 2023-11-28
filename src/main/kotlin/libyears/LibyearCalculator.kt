@@ -2,13 +2,13 @@ package libyears
 
 
 import artifact.model.ArtifactDto
-import artifact.model.DependencyGraphDto
+import dependencies.model.DependencyGraphDto
 import artifact.model.VersionDto
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.*
 
-class LibyearCalculator {
+object LibyearCalculator {
 
     fun printDependencyGraph(dependencyGraphDto: DependencyGraphDto) {
         dependencyGraphDto.packageManagerToScopes.forEach { (packageManager, scopes) ->

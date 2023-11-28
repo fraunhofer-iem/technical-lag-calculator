@@ -3,7 +3,7 @@ import artifact.db.Artifact
 import artifact.db.Artifacts
 import artifact.db.Version
 import artifact.model.ArtifactDto
-import artifact.model.DependencyGraphDto
+import dependencies.model.DependencyGraphDto
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.groups.OptionGroup
 import com.github.ajalt.clikt.parameters.groups.cooccurring
@@ -21,6 +21,7 @@ import org.jetbrains.exposed.sql.and
 import util.DbConfig
 import util.dbQuery
 import util.initDatabase
+import util.updateCache
 import java.io.File
 import java.nio.file.Path
 import java.util.*
@@ -90,8 +91,8 @@ suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig
 
     val dependencyAnalyzerResult = dependencyAnalyzer.getDependencyPackagesForProject(projectPath)
 
-    val libyearCalculator = LibyearCalculator()
-    libyearCalculator.printDependencyGraph(dependencyAnalyzerResult.dependencyGraphDto)
+
+    LibyearCalculator.printDependencyGraph(dependencyAnalyzerResult.dependencyGraphDto)
 
 
     if (outputPath != null) {
@@ -112,64 +113,8 @@ suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig
                 graph = dependencyAnalyzerResult.dependencyGraphDto
             }
         }
-        dependencyAnalyzerResult.dependencyGraphDto.packageManagerToScopes.values.forEach {
-            it.scopesToDependencies.values.forEach {
-                it.forEach { artifact ->
-                    recursivelyUpdateCache(artifact)
-                }
-            }
-        }
+        updateCache(dependencyAnalyzerResult.dependencyGraphDto)
     }
 
     return dependencyAnalyzerResult.dependencyGraphDto
-}
-
-suspend fun recursivelyUpdateCache(artifactDto: ArtifactDto) {
-    dbQuery {
-        val artifacts = Artifact.find {
-            Artifacts.artifactId eq artifactDto.artifactId and (Artifacts.groupId eq artifactDto.groupId)
-        }.with(Artifact::versions)
-
-        if (artifacts.count() > 1) {
-            println(
-                "The cache should only contain a single entry for every groupId and " +
-                        "artifact id combo. Clearing cache for ${artifactDto.groupId}/${artifactDto.artifactId}"
-            )
-            // TODO: we need to test if the artifacts iterable is empty after delete
-            artifacts.forEach { it.delete() }
-        }
-
-        val updateNeededForArtifact: Pair<Boolean, Artifact> = if (artifacts.empty()) {
-            val artifactDb = Artifact.new {
-                artifactId = artifactDto.artifactId
-                groupId = artifactDto.groupId
-            }
-            Pair(true, artifactDb)
-        } else {
-            val artifactDb = artifacts.first()
-            if (artifactDb.versions.count().toInt() == artifactDto.versions.count()) {
-                Pair(false, artifactDb)
-            } else {
-                Pair(true, artifactDb)
-            }
-        }
-
-        if (updateNeededForArtifact.first) {
-            artifactDto.versions.forEach { version ->
-                if (version.releaseDate != -1L) {
-                    Version.new {
-                        versionNumber = version.versionNumber
-                        releaseDate = version.releaseDate
-                        artifact = updateNeededForArtifact.second
-                    }
-                } else {
-                    println("Not storing version with missing release date $version")
-                }
-            }
-        }
-    }
-    artifactDto.transitiveDependencies.forEach { transitiveDependency ->
-        recursivelyUpdateCache(artifactDto = transitiveDependency)
-    }
-
 }
