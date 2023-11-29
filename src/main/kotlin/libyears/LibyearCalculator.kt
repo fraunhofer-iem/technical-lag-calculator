@@ -43,25 +43,26 @@ object LibyearCalculator {
     }
 
     fun calculateDifferenceForPackage(currentVersion: String, packageList: List<VersionDto>): Long {
-        return if (packageList.isNotEmpty()) {
+        if (packageList.isNotEmpty()) {
             val currentPackage = packageList.filter { it.versionNumber == currentVersion }
-            val newestVersion = packageList.maxByOrNull { it.releaseDate }
+            if (currentPackage.isNotEmpty()) {
+                val newestVersion = packageList.maxByOrNull { it.releaseDate }
 
-            val currentVersionTime = Date(currentPackage.first().releaseDate)
-            val newestVersionTime = Date(newestVersion?.releaseDate ?: 0)
+                val currentVersionTime = Date(currentPackage.first().releaseDate)
+                val newestVersionTime = Date(newestVersion?.releaseDate ?: 0)
 
 
-            println("Library Difference $currentVersionTime $newestVersionTime")
-            val startLocalDate = newestVersionTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-            val endLocalDate = currentVersionTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                println("Library Difference $currentVersionTime $newestVersionTime")
+                val startLocalDate = newestVersionTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+                val endLocalDate = currentVersionTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
 
-            val differenceInDays = ChronoUnit.DAYS.between(startLocalDate, endLocalDate)
-            println("Differences in days: $differenceInDays")
+                val differenceInDays = ChronoUnit.DAYS.between(startLocalDate, endLocalDate)
+                println("Differences in days: $differenceInDays")
 
-            differenceInDays
-        } else {
-            0
+                return differenceInDays
+            }
         }
+        return 0
     }
 
     private fun printLibyearWarning(artifact: ArtifactDto) {

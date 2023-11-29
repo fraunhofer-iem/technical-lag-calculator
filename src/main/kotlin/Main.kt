@@ -72,7 +72,7 @@ suspend fun main(args: Array<String>) {
             outputPath = libyearCommand.outputPath,
             dbConfig = dbConfig,
         )
-    } * 60000
+    } / 60000
     println("The libyear calculation took $runtime minutes to execute.")
 }
 
