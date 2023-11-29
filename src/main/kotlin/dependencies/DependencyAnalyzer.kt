@@ -1,12 +1,7 @@
 package dependencies
 
 import artifact.ArtifactService
-import dependencies.model.DependencyGraphDto
-import dependencies.model.ScopedDependencyDto
-import dependencies.model.AnalyzerResultDto
-import dependencies.model.EnvironmentInfoDto
-import dependencies.model.ProjectDto
-import dependencies.model.RepositoryInfoDto
+import dependencies.model.*
 import org.apache.logging.log4j.kotlin.logger
 import org.ossreviewtoolkit.analyzer.Analyzer
 import org.ossreviewtoolkit.analyzer.PackageManagerFactory

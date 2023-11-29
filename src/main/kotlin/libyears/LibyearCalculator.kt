@@ -2,8 +2,8 @@ package libyears
 
 
 import artifact.model.ArtifactDto
-import dependencies.model.DependencyGraphDto
 import artifact.model.VersionDto
+import dependencies.model.DependencyGraphDto
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.*

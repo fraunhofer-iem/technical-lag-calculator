@@ -10,7 +10,6 @@ import dependencies.model.DependencyGraphDto
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.dao.with
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 
@@ -36,6 +35,7 @@ fun initDatabase(dbConfig: DbConfig) {
 }
 
 suspend fun updateCache(dependencyGraphDto: DependencyGraphDto) {
+    println("Updating versions cache")
     dependencyGraphDto.packageManagerToScopes.values.forEach {
         it.scopesToDependencies.values.forEach {
             it.forEach { artifact ->
