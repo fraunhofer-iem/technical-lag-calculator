@@ -26,7 +26,9 @@ class DepsClient {
 
         val requestUrl: String? = when (type.lowercase()) {
             "maven" -> "https://api.deps.dev/v3alpha/systems/$type/packages/$namespace:$name"
-            "gradle" -> "https://api.deps.dev/v3alpha/systems/$type/packages/$namespace:$name"
+            "gradle" ->
+                // Gradle must be accessed with the maven key
+                "https://api.deps.dev/v3alpha/systems/maven/packages/$namespace:$name"
             else -> null
         }
         return if (requestUrl != null) {

@@ -3,62 +3,64 @@ package artifact
 import artifact.model.ArtifactDto
 import artifact.model.CreateArtifactDto
 import http.deps.DepsClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import org.ossreviewtoolkit.model.PackageReference
 
-class ArtifactService(private val storeResults: Boolean = false) {
+class ArtifactService {
 
     private val depsClient = DepsClient()
+    private val ioScope = CoroutineScope(Dispatchers.IO)
 
     suspend fun getAllTransitiveVersionInformation(
         rootPackage: PackageReference,
-    ): List<ArtifactDto> {
-        val infoList: MutableList<CreateArtifactDto> = mutableListOf()
-        val seen: MutableSet<PackageReference> = mutableSetOf()
-        getDependencyVersionInformation(
-            packageRef = rootPackage,
-            infoList = infoList,
-            isTransitiveDependency = false,
-            seen = seen
-        )
+    ): ArtifactDto? {
 
-        return infoList.map { it.toArtifactDto() }
+        return getDependencyVersionInformation(
+            packageRef = rootPackage,
+            isTransitiveDependency = false,
+            seen = mutableSetOf()
+        )?.toArtifactDto() // The toDto call resolves all deferreds
     }
 
-    //TODO: check for cyclic dependencies
+
     private suspend fun getDependencyVersionInformation(
         packageRef: PackageReference,
-        infoList: MutableList<CreateArtifactDto>,
         isTransitiveDependency: Boolean = true,
-        seen: MutableSet<PackageReference>
-    ) {
-        if (seen.contains(packageRef)) {
-            println("FOUND CIRCLE")
-            return
+        seen: MutableSet<PackageReference>,
+    ): CreateArtifactDto? {
+        return if (seen.contains(packageRef)) {
+            null
         } else {
             seen.add(packageRef)
-            val versions = depsClient.getVersionsForPackage(
-                type = packageRef.id.type,
-                namespace = packageRef.id.namespace,
-                name = packageRef.id.name)
 
-            val createArtifactDto = CreateArtifactDto(
+
+            val versions = ioScope.async {
+                depsClient.getVersionsForPackage(
+                    type = packageRef.id.type,
+                    namespace = packageRef.id.namespace,
+                    name = packageRef.id.name
+                )
+            }
+
+            val transitiveDependencies =  packageRef.dependencies.map {
+                ioScope.async {
+                    getDependencyVersionInformation(
+                        packageRef = it,
+                        seen = seen
+                    )
+                }
+            }
+
+            return CreateArtifactDto(
                 artifactId = packageRef.id.name,
                 groupId = packageRef.id.namespace,
                 usedVersion = packageRef.id.version,
                 isTopLevelDependency = !isTransitiveDependency,
-                versions = versions.associateBy { it.versionNumber}.toMutableMap(),
-                transitiveDependencies = mutableListOf()
+                versionDeferred = versions,
+                transitiveDependencies = transitiveDependencies
             )
-
-            packageRef.dependencies.forEach {
-                getDependencyVersionInformation(
-                    packageRef = it,
-                    infoList = createArtifactDto.transitiveDependencies,
-                    seen = seen
-                )
-            }
-
-            infoList.add(createArtifactDto)
         }
     }
 }

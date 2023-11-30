@@ -1,40 +1,45 @@
 package artifact.model
 
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.awaitAll
 import libyears.LibyearCalculator
 
 data class CreateArtifactDto(
     var artifactId: String? = null,
     var groupId: String? = null,
     var usedVersion: String? = null,
-    var versions: MutableMap<String, VersionDto> = mutableMapOf(),
+    var versionDeferred: Deferred<List<VersionDto>>? = null,
     var isTopLevelDependency: Boolean? = null,
-    val transitiveDependencies: MutableList<CreateArtifactDto> = mutableListOf()
+    val transitiveDependencies: List<Deferred<CreateArtifactDto?>>
 ) {
-    fun toArtifactDto(): ArtifactDto {
-        if (artifactId != null &&
-            groupId != null &&
-            usedVersion != null &&
-            isTopLevelDependency != null
-        ) {
-            val versionList = versions.values.toList()
+    suspend fun toArtifactDto(): ArtifactDto {
+        if (artifactIsComplete()) {
+
+            val versions = try {
+                versionDeferred?.await()
+                } catch (exception: Exception) {
+                    println("API version job failed with error $exception")
+                    null
+                } ?: emptyList()
 
             return ArtifactDto(
                 artifactId = artifactId!!,
                 groupId = groupId!!,
                 usedVersion = usedVersion!!,
                 isTopLevelDependency = isTopLevelDependency!!,
-                versions = versionList,
-                transitiveDependencies = transitiveDependencies.map { it.toArtifactDto() },
-                libyear = LibyearCalculator.calculateDifferenceForPackage(usedVersion!!, versionList)
+                versions = versions ,
+                transitiveDependencies = transitiveDependencies.awaitAll().mapNotNull { it?.toArtifactDto() },
+                libyear = LibyearCalculator.calculateDifferenceForPackage(usedVersion!!, versions)
             )
         }
 
         throw Exception("Transformation of incomplete artifact not possible.")
     }
 
-    fun addVersions(versionsToAdd: List<VersionDto>) {
-        versionsToAdd.forEach {
-            versions[it.versionNumber] = it
-        }
+    private fun artifactIsComplete(): Boolean {
+        return artifactId != null &&
+                groupId != null &&
+                usedVersion != null &&
+                isTopLevelDependency != null
     }
 }

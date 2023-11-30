@@ -84,7 +84,7 @@ suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig
     }
 
     val dependencyAnalyzer = DependencyAnalyzer(
-        ArtifactService(storeResults)
+        ArtifactService()
     )
 
     val dependencyAnalyzerResult = dependencyAnalyzer.getDependencyPackagesForProject(projectPath)
@@ -111,7 +111,6 @@ suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig
                 graph = dependencyAnalyzerResult.dependencyGraphDto
             }
         }
-        updateCache(dependencyAnalyzerResult.dependencyGraphDto)
     }
 
     return dependencyAnalyzerResult.dependencyGraphDto

@@ -86,7 +86,7 @@ class DependencyAnalyzer(private val artifactService: ArtifactService = Artifact
         val transformedGraph = dependencyGraphs.map { (packageManager, graph) ->
             val transformedScope = graph.createScopes().associate { scope ->
 
-                val transformedDependencies = scope.dependencies.flatMap { packageRef ->
+                val transformedDependencies = scope.dependencies.mapNotNull { packageRef ->
                     artifactService.getAllTransitiveVersionInformation(
                         rootPackage = packageRef
                     )
