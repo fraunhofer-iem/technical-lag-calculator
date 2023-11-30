@@ -29,6 +29,7 @@ class DepsClient {
             "gradle" ->
                 // Gradle must be accessed with the maven key
                 "https://api.deps.dev/v3alpha/systems/maven/packages/$namespace:$name"
+
             else -> null
         }
         return if (requestUrl != null) {
@@ -46,7 +47,7 @@ class DepsClient {
             }
 
 
-             responseDto?.versions?.mapNotNull { version ->
+            responseDto?.versions?.mapNotNull { version ->
                 if (version.publishedAt != null) {
                     try {
                         VersionDto(
@@ -64,14 +65,14 @@ class DepsClient {
             } ?: emptyList()
         } else {
             println("Currently unsupported package manager")
-             emptyList()
+            emptyList()
         }
 
     }
+
     private fun dateToMs(dateString: String): Long {
         val formatter: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
         val dateTime: OffsetDateTime = OffsetDateTime.parse(dateString, formatter)
         return dateTime.toInstant().toEpochMilli()
     }
-
 }

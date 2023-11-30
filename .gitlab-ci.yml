@@ -1,0 +1,37 @@
+stages:
+  - build_kubernetes_dev
+  - build_kubernetes
+
+.base:
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  cache: {}
+  tags:
+    - "opencode-high"
+  before_script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+
+build_sha_dev:
+  extends: .base
+  stage: build_kubernetes_dev
+  only:
+    - dev
+  script:
+    - /kaniko/executor --build-arg "profile=dev" --context "${CI_PROJECT_DIR}" --dockerfile "${CI_PROJECT_DIR}/Dockerfile" --destination "${CI_REGISTRY_IMAGE}:dev_${CI_COMMIT_SHORT_SHA}"
+
+build_sha_prod:
+  extends: .base
+  stage: build_kubernetes
+  only:
+    - main
+  script:
+    - /kaniko/executor --build-arg "profile=prod" --context "${CI_PROJECT_DIR}" --dockerfile "${CI_PROJECT_DIR}/Dockerfile" --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+
+build_latest_prod:
+  extends: .base
+  stage: build_kubernetes
+  only:
+    - main
+  script:
+    - /kaniko/executor --build-arg "profile=prod" --context "${CI_PROJECT_DIR}" --dockerfile "${CI_PROJECT_DIR}/Dockerfile" --destination "${CI_REGISTRY_IMAGE}:latest"

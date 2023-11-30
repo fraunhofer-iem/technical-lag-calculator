@@ -44,7 +44,7 @@ class ArtifactService {
                 )
             }
 
-            val transitiveDependencies =  packageRef.dependencies.map {
+            val transitiveDependencies = packageRef.dependencies.map {
                 ioScope.async {
                     getDependencyVersionInformation(
                         packageRef = it,

@@ -17,17 +17,17 @@ data class CreateArtifactDto(
 
             val versions = try {
                 versionDeferred?.await()
-                } catch (exception: Exception) {
-                    println("API version job failed with error $exception")
-                    null
-                } ?: emptyList()
+            } catch (exception: Exception) {
+                println("API version job failed with error $exception")
+                null
+            } ?: emptyList()
 
             return ArtifactDto(
                 artifactId = artifactId!!,
                 groupId = groupId!!,
                 usedVersion = usedVersion!!,
                 isTopLevelDependency = isTopLevelDependency!!,
-                versions = versions ,
+                versions = versions,
                 transitiveDependencies = transitiveDependencies.awaitAll().mapNotNull { it?.toArtifactDto() },
                 libyear = LibyearCalculator.calculateDifferenceForPackage(usedVersion!!, versions)
             )
