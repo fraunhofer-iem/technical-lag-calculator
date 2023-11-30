@@ -31,6 +31,9 @@ Options:
 ```
 Instead of using the CLI parameters the db url and project path can also be set using the
 environment variables `PROJECT_PATH` and `DB_URL`.
+### Architecture overview
+
+![architecture](doc/workflow.png)
 
 ### Maintainer
 * Jan-Niclas Strüwer
