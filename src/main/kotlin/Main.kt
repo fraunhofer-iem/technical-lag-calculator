@@ -1,4 +1,3 @@
-import artifact.ArtifactService
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.groups.OptionGroup
 import com.github.ajalt.clikt.parameters.groups.cooccurring
@@ -6,7 +5,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 import dependencies.DependencyAnalyzer
-import dependencies.db.DependencyGraph
+import dependencies.db.AnalyzerResult
 import dependencies.model.DependencyGraphDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,7 +14,6 @@ import libyears.LibyearCalculator
 import util.DbConfig
 import util.dbQuery
 import util.initDatabase
-import util.updateCache
 import java.io.File
 import java.nio.file.Path
 import java.util.*
@@ -78,14 +76,13 @@ suspend fun main(args: Array<String>) {
 
 
 suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig?): DependencyGraphDto {
-    val storeResults = dbConfig != null
-    if (storeResults) {
+    val useDb = dbConfig != null
+
+    if (useDb) {
         initDatabase(dbConfig!!)
     }
 
-    val dependencyAnalyzer = DependencyAnalyzer(
-        ArtifactService()
-    )
+    val dependencyAnalyzer = DependencyAnalyzer()
 
     val dependencyAnalyzerResult = dependencyAnalyzer.getDependencyPackagesForProject(projectPath)
 
@@ -105,10 +102,10 @@ suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig
     }
 
 
-    if (storeResults) {
+    if (useDb) {
         dbQuery {
-            DependencyGraph.new {
-                graph = dependencyAnalyzerResult.dependencyGraphDto
+            AnalyzerResult.new {
+                result = dependencyAnalyzerResult
             }
         }
     }
