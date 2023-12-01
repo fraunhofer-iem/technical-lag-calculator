@@ -8,7 +8,10 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import java.net.URLEncoder
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
@@ -25,14 +28,23 @@ class DepsClient {
     suspend fun getVersionsForPackage(type: String, namespace: String, name: String): List<VersionDto> {
 
         val requestUrl: String? = when (type.lowercase()) {
-            "maven" -> "https://api.deps.dev/v3alpha/systems/$type/packages/$namespace:$name"
-            "gradle" ->
-                // Gradle must be accessed with the maven key
-                "https://api.deps.dev/v3alpha/systems/maven/packages/$namespace:$name"
+            "maven", "gradle" -> {
+                val urlNamespace = if(namespace.isBlank()) {""} else {"$namespace:"}
+                "https://api.deps.dev/v3alpha/systems/maven/packages/$urlNamespace$name"
+            }
+            "npm" -> {
 
+                val urlNamespace = withContext(Dispatchers.IO) {
+                    URLEncoder.encode(if(namespace.isBlank()) {""} else {"$namespace/"}
+                        , "UTF-8")
+
+            }
+                "https://api.deps.dev/v3alpha/systems/npm/packages/$urlNamespace$name"
+            }
             else -> null
         }
         return if (requestUrl != null) {
+
             val responseDto = try {
                 val response = httpClient.request(requestUrl)
 
@@ -52,7 +64,8 @@ class DepsClient {
                     try {
                         VersionDto(
                             versionNumber = version.versionKey.version,
-                            releaseDate = dateToMs(version.publishedAt)
+                            releaseDate = dateToMs(version.publishedAt),
+                            isDefault = version.isDefault ?: false
                         )
                     } catch (exception: Exception) {
                         null

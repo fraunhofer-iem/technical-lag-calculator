@@ -10,5 +10,5 @@ data class ArtifactDto(
     val versions: List<VersionDto> = listOf(),
     val isTopLevelDependency: Boolean,
     val transitiveDependencies: List<ArtifactDto> = listOf(),
-    val libyear: Long,
+    val libyear: Long? = null,
 )

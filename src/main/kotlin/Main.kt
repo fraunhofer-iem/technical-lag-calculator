@@ -64,13 +64,13 @@ suspend fun main(args: Array<String>) {
             password = it.password
         )
     }
-    val runtime = measureTimeMillis {
+    val runtime:Double = measureTimeMillis {
         getLibYears(
             projectPath = libyearCommand.projectPath.toFile(),
             outputPath = libyearCommand.outputPath,
             dbConfig = dbConfig,
         )
-    } / 60000
+    }.toDouble() / 60000
     println("The libyear calculation took $runtime minutes to execute.")
 }
 
