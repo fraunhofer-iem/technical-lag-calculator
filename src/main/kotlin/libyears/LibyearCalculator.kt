@@ -49,7 +49,7 @@ object LibyearCalculator {
         val newestVersionByDate = packageList.maxByOrNull { it.releaseDate }
         val defaultVersion = packageList.filter { it.isDefault }
 
-        return if(defaultVersion.count() == 1) {
+        return if (defaultVersion.count() == 1) {
             defaultVersion.first()
         } else {
             newestVersionByDate

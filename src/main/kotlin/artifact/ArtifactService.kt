@@ -8,10 +8,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import org.ossreviewtoolkit.model.PackageReference
 
-class ArtifactService {
-
-    private val depsClient = DepsClient()
-    private val ioScope = CoroutineScope(Dispatchers.IO)
+class ArtifactService(
+    private val depsClient: DepsClient = DepsClient(),
+    private val ioScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+) {
 
     suspend fun getAllTransitiveVersionInformation(
         rootPackage: PackageReference,
