@@ -29,18 +29,29 @@ class DepsClient {
 
         val requestUrl: String? = when (type.lowercase()) {
             "maven", "gradle" -> {
-                val urlNamespace = if(namespace.isBlank()) {""} else {"$namespace:"}
+                val urlNamespace = if (namespace.isBlank()) {
+                    ""
+                } else {
+                    "$namespace:"
+                }
                 "https://api.deps.dev/v3alpha/systems/maven/packages/$urlNamespace$name"
             }
+
             "npm" -> {
 
                 val urlNamespace = withContext(Dispatchers.IO) {
-                    URLEncoder.encode(if(namespace.isBlank()) {""} else {"$namespace/"}
-                        , "UTF-8")
+                    URLEncoder.encode(
+                        if (namespace.isBlank()) {
+                            ""
+                        } else {
+                            "$namespace/"
+                        }, "UTF-8"
+                    )
 
-            }
+                }
                 "https://api.deps.dev/v3alpha/systems/npm/packages/$urlNamespace$name"
             }
+
             else -> null
         }
         return if (requestUrl != null) {

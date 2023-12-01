@@ -64,7 +64,7 @@ suspend fun main(args: Array<String>) {
             password = it.password
         )
     }
-    val runtime:Double = measureTimeMillis {
+    val runtime: Double = measureTimeMillis {
         getLibYears(
             projectPath = libyearCommand.projectPath.toFile(),
             outputPath = libyearCommand.outputPath,
