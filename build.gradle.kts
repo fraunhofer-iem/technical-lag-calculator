@@ -88,6 +88,7 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql:42.6.0")
     runtimeOnly("org.ossreviewtoolkit.plugins.packagecurationproviders:file-package-curation-provider:$ortVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test:1.8.10")
+    testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
 }
 
 tasks.test {

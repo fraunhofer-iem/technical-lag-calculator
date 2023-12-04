@@ -102,6 +102,11 @@ class DependencyAnalyzer(private val artifactService: ArtifactService = Artifact
     }
 
     private fun createConfig(): DependencyAnalyzerConfig {
+        //TODO: check if we want to enable this
+        // NPM failed to resolve dependencies for path 'package.json':
+        // IllegalArgumentException: No lockfile found in '.'. This potentially
+        // results in unstable versions of dependencies. To support this, enable
+        // the 'allowDynamicVersions' option in 'config.yml'.
         val ortConfig = OrtConfiguration()
         val analyzerConfiguration = ortConfig.analyzer
         val repositoryConfiguration = RepositoryConfiguration()

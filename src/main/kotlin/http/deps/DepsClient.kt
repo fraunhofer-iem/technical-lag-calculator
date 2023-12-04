@@ -9,6 +9,7 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -23,11 +24,11 @@ class DepsClient(
                 Json { ignoreUnknownKeys = true }
             )
         }
-    }
+    },
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 
     suspend fun getVersionsForPackage(type: String, namespace: String, name: String): List<VersionDto> {
-
         val requestUrl: String? = getRequestUrl(
             type = type,
             namespace = namespace,
@@ -106,7 +107,7 @@ class DepsClient(
     }
 
     private suspend fun concatNamespaceAndName(name: String, namespace: String, concatSymbol: String): String {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             URLEncoder.encode(
                 if (namespace.isBlank()) {
                     name
