@@ -7,7 +7,7 @@ data class PackageReferenceDto(
     val namespace: String,
     val version: String,
     val type: String,
-    val dependencies: List<PackageReferenceDto>
+    val dependencies: List<PackageReferenceDto> = listOf()
 ) {
     companion object {
         fun initFromPackageRef(packageRef: PackageReference): PackageReferenceDto {

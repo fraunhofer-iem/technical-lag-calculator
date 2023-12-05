@@ -75,7 +75,7 @@ object LibyearCalculator {
                     val differenceInDays = ChronoUnit.DAYS.between(startLocalDate, endLocalDate)
                     println("Differences in days: $differenceInDays")
 
-                    return differenceInDays
+                    return if(differenceInDays > 0) { 0 } else {differenceInDays}
                 }
             }
         }
