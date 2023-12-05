@@ -43,7 +43,7 @@ object LibyearCalculator {
         }
     }
 
-    fun getNewestVersion(packageList: List<VersionDto>): VersionDto? {
+    private fun getNewestVersion(packageList: List<VersionDto>): VersionDto? {
         // If available we use the release date of the default version for comparison
         // as this is the recommended version of the maintainers
         val newestVersionByDate = packageList.maxByOrNull { it.releaseDate }

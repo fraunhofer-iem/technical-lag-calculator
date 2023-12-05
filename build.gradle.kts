@@ -89,6 +89,7 @@ dependencies {
     runtimeOnly("org.ossreviewtoolkit.plugins.packagecurationproviders:file-package-curation-provider:$ortVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test:1.8.10")
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinCoroutines")
 }
 
 tasks.test {

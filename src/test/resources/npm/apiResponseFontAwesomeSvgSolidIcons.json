@@ -1,0 +1,683 @@
+{
+  "packageKey": {
+    "system": "NPM",
+    "name": "@fortawesome/free-solid-svg-icons"
+  },
+  "versions": [
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.1.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-06-20T20:02:03Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.1.0-10"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-05-03T19:52:20Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.1.0-11"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-05-10T16:02:17Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.1.0-4"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-03-12T21:40:08Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.1.0-5"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-03-22T16:34:25Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.1.0-6"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-03-23T22:23:46Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.1.0-7"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-03-27T21:41:16Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.1.0-8"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-04-11T03:30:06Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.1.0-9"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-05-01T21:37:21Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.1.1"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-07-17T17:41:28Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-07-29T15:14:24Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0-1"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-05-28T21:42:17Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0-10"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-06-24T20:32:33Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0-11"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-06-25T20:55:09Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0-12"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-07-23T19:06:12Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0-13"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-07-25T19:40:10Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0-14"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-07-25T21:40:56Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0-2"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-05-29T15:22:46Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0-3"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-06-12T18:25:11Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0-4"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-06-14T16:59:26Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0-5"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-06-17T17:40:34Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0-6"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-06-19T16:56:21Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0-7"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-06-20T15:49:46Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0-8"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-06-21T13:31:43Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.0-9"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-06-24T13:40:54Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.1"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-08-02T19:52:10Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.10.2"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-08-22T20:03:24Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.11.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-09-18T16:25:40Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.11.1"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-09-18T22:54:04Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.11.2"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-09-23T18:43:34Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.12.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-12-10T22:35:33Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.12.0-1"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-11-06T23:38:36Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.12.0-2"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-12-10T18:24:38Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.12.1"
+      },
+      "isDefault": false,
+      "publishedAt": "2020-02-05T14:20:45Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.13.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2020-03-23T15:58:54Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.13.1"
+      },
+      "isDefault": false,
+      "publishedAt": "2020-06-18T21:01:58Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.14.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2020-07-15T18:06:51Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.15.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2020-09-29T13:32:12Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.15.1"
+      },
+      "isDefault": false,
+      "publishedAt": "2020-10-05T16:48:38Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.15.2"
+      },
+      "isDefault": false,
+      "publishedAt": "2021-01-13T21:01:34Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.15.3"
+      },
+      "isDefault": false,
+      "publishedAt": "2021-03-16T19:01:03Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.15.4"
+      },
+      "isDefault": false,
+      "publishedAt": "2021-08-04T19:12:06Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.2.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-07-23T16:47:28Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.3.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-08-27T17:20:25Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.3.1"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-08-28T17:38:37Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.4.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-10-08T19:27:04Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.4.1"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-10-11T19:50:10Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.4.2"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-10-25T21:52:42Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.5.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-11-02T15:07:12Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.5.0-1"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-11-01T20:37:29Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.5.0-2"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-11-01T21:17:30Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.6.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-12-07T21:39:41Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.6.1"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-12-12T17:08:57Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.6.2"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-12-20T16:57:28Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.6.3"
+      },
+      "isDefault": false,
+      "publishedAt": "2018-12-20T17:09:28Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.7.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-01-28T19:07:07Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.7.1"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-02-01T18:40:48Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.7.2"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-02-12T17:16:02Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.8.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-03-19T22:26:46Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.8.1"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-03-21T21:26:42Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.8.2"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-05-07T16:42:23Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "5.9.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2019-06-04T20:31:31Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "6.0.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2022-02-07T20:37:23Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "6.0.0-beta2"
+      },
+      "isDefault": false,
+      "publishedAt": "2021-09-20T20:23:03Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "6.0.0-beta3"
+      },
+      "isDefault": false,
+      "publishedAt": "2021-11-22T20:21:33Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "6.1.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2022-03-15T18:04:16Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "6.1.1"
+      },
+      "isDefault": false,
+      "publishedAt": "2022-03-22T15:37:33Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "6.1.2"
+      },
+      "isDefault": false,
+      "publishedAt": "2022-07-25T17:53:46Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "6.2.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2022-08-30T16:46:41Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "6.2.1"
+      },
+      "isDefault": false,
+      "publishedAt": "2022-11-15T17:56:13Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "6.3.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2023-02-07T19:26:57Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "6.4.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2023-03-27T17:02:10Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "6.4.2"
+      },
+      "isDefault": false,
+      "publishedAt": "2023-08-02T20:31:27Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "6.5.0"
+      },
+      "isDefault": false,
+      "publishedAt": "2023-11-28T18:15:03Z"
+    },
+    {
+      "versionKey": {
+        "system": "NPM",
+        "name": "@fortawesome/free-solid-svg-icons",
+        "version": "6.5.1"
+      },
+      "isDefault": true,
+      "publishedAt": "2023-11-30T21:57:30Z"
+    }
+  ]
+}

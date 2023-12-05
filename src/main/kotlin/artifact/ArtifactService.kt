@@ -2,11 +2,11 @@ package artifact
 
 import artifact.model.ArtifactDto
 import artifact.model.CreateArtifactDto
+import artifact.model.PackageReferenceDto
 import http.deps.DepsClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import org.ossreviewtoolkit.model.PackageReference
 
 class ArtifactService(
     private val depsClient: DepsClient = DepsClient(),
@@ -14,7 +14,7 @@ class ArtifactService(
 ) {
 
     suspend fun getAllTransitiveVersionInformation(
-        rootPackage: PackageReference,
+        rootPackage: PackageReferenceDto,
     ): ArtifactDto? {
 
         return getDependencyVersionInformation(
@@ -26,21 +26,20 @@ class ArtifactService(
 
 
     private suspend fun getDependencyVersionInformation(
-        packageRef: PackageReference,
+        packageRef: PackageReferenceDto,
         isTransitiveDependency: Boolean = true,
-        seen: MutableSet<PackageReference>,
+        seen: MutableSet<PackageReferenceDto>,
     ): CreateArtifactDto? {
         return if (seen.contains(packageRef)) {
             null
         } else {
             seen.add(packageRef)
 
-
             val versions = ioScope.async {
                 depsClient.getVersionsForPackage(
-                    type = packageRef.id.type,
-                    namespace = packageRef.id.namespace,
-                    name = packageRef.id.name
+                    type = packageRef.type,
+                    namespace = packageRef.namespace,
+                    name = packageRef.name
                 )
             }
 
@@ -54,9 +53,9 @@ class ArtifactService(
             }
 
             return CreateArtifactDto(
-                artifactId = packageRef.id.name,
-                groupId = packageRef.id.namespace,
-                usedVersion = packageRef.id.version,
+                artifactId = packageRef.name,
+                groupId = packageRef.namespace,
+                usedVersion = packageRef.version,
                 isTopLevelDependency = !isTransitiveDependency,
                 versionDeferred = versions,
                 transitiveDependencies = transitiveDependencies

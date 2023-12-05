@@ -1,6 +1,7 @@
 package dependencies
 
 import artifact.ArtifactService
+import artifact.model.PackageReferenceDto
 import dependencies.model.*
 import org.apache.logging.log4j.kotlin.logger
 import org.ossreviewtoolkit.analyzer.Analyzer
@@ -87,8 +88,9 @@ class DependencyAnalyzer(private val artifactService: ArtifactService = Artifact
             val transformedScope = graph.createScopes().associate { scope ->
 
                 val transformedDependencies = scope.dependencies.mapNotNull { packageRef ->
+
                     artifactService.getAllTransitiveVersionInformation(
-                        rootPackage = packageRef
+                        rootPackage = PackageReferenceDto.initFromPackageRef(packageRef)
                     )
                 }
 

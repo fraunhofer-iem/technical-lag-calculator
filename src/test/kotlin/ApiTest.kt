@@ -37,7 +37,9 @@ class ApiTest {
                         )
                     }
                 }
-                val apiClient = DepsClient(httpClient = httpClient)
+                val apiClient = DepsClient(
+                    httpClient = httpClient
+                )
                 val versions = apiClient.getVersionsForPackage(
                     type = "npm",
                     namespace = "",
@@ -48,5 +50,55 @@ class ApiTest {
             }
 
         }
+    }
+
+    @Test
+    fun urlEncoding() {
+        runBlocking {
+
+            val mockEngine = MockEngine { request ->
+                println(request.url.toString())
+                if (request.url.toString() != "https://api.deps.dev/v3alpha/systems/npm/packages/%40test%2F%40vite"
+                    && request.url.toString() != "https://api.deps.dev/v3alpha/systems/maven/packages/%40test%3A%40vite"
+                ) {
+                    fail("URL format is invalid")
+                }
+                respond(
+                    content = ByteReadChannel(
+                        "{" +
+                                "  \"packageKey\": {" +
+                                "    \"system\": \"NPM\"," +
+                                "    \"name\": \"vite\"" +
+                                "  }," +
+                                "  \"versions\":[] }", Charsets.UTF_8
+                    ),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json")
+                )
+            }
+            val httpClient = HttpClient(mockEngine) {
+                install(ContentNegotiation) {
+                    json(
+                        Json { ignoreUnknownKeys = true }
+                    )
+                }
+            }
+            val apiClient = DepsClient(
+                httpClient = httpClient
+            )
+
+            apiClient.getVersionsForPackage(
+                type = "npm",
+                namespace = "@test",
+                name = "@vite"
+            )
+            apiClient.getVersionsForPackage(
+                type = "maven",
+                namespace = "@test",
+                name = "@vite"
+            )
+
+        }
+
     }
 }
