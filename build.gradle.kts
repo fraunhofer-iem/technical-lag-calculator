@@ -90,6 +90,9 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test:1.8.10")
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinCoroutines")
+    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.0")
+    testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.0")
 }
 
 tasks.test {

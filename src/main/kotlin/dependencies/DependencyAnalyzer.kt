@@ -17,7 +17,7 @@ import org.ossreviewtoolkit.plugins.packagecurationproviders.api.PackageCuration
 import org.ossreviewtoolkit.plugins.packagecurationproviders.api.SimplePackageCurationProvider
 import java.io.File
 
-private data class DependencyAnalyzerConfig(
+data class DependencyAnalyzerConfig(
     val analyzerConfiguration: AnalyzerConfiguration,
     val enabledPackageManagers: Set<PackageManagerFactory>,
     val enabledCurationProviders: List<Pair<String, PackageCurationProvider>>,
@@ -31,10 +31,12 @@ private data class RawAnalyzerResult(
 )
 
 
-class DependencyAnalyzer(private val artifactService: ArtifactService = ArtifactService()) {
+class DependencyAnalyzer(
+    private val artifactService: ArtifactService = ArtifactService(),
+    private val config: DependencyAnalyzerConfig = createDefaultConfig(),
+    private val analyzer: Analyzer = Analyzer(config = config.analyzerConfiguration)
+) {
 
-    private val defaultDependencyAnalyzerConfig = createConfig()
-    private val defaultAnalyzer = Analyzer(config = defaultDependencyAnalyzerConfig.analyzerConfiguration)
 
     suspend fun getDependencyPackagesForProject(projectPath: File): AnalyzerResultDto {
         val rawAnalyzerResult = runAnalyzer(projectPath)
@@ -49,8 +51,6 @@ class DependencyAnalyzer(private val artifactService: ArtifactService = Artifact
 
     private fun runAnalyzer(
         projectPath: File,
-        analyzer: Analyzer = this.defaultAnalyzer,
-        config: DependencyAnalyzerConfig = this.defaultDependencyAnalyzerConfig
     ): RawAnalyzerResult {
 
         val managedFiles = analyzer.findManagedFiles(
@@ -103,41 +103,43 @@ class DependencyAnalyzer(private val artifactService: ArtifactService = Artifact
         return DependencyGraphDto(transformedGraph)
     }
 
-    private fun createConfig(): DependencyAnalyzerConfig {
-        //TODO: check if we want to enable this
-        // NPM failed to resolve dependencies for path 'package.json':
-        // IllegalArgumentException: No lockfile found in '.'. This potentially
-        // results in unstable versions of dependencies. To support this, enable
-        // the 'allowDynamicVersions' option in 'config.yml'.
-        val ortConfig = OrtConfiguration()
-        val analyzerConfiguration = ortConfig.analyzer
-        val repositoryConfiguration = RepositoryConfiguration()
-        val enabledPackageManagers = analyzerConfiguration.determineEnabledPackageManagers()
+    companion object {
+        private fun createDefaultConfig(): DependencyAnalyzerConfig {
+            //TODO: check if we want to enable this
+            // NPM failed to resolve dependencies for path 'package.json':
+            // IllegalArgumentException: No lockfile found in '.'. This potentially
+            // results in unstable versions of dependencies. To support this, enable
+            // the 'allowDynamicVersions' option in 'config.yml'.
+            val ortConfig = OrtConfiguration()
+            val analyzerConfiguration = ortConfig.analyzer
+            val repositoryConfiguration = RepositoryConfiguration()
+            val enabledPackageManagers = analyzerConfiguration.determineEnabledPackageManagers()
 
-        val enabledCurationProviders = buildList {
-            val repositoryPackageCurations = repositoryConfiguration.curations.packages
+            val enabledCurationProviders = buildList {
+                val repositoryPackageCurations = repositoryConfiguration.curations.packages
 
-            if (ortConfig.enableRepositoryPackageCurations) {
-                add(
-                    ResolvedPackageCurations.REPOSITORY_CONFIGURATION_PROVIDER_ID
-                            to
-                            SimplePackageCurationProvider(repositoryPackageCurations)
-                )
-            } else if (repositoryPackageCurations.isNotEmpty()) {
-                logger.warn {
-                    "Existing package curations are not applied " +
-                            "because the feature is disabled."
+                if (ortConfig.enableRepositoryPackageCurations) {
+                    add(
+                        ResolvedPackageCurations.REPOSITORY_CONFIGURATION_PROVIDER_ID
+                                to
+                                SimplePackageCurationProvider(repositoryPackageCurations)
+                    )
+                } else if (repositoryPackageCurations.isNotEmpty()) {
+                    logger.warn {
+                        "Existing package curations are not applied " +
+                                "because the feature is disabled."
+                    }
                 }
+
+                addAll(PackageCurationProviderFactory.create(ortConfig.packageCurationProviders))
             }
 
-            addAll(PackageCurationProviderFactory.create(ortConfig.packageCurationProviders))
+            return DependencyAnalyzerConfig(
+                analyzerConfiguration = analyzerConfiguration,
+                enabledPackageManagers = enabledPackageManagers,
+                enabledCurationProviders = enabledCurationProviders,
+                repositoryConfiguration = repositoryConfiguration
+            )
         }
-
-        return DependencyAnalyzerConfig(
-            analyzerConfiguration = analyzerConfiguration,
-            enabledPackageManagers = enabledPackageManagers,
-            enabledCurationProviders = enabledCurationProviders,
-            repositoryConfiguration = repositoryConfiguration
-        )
     }
 }
