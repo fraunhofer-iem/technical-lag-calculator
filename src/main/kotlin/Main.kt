@@ -84,7 +84,7 @@ suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig
 
     val dependencyAnalyzer = DependencyAnalyzer()
 
-    val dependencyAnalyzerResult = dependencyAnalyzer.getDependencyPackagesForProject(projectPath)
+    val dependencyAnalyzerResult = dependencyAnalyzer.getAnalyzerResult(projectPath)
 
 
     LibyearCalculator.printDependencyGraph(dependencyAnalyzerResult.dependencyGraphDto)

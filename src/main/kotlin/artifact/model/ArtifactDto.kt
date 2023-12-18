@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 data class ArtifactDto(
     val artifactId: String,
     val groupId: String,
-    val usedVersion: String,
+    val usedVersion: VersionDto,
     val versions: List<VersionDto> = listOf(),
     val isTopLevelDependency: Boolean,
     val transitiveDependencies: List<ArtifactDto> = listOf(),

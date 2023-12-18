@@ -37,8 +37,7 @@ class DependencyAnalyzer(
     private val analyzer: Analyzer = Analyzer(config = config.analyzerConfiguration)
 ) {
 
-
-    suspend fun getDependencyPackagesForProject(projectPath: File): AnalyzerResultDto {
+    suspend fun getAnalyzerResult(projectPath: File): AnalyzerResultDto {
         val rawAnalyzerResult = runAnalyzer(projectPath)
         val transformedGraph = transformDependencyGraph(rawAnalyzerResult.dependencyGraphs)
 

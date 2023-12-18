@@ -4,9 +4,9 @@ package libyears
 import artifact.model.ArtifactDto
 import artifact.model.VersionDto
 import dependencies.model.DependencyGraphDto
-import java.time.ZoneId
-import java.time.temporal.ChronoUnit
-import java.util.*
+import io.github.z4kn4fein.semver.Version
+import io.github.z4kn4fein.semver.toVersion
+import util.TimeHelper.getDifferenceInDays
 
 object LibyearCalculator {
 
@@ -43,6 +43,41 @@ object LibyearCalculator {
         }
     }
 
+    /**
+     * Returns the newest applicable, stable version compared to the given current version.
+     * If a version is explicitly tagged as default this version is used for the comparison.
+     * If not the stable version with the highest version number is used.
+     * Throws if the current version doesn't follow the semver format.
+     */
+    private fun getNewestApplicableVersion(currentVersion: VersionDto, packageList: List<VersionDto>): VersionDto {
+        val current = currentVersion.versionNumber.toVersion(strict = false)
+        val versions = getSortedSemVersions(packageList).filter { it.second.isStable }
+        val newestVersion = versions.last()
+
+        versions.find { it.first.isDefault }?.let { defaultVersion ->
+            return if (defaultVersion.second > current) {
+                defaultVersion.first
+            } else {
+                currentVersion
+            }
+        }
+
+        if (newestVersion.second > current) {
+            return newestVersion.first
+        }
+        return currentVersion
+    }
+
+    private fun getSortedSemVersions(packageList: List<VersionDto>): List<Pair<VersionDto, Version>> {
+        return packageList.mapNotNull {
+            try {
+                Pair(it, it.versionNumber.toVersion(strict = false))
+            } catch (exception: Exception) {
+                null
+            }
+        }.sortedBy { it.second }
+    }
+
     private fun getNewestVersion(packageList: List<VersionDto>): VersionDto? {
         // If available we use the release date of the default version for comparison
         // as this is the recommended version of the maintainers
@@ -56,26 +91,25 @@ object LibyearCalculator {
         }
     }
 
-    fun calculateDifferenceForPackage(currentVersion: String, packageList: List<VersionDto>): Long? {
-        if (packageList.isNotEmpty()) {
-            val currentPackage = packageList.filter { it.versionNumber == currentVersion }
-            if (currentPackage.isNotEmpty()) {
+    fun calculateDifferenceForPackage(currentVersion: VersionDto, packageList: List<VersionDto>): Long? {
+        if(packageList.contains(currentVersion) && currentVersion.releaseDate != -1L) {
+            val newestVersion = try {
+                getNewestApplicableVersion(currentVersion, packageList)
+            } catch (exception: Exception) {
+                getNewestVersion(packageList)
+            }
 
-                val newestVersion = getNewestVersion(packageList)
-
-                if (newestVersion != null) {
-                    val currentVersionTime = Date(currentPackage.first().releaseDate)
-                    val newestVersionTime = Date(newestVersion.releaseDate)
-
-
-                    println("Library Difference $currentVersionTime $newestVersionTime")
-                    val startLocalDate = newestVersionTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-                    val endLocalDate = currentVersionTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-
-                    val differenceInDays = ChronoUnit.DAYS.between(startLocalDate, endLocalDate)
-                    println("Differences in days: $differenceInDays")
-
-                    return if(differenceInDays > 0) { 0 } else {differenceInDays}
+            if (newestVersion != null) {
+                val differenceInDays = getDifferenceInDays(
+                    currentVersion = currentVersion.releaseDate,
+                    newestVersion = newestVersion.releaseDate
+                )
+                // we should do further checks based upon semantic versioning, whether the
+                // semversion is greater than what we are using
+                return if (differenceInDays > 0) {
+                    0
+                } else {
+                    differenceInDays
                 }
             }
         }

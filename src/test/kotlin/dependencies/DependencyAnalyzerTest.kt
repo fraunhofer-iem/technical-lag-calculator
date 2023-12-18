@@ -3,7 +3,6 @@ package dependencies
 import artifact.ArtifactService
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
-import com.fasterxml.jackson.databind.PropertyNamingStrategy
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import http.deps.DepsClient
@@ -22,7 +21,6 @@ import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-import org.junit.jupiter.api.Assertions.*
 import org.ossreviewtoolkit.analyzer.Analyzer
 import org.ossreviewtoolkit.model.*
 import org.ossreviewtoolkit.model.config.AnalyzerConfiguration
@@ -112,7 +110,7 @@ class DependencyAnalyzerTest {
         val resourceDirectory = Paths.get("src", "test", "resources", "npm").toAbsolutePath()
         val file = resourceDirectory.toFile()
 
-        dependencyAnalyzer.getDependencyPackagesForProject(file)
+        dependencyAnalyzer.getAnalyzerResult(file)
     }
 
     @Test
@@ -126,28 +124,16 @@ class DependencyAnalyzerTest {
             managedFiles = emptyMap(),
             repositoryConfiguration = RepositoryConfiguration()
         )
-        // 1. createScopes
-        // scopes.filterKeys
-        // scopes: Map<name, List<RootDependdencyIndex>>
-        // 2. scope.dependencies
-        // scope.name
-        val dependencyGraphs: Map<String, DependencyGraph> = mapOf(
-            "npm" to DependencyGraph()
-        )
+
         val graphText = this.javaClass.classLoader.getResource("npm/analyzer-result.json")?.readText()
-        val json = Json
         val mapper = jacksonObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
             .findAndRegisterModules()
 
-        if(graphText != null) {
-            val ortResult = mapper.readValue<OrtResult>(graphText)
-            println(ortResult.analyzer.toString())
-        }
-        every {
-            analyzerMock.analyze(any(), any())
-        } returns OrtResult(
+        val ortResult = graphText?.let {
+            mapper.readValue<OrtResult>(it)
+        } ?: OrtResult(
             repository = Repository.EMPTY,
             analyzer = AnalyzerRun(
                 startTime = Instant.EPOCH,
@@ -158,7 +144,7 @@ class DependencyAnalyzerTest {
                     projects = emptySet(),
                     packages = emptySet(),
                     issues = emptyMap(),
-                    dependencyGraphs = dependencyGraphs
+                    dependencyGraphs = mapOf()
                 )
             ),
             scanner = null,
@@ -166,6 +152,10 @@ class DependencyAnalyzerTest {
             evaluator = null,
             labels = emptyMap()
         )
+
+        every {
+            analyzerMock.analyze(any(), any())
+        } returns ortResult
 
         val dependencyAnalyzer = DependencyAnalyzer(
             artifactService = artifactService,
@@ -175,7 +165,14 @@ class DependencyAnalyzerTest {
         val resourceDirectory = Paths.get("src", "test", "resources", "npm").toAbsolutePath()
         val file = resourceDirectory.toFile()
 
-        dependencyAnalyzer.getDependencyPackagesForProject(file)
+        val result = dependencyAnalyzer.getAnalyzerResult(file)
+
+        assert(result.dependencyGraphDto.packageManagerToScopes.size == 1)
+        assert(result.dependencyGraphDto.packageManagerToScopes["NPM"]?.scopesToDependencies?.get("dependencies")?.size  == 3 )
+        assert(result.dependencyGraphDto.packageManagerToScopes["NPM"]?.scopesToDependencies?.get("dependencies")?.find { it.artifactId == "fontawesome-svg-core" }?.transitiveDependencies?.size == 1)
+        assert(result.dependencyGraphDto.packageManagerToScopes["NPM"]?.scopesToDependencies?.get("devDependencies")?.size  == 3 )
+        assert(result.dependencyGraphDto.packageManagerToScopes["NPM"]?.scopesToDependencies?.get("devDependencies")?.find { it.artifactId == "vite" }?.transitiveDependencies?.size  == 3 )
+
     }
 
 }

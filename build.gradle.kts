@@ -35,20 +35,20 @@ repositories {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
-        apiVersion = "1.8"
-        jvmTarget = "17"
+        apiVersion = "1.9"
+        jvmTarget = "21"
     }
 }
 
 val exposedVersion = "0.45.0"
-val ortVersion = "7.1.0"
-val ktorVersion = "2.3.6"
+val ortVersion = "10.0.0"
+val ktorVersion = "2.3.7"
 val kotlinCoroutines = "1.7.3"
 
 dependencies {
@@ -56,6 +56,7 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-api-kotlin:1.3.0")
     implementation("org.apache.logging.log4j:log4j-to-slf4j:2.21.1")
     implementation("ch.qos.logback:logback-classic:1.4.11")
+    implementation("io.github.z4kn4fein:semver:1.4.2")
     implementation("org.ossreviewtoolkit:analyzer:$ortVersion")
     implementation("org.ossreviewtoolkit:model:$ortVersion")
     implementation("org.ossreviewtoolkit:reporter:$ortVersion")
@@ -77,7 +78,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-json:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-money:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-spring-boot-starter:$exposedVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutines")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:$kotlinCoroutines")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutines")

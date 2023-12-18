@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import util.TimeHelper.dateToMs
 import java.net.URLEncoder
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -119,9 +120,5 @@ class DepsClient(
         }
     }
 
-    private fun dateToMs(dateString: String): Long {
-        val formatter: DateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME
-        val dateTime: OffsetDateTime = OffsetDateTime.parse(dateString, formatter)
-        return dateTime.toInstant().toEpochMilli()
-    }
+
 }

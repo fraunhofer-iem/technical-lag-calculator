@@ -111,7 +111,7 @@ class ArtifactServiceTest {
         )
 
         artifact?.libyear?.let { libyear ->
-            assertEquals(-1, libyear)
+            assertEquals(0, libyear)
 
         }
     }

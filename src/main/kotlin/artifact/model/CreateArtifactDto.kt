@@ -22,14 +22,17 @@ data class CreateArtifactDto(
                 null
             } ?: emptyList()
 
+            val usedVersionDto = versions.find { it.versionNumber == usedVersion }
+                ?: VersionDto(versionNumber = usedVersion!!)
+
             return ArtifactDto(
                 artifactId = artifactId!!,
                 groupId = groupId!!,
-                usedVersion = usedVersion!!,
+                usedVersion = usedVersionDto,
                 isTopLevelDependency = isTopLevelDependency!!,
                 versions = versions,
                 transitiveDependencies = transitiveDependencies.awaitAll().mapNotNull { it?.toArtifactDto() },
-                libyear = LibyearCalculator.calculateDifferenceForPackage(usedVersion!!, versions)
+                libyear = LibyearCalculator.calculateDifferenceForPackage(usedVersionDto, versions)
             )
         }
 
