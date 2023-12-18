@@ -20,7 +20,7 @@ class LibyearCalculatorTest {
             packageList = emptyList()
         )
 
-        assertEquals(expected = null, actual = libyearNull)
+        assertEquals(expected = null, actual = libyearNull.libyear)
 
         val currentVersionRelease = "2023-05-03T19:52:39Z"
         val packageList = mutableListOf(
@@ -40,14 +40,14 @@ class LibyearCalculatorTest {
             packageList = packageList
         )
 
-        assertEquals(expected = 0, actual = libyear0)
+        assertEquals(expected = 0, actual = libyear0.libyear)
 
         val libyearVersionNotFound = LibyearCalculator.calculateDifferenceForPackage(
             currentVersion = VersionDto("InvalidVersion"),
             packageList = packageList
         )
 
-        assertEquals(expected = null, actual = libyearVersionNotFound)
+        assertEquals(expected = null, actual = libyearVersionNotFound.libyear)
 
         packageList.clear()
         val newerRelease = "2023-05-04T19:52:39Z"
@@ -75,6 +75,6 @@ class LibyearCalculatorTest {
             packageList = packageList
         )
 
-        assertEquals(expected = -1, actual = libyearNewerNoDefault)
+        assertEquals(expected = -1, actual = libyearNewerNoDefault.libyear)
     }
 }

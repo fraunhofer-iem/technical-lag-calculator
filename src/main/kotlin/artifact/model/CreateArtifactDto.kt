@@ -32,7 +32,7 @@ data class CreateArtifactDto(
                 isTopLevelDependency = isTopLevelDependency!!,
                 versions = versions,
                 transitiveDependencies = transitiveDependencies.awaitAll().mapNotNull { it?.toArtifactDto() },
-                libyear = LibyearCalculator.calculateDifferenceForPackage(usedVersionDto, versions)
+                libyearResult = LibyearCalculator.calculateDifferenceForPackage(usedVersionDto, versions),
             )
         }
 

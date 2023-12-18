@@ -6,6 +6,8 @@ import artifact.model.VersionDto
 import dependencies.model.DependencyGraphDto
 import io.github.z4kn4fein.semver.Version
 import io.github.z4kn4fein.semver.toVersion
+import libyears.model.LibyearResultDto
+import libyears.model.LibyearStatus
 import util.TimeHelper.getDifferenceInDays
 
 object LibyearCalculator {
@@ -16,8 +18,8 @@ object LibyearCalculator {
             scopes.scopesToDependencies.forEach { (scope, artifacts) ->
                 println("Libyears in scope $scope")
                 val directDependencies = artifacts.filter {
-                    it.libyear != null && it.isTopLevelDependency
-                }.sumOf { it.libyear!! }
+                    it.libyearResult.libyear != null && it.isTopLevelDependency
+                }.sumOf { it.libyearResult.libyear!! }
                 println(
                     "Direct dependency libyears: $directDependencies Days " +
                             "(equals to roughly ${directDependencies / 365.25} years)"
@@ -49,23 +51,26 @@ object LibyearCalculator {
      * If not the stable version with the highest version number is used.
      * Throws if the current version doesn't follow the semver format.
      */
-    private fun getNewestApplicableVersion(currentVersion: VersionDto, packageList: List<VersionDto>): VersionDto {
+    private fun getNewestApplicableVersion(
+        currentVersion: VersionDto,
+        packageList: List<VersionDto>
+    ): Pair<LibyearStatus, VersionDto> {
         val current = currentVersion.versionNumber.toVersion(strict = false)
         val versions = getSortedSemVersions(packageList).filter { it.second.isStable }
         val newestVersion = versions.last()
 
         versions.find { it.first.isDefault }?.let { defaultVersion ->
             return if (defaultVersion.second > current) {
-                defaultVersion.first
+                Pair(LibyearStatus.SEM_VERSION_WITH_DEFAULT, defaultVersion.first)
             } else {
-                currentVersion
+                Pair(LibyearStatus.SEM_VERSION_WITH_DEFAULT, currentVersion)
             }
         }
 
         if (newestVersion.second > current) {
-            return newestVersion.first
+            return Pair(LibyearStatus.SEM_VERSION_WITHOUT_DEFAULT, newestVersion.first)
         }
-        return currentVersion
+        return Pair(LibyearStatus.SEM_VERSION_WITHOUT_DEFAULT, currentVersion)
     }
 
     private fun getSortedSemVersions(packageList: List<VersionDto>): List<Pair<VersionDto, Version>> {
@@ -78,61 +83,60 @@ object LibyearCalculator {
         }.sortedBy { it.second }
     }
 
-    private fun getNewestVersion(packageList: List<VersionDto>): VersionDto? {
+    private fun getNewestVersion(packageList: List<VersionDto>): Pair<LibyearStatus, VersionDto> {
         // If available we use the release date of the default version for comparison
         // as this is the recommended version of the maintainers
-        val newestVersionByDate = packageList.maxByOrNull { it.releaseDate }
+        val newestVersionByDate = packageList.maxBy { it.releaseDate }
         val defaultVersion = packageList.filter { it.isDefault }
 
         return if (defaultVersion.count() == 1) {
-            defaultVersion.first()
+            Pair(LibyearStatus.DATE_WITH_DEFAULT, defaultVersion.first())
         } else {
-            newestVersionByDate
+            Pair(LibyearStatus.DATE_WITHOUT_DEFAULT, newestVersionByDate)
         }
     }
 
-    fun calculateDifferenceForPackage(currentVersion: VersionDto, packageList: List<VersionDto>): Long? {
-        if(packageList.contains(currentVersion) && currentVersion.releaseDate != -1L) {
+    fun calculateDifferenceForPackage(currentVersion: VersionDto, packageList: List<VersionDto>): LibyearResultDto {
+
+        if (packageList.contains(currentVersion) && currentVersion.releaseDate != -1L) {
             val newestVersion = try {
                 getNewestApplicableVersion(currentVersion, packageList)
             } catch (exception: Exception) {
                 getNewestVersion(packageList)
             }
 
-            if (newestVersion != null) {
-                val differenceInDays = getDifferenceInDays(
-                    currentVersion = currentVersion.releaseDate,
-                    newestVersion = newestVersion.releaseDate
-                )
-                // we should do further checks based upon semantic versioning, whether the
-                // semversion is greater than what we are using
-                return if (differenceInDays > 0) {
-                    0
-                } else {
-                    differenceInDays
-                }
+            val differenceInDays = getDifferenceInDays(
+                currentVersion = currentVersion.releaseDate,
+                newestVersion = newestVersion.second.releaseDate
+            )
+
+            return if(differenceInDays < 0) {
+                LibyearResultDto(libyear = differenceInDays, status = newestVersion.first)
+            } else {
+                LibyearResultDto(libyear = 0, status = LibyearStatus.NEWER_THAN_DEFAULT)
             }
         }
-        return null
+
+        return LibyearResultDto(status = LibyearStatus.NO_RESULT)
     }
 
     private fun printLibyearWarning(artifact: ArtifactDto) {
-        if (artifact.libyear != null && artifact.libyear < -180) {
+        if (artifact.libyearResult.libyear != null && artifact.libyearResult.libyear < -180) {
             println(
                 "Dependency ${artifact.groupId}/${artifact.artifactId}" +
-                        "is ${artifact.libyear} days old."
+                        "is ${artifact.libyearResult} days old."
             )
             val newestVersion = getNewestVersion(artifact.versions)
             println(
                 "The used version is ${artifact.usedVersion} and " +
-                        "the newest version ${newestVersion?.versionNumber}"
+                        "the newest version ${newestVersion.second.versionNumber}"
             )
         }
         artifact.transitiveDependencies.forEach { printLibyearWarning(it) }
     }
 
     private fun calculateTransitiveLibyears(artifact: ArtifactDto): Long {
-        var sumLibyears = artifact.libyear ?: 0
+        var sumLibyears = artifact.libyearResult.libyear ?: 0
 
         for (dependency in artifact.transitiveDependencies) {
             sumLibyears += calculateTransitiveLibyears(dependency)

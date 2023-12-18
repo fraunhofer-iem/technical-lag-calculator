@@ -73,8 +73,8 @@ class ArtifactServiceTest {
         val artifact = artifactService.getAllTransitiveVersionInformation(
             packageDto
         )
-        artifact?.libyear?.let { libyear ->
-            assertEquals(0, libyear)
+        artifact?.libyearResult?.let { libyear ->
+            assertEquals(0, libyear.libyear)
         }
 
         val packageDtoOldVersion = PackageReferenceDto(
@@ -87,8 +87,8 @@ class ArtifactServiceTest {
             packageDtoOldVersion
         )
 
-        artifactOld?.libyear?.let { libyear ->
-            assertEquals(-14, libyear)
+        artifactOld?.libyearResult?.let { libyear ->
+            assertEquals(-14, libyear.libyear)
         }
     }
 
@@ -110,8 +110,8 @@ class ArtifactServiceTest {
             packageDto
         )
 
-        artifact?.libyear?.let { libyear ->
-            assertEquals(0, libyear)
+        artifact?.libyearResult?.let { libyear ->
+            assertEquals(0, libyear.libyear)
 
         }
     }
@@ -163,10 +163,10 @@ class ArtifactServiceTest {
         )
         assertEquals( 3, artifact?.transitiveDependencies?.count())
         assertEquals( 1, artifact?.transitiveDependencies?.get(1)?.transitiveDependencies?.count())
-        assertEquals( 0, artifact?.libyear)
-        assertEquals( -14, artifact?.transitiveDependencies?.get(0)?.libyear)
-        assertEquals( -453, artifact?.transitiveDependencies?.get(1)?.libyear)
-        assertEquals( 0, artifact?.transitiveDependencies?.get(1)?.transitiveDependencies?.get(0)?.libyear)
+        assertEquals( 0, artifact?.libyearResult?.libyear)
+        assertEquals( -14, artifact?.transitiveDependencies?.get(0)?.libyearResult?.libyear)
+        assertEquals( -453, artifact?.transitiveDependencies?.get(1)?.libyearResult?.libyear)
+        assertEquals( 0, artifact?.transitiveDependencies?.get(1)?.transitiveDependencies?.get(0)?.libyearResult?.libyear)
     }
 
 }
