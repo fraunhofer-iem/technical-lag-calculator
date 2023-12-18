@@ -56,7 +56,13 @@ object LibyearCalculator {
         packageList: List<VersionDto>
     ): Pair<LibyearStatus, VersionDto> {
         val current = currentVersion.versionNumber.toVersion(strict = false)
-        val versions = getSortedSemVersions(packageList).filter { it.second.isStable }
+        current.isPreRelease
+        val versions = if (current.isStable) {
+            getSortedSemVersions(packageList).filter { it.second.isStable && !it.second.isPreRelease}
+        } else {
+            getSortedSemVersions(packageList).filter { !it.second.isPreRelease }
+        }
+
         val newestVersion = versions.last()
 
         versions.find { it.first.isDefault }?.let { defaultVersion ->
@@ -110,7 +116,7 @@ object LibyearCalculator {
                 newestVersion = newestVersion.second.releaseDate
             )
 
-            return if(differenceInDays <= 0) {
+            return if (differenceInDays <= 0) {
                 LibyearResultDto(libyear = differenceInDays, status = newestVersion.first)
             } else {
                 LibyearResultDto(libyear = 0, status = LibyearStatus.NEWER_THAN_DEFAULT)
