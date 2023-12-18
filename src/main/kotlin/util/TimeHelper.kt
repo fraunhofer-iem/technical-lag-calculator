@@ -1,10 +1,10 @@
 package util
 
 import java.time.OffsetDateTime
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.*
+
 
 object TimeHelper {
     fun dateToMs(dateString: String): Long {
@@ -13,16 +13,19 @@ object TimeHelper {
         return dateTime.toInstant().toEpochMilli()
     }
 
+    fun msToDateString(ms: Long): String {
+        return Date(ms).toInstant().toString()
+    }
+
     fun getDifferenceInDays(currentVersion: Long, newestVersion: Long): Long {
-        val currentVersionTime = Date(currentVersion)
-        val newestVersionTime = Date(newestVersion)
+
+        val currentVersionTime = Date(currentVersion).toInstant()
+        val newestVersionTime = Date(newestVersion).toInstant()
 
 
         println("Library Difference $currentVersionTime $newestVersionTime")
-        val startLocalDate = newestVersionTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-        val endLocalDate = currentVersionTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
 
-        val differenceInDays = ChronoUnit.DAYS.between(startLocalDate, endLocalDate)
+        val differenceInDays = ChronoUnit.DAYS.between(newestVersionTime, currentVersionTime)
         println("Differences in days: $differenceInDays")
         return differenceInDays
     }

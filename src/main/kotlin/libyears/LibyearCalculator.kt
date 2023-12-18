@@ -110,7 +110,7 @@ object LibyearCalculator {
                 newestVersion = newestVersion.second.releaseDate
             )
 
-            return if(differenceInDays < 0) {
+            return if(differenceInDays <= 0) {
                 LibyearResultDto(libyear = differenceInDays, status = newestVersion.first)
             } else {
                 LibyearResultDto(libyear = 0, status = LibyearStatus.NEWER_THAN_DEFAULT)
