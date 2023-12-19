@@ -1,4 +1,4 @@
-FROM gradle:8.4-jdk17-jammy AS build
+FROM gradle:8.5-jdk21-jammy AS build
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ COPY src src
 
 RUN ./gradlew installDist
 
-FROM gradle:8.4-jdk17-jammy
+FROM gradle:8.5-jdk21-jammy
 
 WORKDIR /app
 
