@@ -7,10 +7,13 @@ import com.github.ajalt.clikt.parameters.types.path
 import dependencies.DependencyAnalyzer
 import dependencies.db.AnalyzerResult
 import dependencies.model.DependencyGraphDto
+import git.GitHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import libyears.LibyearCalculator
+import libyears.LibyearResults
 import util.DbConfig
 import util.dbQuery
 import util.initDatabase
@@ -32,11 +35,19 @@ class DbOptions : OptionGroup() {
     val password by option(envvar = "DB_PW", help = "Password for given database user").required()
 }
 
+@Serializable
+data class GitConfig(val urls: List<String>)
+
 class Libyears : CliktCommand() {
     val dbOptions by DbOptions().cooccurring()
 
-    val projectPath by option(envvar = "PROJECT_PATH", help = "Path to the analyzed project's root.")
-        .path(mustExist = true, mustBeReadable = true, canBeFile = false)
+//    val projectPath by option(envvar = "PROJECT_PATH", help = "Path to the analyzed project's root.")
+//        .path(mustExist = true, mustBeReadable = true, mustBeWritable = true, canBeFile = false)
+//        .required()
+
+    val gitConfigFile by option(envvar = "GIT_CONFIG_PATH", help = "Path to the file containing the URLs of" +
+            "the repositories which should be analyzed.")
+        .path(mustExist = true, mustBeReadable = true, canBeFile = true)
         .required()
 
     val outputPath by option(
@@ -44,16 +55,19 @@ class Libyears : CliktCommand() {
                 "of the created dependency graph. If the path doesn't exist it will be created."
     )
         .path(mustExist = false, canBeFile = false)
+        .required()
 
     override fun run() {
         echo(
-            "Running libyears for project at $projectPath and output path $outputPath" +
+            "Running libyears for projects in $gitConfigFile and output path $outputPath" +
                     " and db url ${dbOptions?.dbUrl}"
         )
-        outputPath?.createDirectories()
+        outputPath.createDirectories()
     }
 }
 
+@Serializable
+data class AggregatedResults(val results: List<LibyearResults>)
 suspend fun main(args: Array<String>) {
     val libyearCommand = Libyears()
     libyearCommand.main(args)
@@ -64,18 +78,50 @@ suspend fun main(args: Array<String>) {
             password = it.password
         )
     }
+
+    val gits = getConfigFromPath(libyearCommand.gitConfigFile)
+
+
+    val libyearResults: MutableList<LibyearResults> = mutableListOf()
+
     val runtime: Double = measureTimeMillis {
-        getLibYears(
-            projectPath = libyearCommand.projectPath.toFile(),
-            outputPath = libyearCommand.outputPath,
-            dbConfig = dbConfig,
-        )
+        gits.urls.forEachIndexed {
+            idx, gitUrl ->
+            println("Analyzing git at url $gitUrl")
+            val outputPath = libyearCommand.outputPath.resolve("${Date().time}-$idx")
+            outputPath.createDirectories()
+        val gitHelper = GitHelper(gitUrl, outDir = outputPath.toFile())
+            gitHelper.forEach { _ ->
+                libyearResults.add(getLibYears(
+                    projectPath = outputPath.toFile(),
+                    outputPath = outputPath,
+                    dbConfig = dbConfig,
+                )
+                )
+            }
+        }
     }.toDouble() / 60000
     println("The libyear calculation took $runtime minutes to execute.")
+
+    // TODO: do this later and in one file for easier readability
+    // include commit dates
+    val outputFileAggregate = libyearCommand.outputPath.resolve("${Date().time}-graphResultAggregate.json").toFile()
+    withContext(Dispatchers.IO) {
+        outputFileAggregate.createNewFile()
+        val json = Json { prettyPrint = false }
+        val jsonString =
+            json.encodeToString(AggregatedResults.serializer(), AggregatedResults(libyearResults))
+        outputFileAggregate.writeText(jsonString)
+    }
+}
+
+fun getConfigFromPath(path: Path): GitConfig {
+    val json = Json
+    return json.decodeFromString<GitConfig>(path.toFile().readText())
 }
 
 
-suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig?): DependencyGraphDto {
+suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig?): LibyearResults {
     val useDb = dbConfig != null
 
     if (useDb) {
@@ -88,7 +134,7 @@ suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig
     // TODO: maven currently doesn't work without fixed versions. Need to check ORT if this can be circumvented
     // through configuration
 
-    LibyearCalculator.printDependencyGraph(dependencyAnalyzerResult.dependencyGraphDto)
+    val libyearAggregates = LibyearCalculator.printDependencyGraph(dependencyAnalyzerResult.dependencyGraphDto)
 
 
     if (outputPath != null) {
@@ -111,5 +157,5 @@ suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig
         }
     }
 
-    return dependencyAnalyzerResult.dependencyGraphDto
+    return libyearAggregates
 }
