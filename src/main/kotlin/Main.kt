@@ -85,7 +85,8 @@ suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig
     val dependencyAnalyzer = DependencyAnalyzer()
 
     val dependencyAnalyzerResult = dependencyAnalyzer.getAnalyzerResult(projectPath)
-
+    // TODO: maven currently doesn't work without fixed versions. Need to check ORT if this can be circumvented
+    // through configuration
 
     LibyearCalculator.printDependencyGraph(dependencyAnalyzerResult.dependencyGraphDto)
 

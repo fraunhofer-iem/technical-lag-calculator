@@ -4,6 +4,8 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.*
+import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 
 object TimeHelper {
@@ -28,5 +30,10 @@ object TimeHelper {
         val differenceInDays = ChronoUnit.DAYS.between(newestVersionTime, currentVersionTime)
         println("Differences in days: $differenceInDays")
         return differenceInDays
+    }
+
+    fun isWithinOneYear(date1: Long, date2: Long): Boolean {
+        val oneYearInMilliseconds = TimeUnit.DAYS.toMillis(365)
+        return abs(date1 - date2) <= oneYearInMilliseconds
     }
 }
