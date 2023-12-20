@@ -115,7 +115,7 @@ class DependencyAnalyzer(
             // results in unstable versions of dependencies. To support this, enable
             // the 'allowDynamicVersions' option in 'config.yml'.
             val ortConfig = OrtConfiguration()
-            val analyzerConfiguration = ortConfig.analyzer
+            val analyzerConfiguration = ortConfig.analyzer.copy(allowDynamicVersions = true)
             val repositoryConfiguration = RepositoryConfiguration()
             val enabledPackageManagers = analyzerConfiguration.determineEnabledPackageManagers()
 
