@@ -37,15 +37,20 @@ class DependencyAnalyzer(
     private val analyzer: Analyzer = Analyzer(config = config.analyzerConfiguration)
 ) {
 
-    suspend fun getAnalyzerResult(projectPath: File): AnalyzerResultDto {
-        val rawAnalyzerResult = runAnalyzer(projectPath)
-        val transformedGraph = transformDependencyGraph(rawAnalyzerResult.dependencyGraphs)
+    suspend fun getAnalyzerResult(projectPath: File): AnalyzerResultDto? {
+        return try {
+            val rawAnalyzerResult = runAnalyzer(projectPath)
+            val transformedGraph = transformDependencyGraph(rawAnalyzerResult.dependencyGraphs)
 
-        return AnalyzerResultDto(
-            dependencyGraphDto = transformedGraph,
-            repositoryInfo = rawAnalyzerResult.repositoryInfo,
-            environmentInfo = rawAnalyzerResult.environmentInfo
-        )
+             AnalyzerResultDto(
+                dependencyGraphDto = transformedGraph,
+                repositoryInfo = rawAnalyzerResult.repositoryInfo,
+                environmentInfo = rawAnalyzerResult.environmentInfo
+            )
+        } catch (exception: Exception) {
+            println("ORT failed with excpetion $exception")
+            null
+        }
     }
 
     private fun runAnalyzer(

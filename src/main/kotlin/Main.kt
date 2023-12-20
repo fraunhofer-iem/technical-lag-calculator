@@ -45,8 +45,10 @@ class Libyears : CliktCommand() {
 //        .path(mustExist = true, mustBeReadable = true, mustBeWritable = true, canBeFile = false)
 //        .required()
 
-    val gitConfigFile by option(envvar = "GIT_CONFIG_PATH", help = "Path to the file containing the URLs of" +
-            "the repositories which should be analyzed.")
+    val gitConfigFile by option(
+        envvar = "GIT_CONFIG_PATH", help = "Path to the file containing the URLs of" +
+                "the repositories which should be analyzed."
+    )
         .path(mustExist = true, mustBeReadable = true, canBeFile = true)
         .required()
 
@@ -68,6 +70,7 @@ class Libyears : CliktCommand() {
 
 @Serializable
 data class AggregatedResults(val results: List<LibyearResults>)
+
 suspend fun main(args: Array<String>) {
     val libyearCommand = Libyears()
     libyearCommand.main(args)
@@ -85,19 +88,21 @@ suspend fun main(args: Array<String>) {
     val libyearResults: MutableList<LibyearResults> = mutableListOf()
 
     val runtime: Double = measureTimeMillis {
-        gits.urls.forEachIndexed {
-            idx, gitUrl ->
+        gits.urls.forEachIndexed { idx, gitUrl ->
             println("Analyzing git at url $gitUrl")
             val outputPath = libyearCommand.outputPath.resolve("${Date().time}-$idx")
             outputPath.createDirectories()
-        val gitHelper = GitHelper(gitUrl, outDir = outputPath.toFile())
+            val gitHelper = GitHelper(gitUrl, outDir = outputPath.toFile())
             gitHelper.forEach { _ ->
-                libyearResults.add(getLibYears(
+                getLibYears(
                     projectPath = outputPath.toFile(),
                     outputPath = outputPath,
                     dbConfig = dbConfig,
-                )
-                )
+                )?.let { libyears ->
+                    libyearResults.add(
+                        libyears
+                    )
+                }
             }
         }
     }.toDouble() / 60000
@@ -121,7 +126,7 @@ fun getConfigFromPath(path: Path): GitConfig {
 }
 
 
-suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig?): LibyearResults {
+suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig?): LibyearResults? {
     val useDb = dbConfig != null
 
     if (useDb) {
@@ -130,32 +135,34 @@ suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig
 
     val dependencyAnalyzer = DependencyAnalyzer()
 
-    val dependencyAnalyzerResult = dependencyAnalyzer.getAnalyzerResult(projectPath)
-    // TODO: maven currently doesn't work without fixed versions. Need to check ORT if this can be circumvented
-    // through configuration
+    dependencyAnalyzer.getAnalyzerResult(projectPath)?.let { dependencyAnalyzerResult ->
+        // TODO: maven currently doesn't work without fixed versions. Need to check ORT if this can be circumvented
+        // through configuration
 
-    val libyearAggregates = LibyearCalculator.printDependencyGraph(dependencyAnalyzerResult.dependencyGraphDto)
-
-
-    if (outputPath != null) {
-        val outputFile = outputPath.resolve("${Date().time}-graphResult.json").toFile()
-        withContext(Dispatchers.IO) {
-            outputFile.createNewFile()
-            val json = Json { prettyPrint = false }
-            val jsonString =
-                json.encodeToString(DependencyGraphDto.serializer(), dependencyAnalyzerResult.dependencyGraphDto)
-            outputFile.writeText(jsonString)
-        }
-    }
+        val libyearAggregates = LibyearCalculator.printDependencyGraph(dependencyAnalyzerResult.dependencyGraphDto)
 
 
-    if (useDb) {
-        dbQuery {
-            AnalyzerResult.new {
-                result = dependencyAnalyzerResult
+        if (outputPath != null) {
+            val outputFile = outputPath.resolve("${Date().time}-graphResult.json").toFile()
+            withContext(Dispatchers.IO) {
+                outputFile.createNewFile()
+                val json = Json { prettyPrint = false }
+                val jsonString =
+                    json.encodeToString(DependencyGraphDto.serializer(), dependencyAnalyzerResult.dependencyGraphDto)
+                outputFile.writeText(jsonString)
             }
         }
-    }
 
-    return libyearAggregates
+
+        if (useDb) {
+            dbQuery {
+                AnalyzerResult.new {
+                    result = dependencyAnalyzerResult
+                }
+            }
+        }
+
+        return libyearAggregates
+    }
+    return null
 }
