@@ -34,17 +34,11 @@ repositories {
     }
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+
+kotlin {
+    jvmToolchain(21)
 }
 
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        apiVersion = "1.9"
-        jvmTarget = "21"
-    }
-}
 
 val exposedVersion = "0.45.0"
 val ortVersion = "10.0.0"
