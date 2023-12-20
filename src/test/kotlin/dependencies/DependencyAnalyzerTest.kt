@@ -167,11 +167,11 @@ class DependencyAnalyzerTest {
 
         val result = dependencyAnalyzer.getAnalyzerResult(file)
 
-        assert(result.dependencyGraphDto.packageManagerToScopes.size == 1)
-        assert(result.dependencyGraphDto.packageManagerToScopes["NPM"]?.scopesToDependencies?.get("dependencies")?.size  == 3 )
-        assert(result.dependencyGraphDto.packageManagerToScopes["NPM"]?.scopesToDependencies?.get("dependencies")?.find { it.artifactId == "fontawesome-svg-core" }?.transitiveDependencies?.size == 1)
-        assert(result.dependencyGraphDto.packageManagerToScopes["NPM"]?.scopesToDependencies?.get("devDependencies")?.size  == 3 )
-        assert(result.dependencyGraphDto.packageManagerToScopes["NPM"]?.scopesToDependencies?.get("devDependencies")?.find { it.artifactId == "vite" }?.transitiveDependencies?.size  == 3 )
+        assert(result?.dependencyGraphDto?.packageManagerToScopes?.size == 1)
+        assert(result?.dependencyGraphDto?.packageManagerToScopes?.get("NPM")?.scopesToDependencies?.get("dependencies")?.size  == 3 )
+        assert(result?.dependencyGraphDto?.packageManagerToScopes?.get("NPM")?.scopesToDependencies?.get("dependencies")?.find { it.artifactId == "fontawesome-svg-core" }?.transitiveDependencies?.size == 1)
+        assert(result?.dependencyGraphDto?.packageManagerToScopes?.get("NPM")?.scopesToDependencies?.get("devDependencies")?.size  == 3 )
+        assert(result?.dependencyGraphDto?.packageManagerToScopes?.get("NPM")?.scopesToDependencies?.get("devDependencies")?.find { it.artifactId == "vite" }?.transitiveDependencies?.size  == 3 )
 
     }
 
