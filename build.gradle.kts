@@ -46,6 +46,7 @@ val ktorVersion = "2.3.7"
 val kotlinCoroutines = "1.7.3"
 
 dependencies {
+    implementation("com.google.guava:guava:33.0.0-jre")
     implementation("com.github.ajalt.clikt:clikt:4.2.1")
     implementation("org.apache.logging.log4j:log4j-api-kotlin:1.3.0")
     implementation("org.apache.logging.log4j:log4j-to-slf4j:2.21.1")
