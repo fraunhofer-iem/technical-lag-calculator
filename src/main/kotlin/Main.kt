@@ -94,14 +94,18 @@ suspend fun main(args: Array<String>) {
             outputPath.createDirectories()
             val gitHelper = GitHelper(gitUrl, outDir = outputPath.toFile())
             gitHelper.forEach { _ ->
-                getLibYears(
-                    projectPath = outputPath.toFile(),
-                    outputPath = outputPath,
-                    dbConfig = dbConfig,
-                )?.let { libyears ->
-                    libyearResults.add(
-                        libyears
-                    )
+                try {
+                    getLibYears(
+                        projectPath = outputPath.toFile(),
+                        outputPath = outputPath,
+                        dbConfig = dbConfig,
+                    )?.let { libyears ->
+                        libyearResults.add(
+                            libyears
+                        )
+                    }
+                } catch (e: Exception) {
+                    println("Libyear calculation failed with $e")
                 }
             }
         }
