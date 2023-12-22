@@ -114,6 +114,7 @@ suspend fun main(args: Array<String>) {
 
     // TODO: do this later and in one file for easier readability
     // include commit dates
+    //TODO: log how many libraries have a high libyear score (e.g. > 100 days) for each run for comparability.
     val outputFileAggregate = libyearCommand.outputPath.resolve("${Date().time}-graphResultAggregate.json").toFile()
     withContext(Dispatchers.IO) {
         outputFileAggregate.createNewFile()

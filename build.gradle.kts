@@ -1,8 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.9.21"
-    kotlin("plugin.serialization") version "1.9.21"
+    kotlin("jvm") version "1.9.22"
+    kotlin("plugin.serialization") version "1.9.22"
     application
 }
 
@@ -49,13 +49,15 @@ dependencies {
     implementation("com.google.guava:guava:33.0.0-jre")
     implementation("com.github.ajalt.clikt:clikt:4.2.1")
     implementation("org.apache.logging.log4j:log4j-api-kotlin:1.3.0")
-    implementation("org.apache.logging.log4j:log4j-to-slf4j:2.21.1")
-    implementation("ch.qos.logback:logback-classic:1.4.11")
+    implementation("org.apache.logging.log4j:log4j-to-slf4j:2.22.0")
+    implementation("ch.qos.logback:logback-classic:1.4.14")
     implementation("io.github.z4kn4fein:semver:1.4.2")
     implementation("org.ossreviewtoolkit:analyzer:$ortVersion")
     implementation("org.ossreviewtoolkit:model:$ortVersion")
     implementation("org.ossreviewtoolkit:reporter:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.packagecurationproviders:package-curation-provider-api:$ortVersion")
+    implementation("org.ossreviewtoolkit.plugins.packageconfigurationproviders:package-configuration-provider-api:$ortVersion")
+    implementation("org.ossreviewtoolkit.plugins.packageconfigurationproviders:ort-config-package-configuration-provider:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.packagemanagers:maven-package-manager:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.packagemanagers:gradle-package-manager:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.packagemanagers:nuget-package-manager:$ortVersion")
@@ -65,6 +67,7 @@ dependencies {
     implementation("org.ossreviewtoolkit.plugins.packagecurationproviders:ort-config-package-curation-provider:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.packagecurationproviders:clearly-defined-package-curation-provider:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.packagemanagers:python-package-manager:$ortVersion")
+    implementation("org.ossreviewtoolkit.plugins.versioncontrolsystems:git-version-control-system:$ortVersion")
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-crypt:$exposedVersion")
@@ -84,6 +87,9 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     runtimeOnly("org.postgresql:postgresql:42.6.0")
     runtimeOnly("org.ossreviewtoolkit.plugins.packagecurationproviders:file-package-curation-provider:$ortVersion")
+    runtimeOnly("org.ossreviewtoolkit.utils:common-utils:$ortVersion")
+    runtimeOnly("org.ossreviewtoolkit.utils:ort-utils:$ortVersion")
+    runtimeOnly("org.ossreviewtoolkit.plugins.packageconfigurationproviders:dir-package-configuration-provider:$ortVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test:1.8.10")
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinCoroutines")
