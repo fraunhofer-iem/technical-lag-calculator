@@ -89,14 +89,15 @@ suspend fun main(args: Array<String>) {
     val gits = getConfigFromPath(libyearCommand.gitConfigFile)
 
 
-    val libyearResultForPackageManagerAndScopes: MutableList<LibyearSumsForPackageManagerAndScopes> = mutableListOf()
-
     val runtime: Double = measureTimeMillis {
         gits.urls.forEachIndexed { idx, gitUrl ->
             println("Analyzing git at url $gitUrl")
             val outputPath = libyearCommand.outputPath.resolve("${Date().time}-$idx")
             outputPath.createDirectories()
             val gitHelper = GitHelper(gitUrl, outDir = outputPath.toFile())
+            val libyearResultForPackageManagerAndScopes: MutableList<LibyearSumsForPackageManagerAndScopes> =
+                mutableListOf()
+
             gitHelper.forEach { _ ->
                 try {
                     getLibYears(
@@ -112,28 +113,35 @@ suspend fun main(args: Array<String>) {
                     println("Libyear calculation failed with $e")
                 }
             }
+            // TODO: do this later and in one file for easier readability
+            // include commit dates
+            //TODO: log how many libraries have a high libyear score (e.g. > 100 days) for each run for comparability.
+            val outputFileAggregate =
+                libyearCommand.outputPath.resolve("${Date().time}-graphResultAggregate.json").toFile()
+            withContext(Dispatchers.IO) {
+                outputFileAggregate.createNewFile()
+                val json = Json { prettyPrint = false }
+                val transitiveDeps =
+                    libyearResultForPackageManagerAndScopes.flatMap { it.packageManagerToScopes.flatMap { it.value.map { it.value.transitive } } }
+                val directDeps =
+                    libyearResultForPackageManagerAndScopes.flatMap { it.packageManagerToScopes.flatMap { it.value.map { it.value.direct } } }
+                val jsonString =
+                    json.encodeToString(
+                        AggregatedResults.serializer(),
+                        AggregatedResults(
+                            libyearResultForPackageManagerAndScopes,
+                            cvsDirect = directDeps,
+                            csvTransitive = transitiveDeps
+                        )
+                    )
+                outputFileAggregate.writeText(jsonString)
+            }
+
         }
     }.toDouble() / 60000
     println("The libyear calculation took $runtime minutes to execute.")
 
-    // TODO: do this later and in one file for easier readability
-    // include commit dates
-    //TODO: log how many libraries have a high libyear score (e.g. > 100 days) for each run for comparability.
-    val outputFileAggregate = libyearCommand.outputPath.resolve("${Date().time}-graphResultAggregate.json").toFile()
-    withContext(Dispatchers.IO) {
-        outputFileAggregate.createNewFile()
-        val json = Json { prettyPrint = false }
-        val transitiveDeps =
-            libyearResultForPackageManagerAndScopes.flatMap { it.packageManagerToScopes.flatMap { it.value.map { it.value.transitive } } }
-        val directDeps =
-            libyearResultForPackageManagerAndScopes.flatMap { it.packageManagerToScopes.flatMap { it.value.map { it.value.direct } } }
-        val jsonString =
-            json.encodeToString(
-                AggregatedResults.serializer(),
-                AggregatedResults(libyearResultForPackageManagerAndScopes, cvsDirect = directDeps, csvTransitive = transitiveDeps)
-            )
-        outputFileAggregate.writeText(jsonString)
-    }
+
 }
 
 fun getConfigFromPath(path: Path): GitConfig {
@@ -142,7 +150,11 @@ fun getConfigFromPath(path: Path): GitConfig {
 }
 
 
-suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig?): LibyearSumsForPackageManagerAndScopes? {
+suspend fun getLibYears(
+    projectPath: File,
+    outputPath: Path?,
+    dbConfig: DbConfig?
+): LibyearSumsForPackageManagerAndScopes? {
     val useDb = dbConfig != null
 
     if (useDb) {
