@@ -97,7 +97,7 @@ suspend fun main(args: Array<String>) {
             val gitHelper = GitHelper(gitUrl, outDir = outputPath.toFile())
             val libyearResultForPackageManagerAndScopes: MutableList<LibyearSumsForPackageManagerAndScopes> =
                 mutableListOf()
-
+            try {
             gitHelper.forEach { _ ->
                 try {
                     getLibYears(
@@ -110,8 +110,11 @@ suspend fun main(args: Array<String>) {
                         )
                     }
                 } catch (e: Exception) {
-                    println("Libyear calculation failed with $e")
+                    println("Libyear calculation failed with $e ${e.stackTrace}")
                 }
+            }
+            } catch (e: Exception) {
+                println("Processing git commit failed with $e")
             }
             // TODO: do this later and in one file for easier readability
             // include commit dates

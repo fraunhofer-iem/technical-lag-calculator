@@ -42,7 +42,6 @@ class DepsClient(
                 val response = httpClient.request(requestUrl)
 
                 val currentResponse = response.body<DepsResponseDto>()
-                println("API response:${currentResponse}")
 
                 currentResponse
             } catch (exception: Exception) {

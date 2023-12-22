@@ -22,7 +22,7 @@ class GitHelper(repoUrl: String, outDir: File): Iterable<String> {
         git.log()
             .setRevFilter(commitFilter)
             .call()
-    )
+    ).toMutableList()
 
     fun close() {
         git.close()
@@ -67,6 +67,7 @@ class GitHelper(repoUrl: String, outDir: File): Iterable<String> {
                     throw NoSuchElementException()
                 }
                 val commit = commits.removeFirst()
+
                 git.checkout().setName(commit.name).call()
                 println("Next commit $commit.name msg: ${commit.fullMessage}")
                 return commit.name
