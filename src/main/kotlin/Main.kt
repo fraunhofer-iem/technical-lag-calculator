@@ -13,7 +13,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import libyears.LibyearCalculator
-import libyears.LibyearResults
+import libyears.model.LibyearSumsForPackageManagerAndScopes
 import util.DbConfig
 import util.dbQuery
 import util.initDatabase
@@ -69,7 +69,11 @@ class Libyears : CliktCommand() {
 }
 
 @Serializable
-data class AggregatedResults(val results: List<LibyearResults>)
+data class AggregatedResults(
+    val results: List<LibyearSumsForPackageManagerAndScopes>,
+    val csvTransitive: List<Long>,
+    val cvsDirect: List<Long>
+)
 
 suspend fun main(args: Array<String>) {
     val libyearCommand = Libyears()
@@ -85,7 +89,7 @@ suspend fun main(args: Array<String>) {
     val gits = getConfigFromPath(libyearCommand.gitConfigFile)
 
 
-    val libyearResults: MutableList<LibyearResults> = mutableListOf()
+    val libyearResultForPackageManagerAndScopes: MutableList<LibyearSumsForPackageManagerAndScopes> = mutableListOf()
 
     val runtime: Double = measureTimeMillis {
         gits.urls.forEachIndexed { idx, gitUrl ->
@@ -100,7 +104,7 @@ suspend fun main(args: Array<String>) {
                         outputPath = outputPath,
                         dbConfig = dbConfig,
                     )?.let { libyears ->
-                        libyearResults.add(
+                        libyearResultForPackageManagerAndScopes.add(
                             libyears
                         )
                     }
@@ -119,8 +123,15 @@ suspend fun main(args: Array<String>) {
     withContext(Dispatchers.IO) {
         outputFileAggregate.createNewFile()
         val json = Json { prettyPrint = false }
+        val transitiveDeps =
+            libyearResultForPackageManagerAndScopes.flatMap { it.packageManagerToScopes.flatMap { it.value.map { it.value.transitive } } }
+        val directDeps =
+            libyearResultForPackageManagerAndScopes.flatMap { it.packageManagerToScopes.flatMap { it.value.map { it.value.direct } } }
         val jsonString =
-            json.encodeToString(AggregatedResults.serializer(), AggregatedResults(libyearResults))
+            json.encodeToString(
+                AggregatedResults.serializer(),
+                AggregatedResults(libyearResultForPackageManagerAndScopes, cvsDirect = directDeps, csvTransitive = transitiveDeps)
+            )
         outputFileAggregate.writeText(jsonString)
     }
 }
@@ -131,7 +142,7 @@ fun getConfigFromPath(path: Path): GitConfig {
 }
 
 
-suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig?): LibyearResults? {
+suspend fun getLibYears(projectPath: File, outputPath: Path?, dbConfig: DbConfig?): LibyearSumsForPackageManagerAndScopes? {
     val useDb = dbConfig != null
 
     if (useDb) {

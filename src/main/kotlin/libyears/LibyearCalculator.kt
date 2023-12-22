@@ -4,23 +4,20 @@ package libyears
 import artifact.model.ArtifactDto
 import artifact.model.VersionDto
 import dependencies.model.DependencyGraphDto
-import dependencies.model.ScopedDependencyDto
 import io.github.z4kn4fein.semver.Version
 import io.github.z4kn4fein.semver.toVersion
 import kotlinx.serialization.Serializable
 import libyears.model.LibyearResultDto
 import libyears.model.LibyearStatus
+import libyears.model.LibyearSumsForPackageManagerAndScopes
+import libyears.model.LibyearSumsResult
 import util.TimeHelper.getDifferenceInDays
 
-@Serializable
-data class LibyearResult(val transitive: Long, val direct: Long)
-@Serializable
-data class LibyearResults(val packageManagerToScopes:  Map<String, Map<String, LibyearResult>>)
 
 object LibyearCalculator {
 
-    fun printDependencyGraph(dependencyGraphDto: DependencyGraphDto): LibyearResults {
-        val packageManagerToScopes: MutableMap<String, MutableMap<String, LibyearResult>> = mutableMapOf()
+    fun printDependencyGraph(dependencyGraphDto: DependencyGraphDto): LibyearSumsForPackageManagerAndScopes {
+        val packageManagerToScopes: MutableMap<String, MutableMap<String, LibyearSumsResult>> = mutableMapOf()
 
         dependencyGraphDto.packageManagerToScopes.forEach { (packageManager, scopes) ->
             println("\n\nLibyears for $packageManager")
@@ -43,8 +40,8 @@ object LibyearCalculator {
                     "Transitive dependency libyears: $transitiveDependencySum Days " +
                             "(equals to roughly ${transitiveDependencySum / 365.25} years)"
                 )
-                val libyearResult = LibyearResult(transitive = transitiveDependencySum, direct = directDependencies)
-                packageManagerToScopes[packageManager]?.set(scope, libyearResult)
+                val libyearSumsResult = LibyearSumsResult(transitive = transitiveDependencySum, direct = directDependencies)
+                packageManagerToScopes[packageManager]?.set(scope, libyearSumsResult)
             }
         }
 
@@ -57,7 +54,7 @@ object LibyearCalculator {
             }
         }
 
-        return LibyearResults(packageManagerToScopes.mapValues { it.value.toMap() })
+        return LibyearSumsForPackageManagerAndScopes(packageManagerToScopes.mapValues { it.value.toMap() })
     }
 
     /**
