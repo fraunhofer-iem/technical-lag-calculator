@@ -6,18 +6,14 @@ import artifact.model.VersionDto
 import dependencies.model.DependencyGraphDto
 import io.github.z4kn4fein.semver.Version
 import io.github.z4kn4fein.semver.toVersion
-import kotlinx.serialization.Serializable
-import libyears.model.LibyearResultDto
-import libyears.model.LibyearStatus
-import libyears.model.LibyearSumsForPackageManagerAndScopes
-import libyears.model.LibyearSumsResult
+import libyears.model.*
 import util.TimeHelper.getDifferenceInDays
 
 
 object LibyearCalculator {
 
     fun printDependencyGraph(dependencyGraphDto: DependencyGraphDto): LibyearSumsForPackageManagerAndScopes {
-        val packageManagerToScopes: MutableMap<String, MutableMap<String, LibyearSumsResult>> = mutableMapOf()
+        val packageManagerToScopes: MutableMap<String, MutableMap<String, LibyearsAndDependencyCount>> = mutableMapOf()
 
         dependencyGraphDto.packageManagerToScopes.forEach { (packageManager, scopes) ->
             println("\n\nLibyears for $packageManager")
@@ -27,21 +23,37 @@ object LibyearCalculator {
 
                 val directDependencies = artifacts.filter {
                     it.libyearResult.libyear != null && it.isTopLevelDependency
-                }.sumOf { it.libyearResult.libyear!! }
-                println(
-                    "Direct dependency libyears: $directDependencies Days " +
-                            "(equals to roughly ${directDependencies / 365.25} years)"
+                }
+
+                val directResult = LibyearSumsResult(
+                    libyears = directDependencies.sumOf { it.libyearResult.libyear!! },
+                    numberOfDependencies = directDependencies.count()
                 )
 
-                val transitiveDependencySum = artifacts.sumOf {
-                    it.transitiveDependencies.sumOf { transitive -> calculateTransitiveLibyears(transitive) }
-                }
                 println(
-                    "Transitive dependency libyears: $transitiveDependencySum Days " +
-                            "(equals to roughly ${transitiveDependencySum / 365.25} years)"
+                    "Direct dependency libyears: ${directResult.libyears} days " +
+                            "and ${directResult.numberOfDependencies} dependencies."
                 )
-                val libyearSumsResult = LibyearSumsResult(transitive = transitiveDependencySum, direct = directDependencies)
-                packageManagerToScopes[packageManager]?.set(scope, libyearSumsResult)
+
+                val transitiveDependencyResult = artifacts.map {
+                    calculateTransitiveLibyearsAndCount(it)
+                }
+
+                val transitiveDependencySum = transitiveDependencyResult.sumOf { it.libyears }
+                val transitiveDependencyCount = transitiveDependencyResult.sumOf { it.numberOfDependencies }
+                val transitiveResult = LibyearSumsResult(
+                    libyears = transitiveDependencySum,
+                    numberOfDependencies = transitiveDependencyCount
+                )
+                println(
+                    "Direct dependency libyears: $transitiveDependencySum days " +
+                            "and $transitiveDependencyCount dependencies."
+                )
+
+                packageManagerToScopes[packageManager]?.set(
+                    scope,
+                    LibyearsAndDependencyCount(direct = directResult, transitive = transitiveResult)
+                )
             }
         }
 
@@ -70,7 +82,7 @@ object LibyearCalculator {
         val current = currentVersion.versionNumber.toVersion(strict = false)
         current.isPreRelease
         val versions = if (current.isStable) {
-            getSortedSemVersions(packageList).filter { it.second.isStable && !it.second.isPreRelease}
+            getSortedSemVersions(packageList).filter { it.second.isStable && !it.second.isPreRelease }
         } else {
             getSortedSemVersions(packageList).filter { !it.second.isPreRelease }
         }
@@ -153,13 +165,19 @@ object LibyearCalculator {
         artifact.transitiveDependencies.forEach { printLibyearWarning(it) }
     }
 
-    private fun calculateTransitiveLibyears(artifact: ArtifactDto): Long {
+    private fun calculateTransitiveLibyearsAndCount(artifact: ArtifactDto): LibyearSumsResult {
         var sumLibyears = artifact.libyearResult.libyear ?: 0
+        var transitiveDependencyCount = 0
 
         for (dependency in artifact.transitiveDependencies) {
-            sumLibyears += calculateTransitiveLibyears(dependency)
+            val result = calculateTransitiveLibyearsAndCount(dependency)
+            sumLibyears += result.libyears
+            transitiveDependencyCount += 1 + result.numberOfDependencies
         }
 
-        return sumLibyears
+        return LibyearSumsResult(
+            libyears = sumLibyears,
+            numberOfDependencies = transitiveDependencyCount
+        )
     }
 }

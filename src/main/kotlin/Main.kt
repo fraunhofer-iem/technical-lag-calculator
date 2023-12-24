@@ -41,10 +41,6 @@ data class GitConfig(val urls: List<String>)
 class Libyears : CliktCommand() {
     val dbOptions by DbOptions().cooccurring()
 
-//    val projectPath by option(envvar = "PROJECT_PATH", help = "Path to the analyzed project's root.")
-//        .path(mustExist = true, mustBeReadable = true, mustBeWritable = true, canBeFile = false)
-//        .required()
-
     val gitConfigFile by option(
         envvar = "GIT_CONFIG_PATH", help = "Path to the file containing the URLs of" +
                 "the repositories which should be analyzed."
@@ -71,8 +67,10 @@ class Libyears : CliktCommand() {
 @Serializable
 data class AggregatedResults(
     val results: List<LibyearSumsForPackageManagerAndScopes>,
-    val csvTransitive: List<Long>,
-    val cvsDirect: List<Long>
+    val csvTransitiveLibyears: List<Long>,
+    val csvTransitiveNumberOfDeps: List<Int>,
+    val csvDirectNumberOfDeps: List<Int>,
+    val cvsDirectLibyears: List<Long>
 )
 
 suspend fun main(args: Array<String>) {
@@ -133,8 +131,10 @@ suspend fun main(args: Array<String>) {
                         AggregatedResults.serializer(),
                         AggregatedResults(
                             libyearResultForPackageManagerAndScopes,
-                            cvsDirect = directDeps,
-                            csvTransitive = transitiveDeps
+                            cvsDirectLibyears = directDeps.map { it.libyears },
+                            csvTransitiveLibyears = transitiveDeps.map { it.libyears } ,
+                            csvDirectNumberOfDeps = directDeps.map { it.numberOfDependencies },
+                            csvTransitiveNumberOfDeps = transitiveDeps.map { it.numberOfDependencies }
                         )
                     )
                 outputFileAggregate.writeText(jsonString)

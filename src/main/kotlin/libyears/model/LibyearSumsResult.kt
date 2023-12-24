@@ -3,6 +3,10 @@ package libyears.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class LibyearSumsResult(val transitive: Long, val direct: Long)
+data class LibyearSumsResult(val libyears: Long, val numberOfDependencies: Int)
+
 @Serializable
-data class LibyearSumsForPackageManagerAndScopes(val packageManagerToScopes:  Map<String, Map<String, LibyearSumsResult>>)
+data class LibyearsAndDependencyCount(val transitive: LibyearSumsResult, val direct: LibyearSumsResult)
+
+@Serializable
+data class LibyearSumsForPackageManagerAndScopes(val packageManagerToScopes:  Map<String, Map<String, LibyearsAndDependencyCount>>)
