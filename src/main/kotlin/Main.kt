@@ -22,6 +22,7 @@ import java.nio.file.Path
 import java.util.*
 import kotlin.io.path.createDirectories
 import kotlin.system.measureTimeMillis
+import kotlin.time.measureTime
 
 class DbOptions : OptionGroup() {
     val dbUrl by option(
@@ -87,7 +88,7 @@ suspend fun main(args: Array<String>) {
     val gits = getConfigFromPath(libyearCommand.gitConfigFile)
 
 
-    val runtime: Double = measureTimeMillis {
+    val runtime = measureTime {
         gits.urls.forEachIndexed { idx, gitUrl ->
             println("Analyzing git at url $gitUrl")
             val outputPath = libyearCommand.outputPath.resolve("${Date().time}-$idx")
@@ -141,8 +142,8 @@ suspend fun main(args: Array<String>) {
             }
 
         }
-    }.toDouble() / 60000
-    println("The libyear calculation took $runtime minutes to execute.")
+    }
+    println("The libyear calculation took ${runtime.inWholeMinutes} minutes to execute.")
 
 
 }
