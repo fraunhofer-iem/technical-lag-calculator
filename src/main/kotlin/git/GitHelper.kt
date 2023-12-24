@@ -1,6 +1,7 @@
 package git
 
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.ResetCommand
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.revwalk.filter.RevFilter
@@ -66,9 +67,13 @@ class GitHelper(repoUrl: String, outDir: File): Iterable<String> {
                 if (!hasNext()) {
                     throw NoSuchElementException()
                 }
-                val commit = commits.removeFirst()
 
-                git.checkout().setName(commit.name).call()
+                val commit = commits.removeFirst()
+                git.reset()
+                    .setMode(ResetCommand.ResetType.HARD)
+                    .setRef(commit.name)
+                    .call()
+
                 println("Next commit $commit.name msg: ${commit.fullMessage}")
                 return commit.name
             }
