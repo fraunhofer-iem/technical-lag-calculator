@@ -34,6 +34,8 @@ RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg -
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
+RUN git config --global --add safe.directory '*'
+
 WORKDIR /app
 
 # Copy the built application from the build stage
