@@ -92,7 +92,7 @@ dependencies {
     runtimeOnly("org.ossreviewtoolkit.utils:ort-utils:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.plugins.packagemanagers:gradle-model:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.plugins.packageconfigurationproviders:dir-package-configuration-provider:$ortVersion")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:1.8.10")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.22")
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinCoroutines")
     testImplementation("io.mockk:mockk:1.13.8")
