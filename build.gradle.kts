@@ -86,7 +86,7 @@ dependencies {
     implementation("io.ktor:ktor-client-cio-jvm:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-    runtimeOnly("org.postgresql:postgresql:42.6.0")
+    runtimeOnly("org.postgresql:postgresql:42.7.1")
     runtimeOnly("org.ossreviewtoolkit.plugins.packagecurationproviders:file-package-curation-provider:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.utils:common-utils:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.utils:ort-utils:$ortVersion")
