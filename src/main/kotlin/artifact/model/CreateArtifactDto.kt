@@ -3,6 +3,7 @@ package artifact.model
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.awaitAll
 import libyears.LibyearCalculator
+import org.apache.logging.log4j.kotlin.logger
 
 data class CreateArtifactDto(
     var artifactId: String? = null,
@@ -18,7 +19,7 @@ data class CreateArtifactDto(
             val versions = try {
                 versionDeferred?.await()
             } catch (exception: Exception) {
-                println("API version job failed with error $exception")
+                logger.error { "API version job failed with error $exception" }
                 null
             } ?: emptyList()
 

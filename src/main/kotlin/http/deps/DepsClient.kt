@@ -13,10 +13,9 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import org.apache.logging.log4j.kotlin.logger
 import util.TimeHelper.dateToMs
 import java.net.URLEncoder
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 
 class DepsClient(
     private val httpClient: HttpClient = HttpClient(CIO) {
@@ -45,7 +44,7 @@ class DepsClient(
 
                 currentResponse
             } catch (exception: Exception) {
-                println("Exception during http call to $requestUrl. $exception")
+                logger.error { "Exception during http call to $requestUrl. $exception" }
 
                 null
             }
@@ -54,7 +53,7 @@ class DepsClient(
                 versionResponseToDto(version)
             } ?: emptyList()
         } else {
-            println("Currently unsupported package manager")
+            logger.error { "Currently unsupported package manager" }
             emptyList()
         }
     }
@@ -71,8 +70,7 @@ class DepsClient(
                 null
             }
         } else {
-            println("Insufficient data in maven response to create version dto")
-            println(version)
+            logger.warn { "Insufficient data in maven response to create version dto $version" }
             null
         }
     }
@@ -118,6 +116,4 @@ class DepsClient(
 
         }
     }
-
-
 }

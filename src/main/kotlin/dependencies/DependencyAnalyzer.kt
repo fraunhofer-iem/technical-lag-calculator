@@ -42,13 +42,13 @@ class DependencyAnalyzer(
             val rawAnalyzerResult = runAnalyzer(projectPath)
             val transformedGraph = transformDependencyGraph(rawAnalyzerResult.dependencyGraphs)
 
-             AnalyzerResultDto(
+            AnalyzerResultDto(
                 dependencyGraphDto = transformedGraph,
                 repositoryInfo = rawAnalyzerResult.repositoryInfo,
                 environmentInfo = rawAnalyzerResult.environmentInfo
             )
         } catch (exception: Exception) {
-            println("ORT failed with excpetion $exception")
+            logger.error { "ORT failed with exception $exception" }
             null
         }
     }

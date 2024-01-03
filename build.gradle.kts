@@ -44,13 +44,15 @@ val exposedVersion = "0.45.0"
 val ortVersion = "11.0.0"
 val ktorVersion = "2.3.7"
 val kotlinCoroutines = "1.7.3"
+val logback = "1.4.14"
 
 dependencies {
     implementation("com.google.guava:guava:33.0.0-jre")
     implementation("com.github.ajalt.clikt:clikt:4.2.1")
     implementation("org.apache.logging.log4j:log4j-api-kotlin:1.4.0")
     implementation("org.apache.logging.log4j:log4j-to-slf4j:2.22.1")
-    implementation("ch.qos.logback:logback-classic:1.4.14")
+    implementation("ch.qos.logback:logback-core:$logback")
+    implementation("ch.qos.logback:logback-classic:$logback")
     implementation("io.github.z4kn4fein:semver:1.4.2")
     implementation("org.ossreviewtoolkit:analyzer:$ortVersion")
     implementation("org.ossreviewtoolkit:model:$ortVersion")

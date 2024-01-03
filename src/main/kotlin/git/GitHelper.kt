@@ -1,5 +1,6 @@
 package git
 
+import org.apache.logging.log4j.kotlin.logger
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ResetCommand
 import org.eclipse.jgit.revwalk.RevCommit
@@ -9,7 +10,7 @@ import util.TimeHelper.isWithinOneYear
 import java.io.File
 import java.util.*
 
-class GitHelper(repoUrl: String, outDir: File): Iterable<String> {
+class GitHelper(repoUrl: String, outDir: File) : Iterable<String> {
 
     private val git = Git.cloneRepository()
         .setCloneSubmodules(true)
@@ -33,7 +34,7 @@ class GitHelper(repoUrl: String, outDir: File): Iterable<String> {
         val calendar = Calendar.getInstance()
         val commitMap: MutableMap<Int, RevCommit> = mutableMapOf()
         commits.forEach { commit ->
-            val commitTime = Date(commit.commitTime.toLong()*1000)
+            val commitTime = Date(commit.commitTime.toLong() * 1000)
             calendar.time = commitTime
             val month = calendar[Calendar.MONTH]
             if (!commitMap.contains(month)) {
@@ -47,7 +48,7 @@ class GitHelper(repoUrl: String, outDir: File): Iterable<String> {
     private class DateFilter(val date: Long) : RevFilter() {
         override fun include(walker: RevWalk?, cmit: RevCommit?): Boolean {
             if (cmit != null) {
-                return isWithinOneYear(date, cmit.commitTime.toLong()*1000) //example commitTime 1702406125
+                return isWithinOneYear(date, cmit.commitTime.toLong() * 1000) //example commitTime 1702406125
             }
             return false
         }
@@ -74,7 +75,7 @@ class GitHelper(repoUrl: String, outDir: File): Iterable<String> {
                     .setRef(commit.name)
                     .call()
 
-                println("Next commit $commit.name msg: ${commit.fullMessage}")
+                logger.debug { "Next commit $commit.name msg: ${commit.fullMessage}" }
                 return commit.name
             }
         }

@@ -7,6 +7,7 @@ import dependencies.model.DependencyGraphDto
 import io.github.z4kn4fein.semver.Version
 import io.github.z4kn4fein.semver.toVersion
 import libyears.model.*
+import org.apache.logging.log4j.kotlin.logger
 import util.TimeHelper.getDifferenceInDays
 
 
@@ -16,10 +17,10 @@ object LibyearCalculator {
         val packageManagerToScopes: MutableMap<String, MutableMap<String, LibyearsAndDependencyCount>> = mutableMapOf()
 
         dependencyGraphDto.packageManagerToScopes.forEach { (packageManager, scopes) ->
-            println("\n\nLibyears for $packageManager")
+            logger.info { "\n\nLibyears for $packageManager" }
             packageManagerToScopes[packageManager] = mutableMapOf()
             scopes.scopesToDependencies.forEach { (scope, artifacts) ->
-                println("Libyears in scope $scope")
+                logger.info { "Libyears in scope $scope" }
 
                 val directDependencies = artifacts.filter {
                     it.libyearResult.libyear != null && it.isTopLevelDependency
@@ -30,10 +31,10 @@ object LibyearCalculator {
                     numberOfDependencies = directDependencies.count()
                 )
 
-                println(
+                logger.info {
                     "Direct dependency libyears: ${directResult.libyears} days " +
                             "and ${directResult.numberOfDependencies} dependencies."
-                )
+                }
 
                 val transitiveDependencyResult = artifacts.map {
                     calculateTransitiveLibyearsAndCount(it)
@@ -45,10 +46,10 @@ object LibyearCalculator {
                     libyears = transitiveDependencySum,
                     numberOfDependencies = transitiveDependencyCount
                 )
-                println(
+                logger.info {
                     "Direct dependency libyears: $transitiveDependencySum days " +
                             "and $transitiveDependencyCount dependencies."
-                )
+                }
 
                 packageManagerToScopes[packageManager]?.set(
                     scope,
@@ -57,7 +58,7 @@ object LibyearCalculator {
             }
         }
 
-        println("Warnings for dependencies older than 180 days:")
+        logger.info { "Warnings for dependencies older than 180 days:" }
         dependencyGraphDto.packageManagerToScopes.values.forEach {
             it.scopesToDependencies.values.forEach {
                 it.forEach { artifact ->
@@ -152,15 +153,15 @@ object LibyearCalculator {
 
     private fun printLibyearWarning(artifact: ArtifactDto) {
         if (artifact.libyearResult.libyear != null && artifact.libyearResult.libyear < -180) {
-            println(
+            logger.warn {
                 "Dependency ${artifact.groupId}/${artifact.artifactId}" +
                         "is ${artifact.libyearResult} days old."
-            )
+            }
             val newestVersion = getNewestVersion(artifact.versions)
-            println(
+            logger.warn {
                 "The used version is ${artifact.usedVersion} and " +
                         "the newest version ${newestVersion.second.versionNumber}"
-            )
+            }
         }
         artifact.transitiveDependencies.forEach { printLibyearWarning(it) }
     }

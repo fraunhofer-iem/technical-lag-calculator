@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="JavaScriptLibraryMappings">
-    <excludedPredefinedLibrary name="libyear-ort/src/test/resources/npm/.stash9396636869121589702/node_modules" />
+    <excludedPredefinedLibrary name="libyear-ort/dependencyResults/1703173217365-0/test/fixtures/watch-count/node_modules" />
+    <excludedPredefinedLibrary name="libyear-ort/dependencyResults/1703181761192-0/test/fixtures/watch-count/node_modules" />
+    <excludedPredefinedLibrary name="libyear-ort/dependencyResults/1703182420018-0/node_modules" />
+    <excludedPredefinedLibrary name="libyear-ort/dependencyResults/1703182420018-0/test/fixtures/watch-count/node_modules" />
+    <excludedPredefinedLibrary name="libyear-ort/dependencyResults/1703182632733-0/node_modules" />
+    <excludedPredefinedLibrary name="libyear-ort/dependencyResults/1703182632733-0/test/fixtures/watch-count/node_modules" />
+    <excludedPredefinedLibrary name="libyear-ort/dependencyResults/1703183397791-0/test/fixtures/watch-count/node_modules" />
+    <excludedPredefinedLibrary name="libyear-ort/dependencyResults/1703183900701-0/test/fixtures/watch-count/node_modules" />
+    <excludedPredefinedLibrary name="libyear-ort/dependencyResults/1703235837657-0/node_modules" />
+    <excludedPredefinedLibrary name="libyear-ort/dependencyResults/1703235837657-0/test/fixtures/watch-count/node_modules" />
   </component>
 </project>

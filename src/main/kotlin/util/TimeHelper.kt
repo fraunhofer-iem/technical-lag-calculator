@@ -1,5 +1,6 @@
 package util
 
+import org.apache.logging.log4j.kotlin.logger
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -25,10 +26,10 @@ object TimeHelper {
         val newestVersionTime = Date(newestVersion).toInstant()
 
 
-        println("Library Difference $currentVersionTime $newestVersionTime")
+        logger.debug { "Library Difference $currentVersionTime $newestVersionTime" }
 
         val differenceInDays = ChronoUnit.DAYS.between(newestVersionTime, currentVersionTime)
-        println("Differences in days: $differenceInDays")
+        logger.debug { "Differences in days: $differenceInDays" }
         return differenceInDays
     }
 
