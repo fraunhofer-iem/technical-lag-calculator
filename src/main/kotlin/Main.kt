@@ -1,5 +1,3 @@
-import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.Logger
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.groups.OptionGroup
 import com.github.ajalt.clikt.parameters.groups.cooccurring
@@ -19,6 +17,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import libyears.LibyearCalculator
 import libyears.model.LibyearSumsForPackageManagerAndScopes
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
 import org.apache.logging.log4j.kotlin.logger
 import org.slf4j.LoggerFactory
 import util.DbConfig
@@ -97,6 +97,12 @@ class Libyears : CliktCommand() {
         val runtime = measureTime {
             gits.urls.forEachIndexed { idx, gitUrl ->
                 logger.info { "Analyzing git at url $gitUrl" }
+                val repoName = gitUrl.split("/").last()
+                println("repo name: $repoName")
+
+                logger.info { "test" }
+
+
                 val outputPath = outputPath.resolve("${Date().time}-$idx")
                 outputPath.createDirectories()
                 val gitHelper = GitHelper(gitUrl, outDir = outputPath.toFile())
@@ -145,7 +151,6 @@ class Libyears : CliktCommand() {
                         )
                     outputFileAggregate.writeText(jsonString)
                 }
-
             }
         }
         logger.info { "The libyear calculation took ${runtime.inWholeMinutes} minutes to execute." }
