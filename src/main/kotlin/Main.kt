@@ -74,12 +74,12 @@ class Libyears : CliktCommand() {
 
     override fun run(): Unit = runBlocking {
         configureRootLogger(logLevel, logMode)
-
-        outputPath.createDirectories()
-        val defaultLogPath = outputPath.toAbsolutePath().resolve("libyear-log-${Date().time}").pathString
+        val outputPathWrapper = outputPath.resolve("libyearResults-${Date().time}")
+        outputPathWrapper.createDirectories()
+        val defaultLogPath = outputPathWrapper.toAbsolutePath().resolve("libyear").pathString
         MDC.put("outputFile", defaultLogPath)
         logger.info {
-            "Running libyears for projects in $gitConfigFile and output path $outputPath" +
+            "Running libyears for projects in $gitConfigFile and output path $outputPathWrapper" +
                     " and db url ${dbOptions?.dbUrl}"
         }
 
@@ -103,7 +103,7 @@ class Libyears : CliktCommand() {
                 val repoName = gitUrl.split("/").last()
 
 
-                val gitCheckoutPath = outputPath.resolve("$repoName-${Date().time}")
+                val gitCheckoutPath = outputPathWrapper.resolve("$repoName-${Date().time}")
                 MDC.put("outputFile", gitCheckoutPath.toAbsolutePath().resolve(repoName).pathString)
                 println(MDC.getCopyOfContextMap())
 
@@ -140,7 +140,7 @@ class Libyears : CliktCommand() {
                         dbConfig = dbConfig
                     )
                 )
-                MDC.put("outputFile", outputPath.toAbsolutePath().pathString)
+                MDC.put("outputFile", outputPathWrapper.toAbsolutePath().pathString)
             }
         }
 
