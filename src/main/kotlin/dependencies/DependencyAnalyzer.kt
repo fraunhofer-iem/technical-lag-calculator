@@ -2,7 +2,11 @@ package dependencies
 
 import artifact.ArtifactService
 import artifact.model.PackageReferenceDto
+import dependencies.db.AnalyzerResult
 import dependencies.model.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger
 import org.ossreviewtoolkit.analyzer.Analyzer
 import org.ossreviewtoolkit.analyzer.PackageManagerFactory
@@ -15,7 +19,10 @@ import org.ossreviewtoolkit.model.config.RepositoryConfiguration
 import org.ossreviewtoolkit.model.utils.PackageCurationProvider
 import org.ossreviewtoolkit.plugins.packagecurationproviders.api.PackageCurationProviderFactory
 import org.ossreviewtoolkit.plugins.packagecurationproviders.api.SimplePackageCurationProvider
+import util.dbQuery
 import java.io.File
+import java.nio.file.Path
+import java.util.*
 
 data class DependencyAnalyzerConfig(
     val analyzerConfiguration: AnalyzerConfiguration,
@@ -37,21 +44,31 @@ class DependencyAnalyzer(
     private val analyzer: Analyzer = Analyzer(config = config.analyzerConfiguration)
 ) {
 
+    private val results: MutableList<AnalyzerResultDto> = mutableListOf()
+
     suspend fun getAnalyzerResult(projectPath: File): AnalyzerResultDto? {
         return try {
             val rawAnalyzerResult = runAnalyzer(projectPath)
             val transformedGraph = transformDependencyGraph(rawAnalyzerResult.dependencyGraphs)
 
-            AnalyzerResultDto(
+            val result = AnalyzerResultDto(
                 dependencyGraphDto = transformedGraph,
                 repositoryInfo = rawAnalyzerResult.repositoryInfo,
                 environmentInfo = rawAnalyzerResult.environmentInfo
             )
+            results.add(result)
+            result
         } catch (exception: Exception) {
             logger.error { "ORT failed with exception $exception" }
             null
         }
     }
+
+    fun getAllAnalyzerResults(): List<AnalyzerResultDto> {
+        return results
+    }
+
+
 
     private fun runAnalyzer(
         projectPath: File,

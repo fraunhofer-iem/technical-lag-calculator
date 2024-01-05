@@ -2,12 +2,12 @@
 
     <appender name="SIFT" class="ch.qos.logback.classic.sift.SiftingAppender">
         <discriminator>
-            <key>filename</key>
-            <defaultValue>libyear</defaultValue>
+            <key>outputFile</key>
+            <defaultValue>/tmp/libyear</defaultValue>
         </discriminator>
         <sift>
-            <appender name="FILE-${filename}" class="ch.qos.logback.core.FileAppender">
-                <file>${filename}.log</file>
+            <appender name="FILE-${outputFile}" class="ch.qos.logback.core.FileAppender">
+                <file>${outputFile}.log</file>
                 <append>false</append>
                 <encoder>
                     <pattern>%d [%thread] %level %mdc %logger{35} -%kvp -%msg%n</pattern>
