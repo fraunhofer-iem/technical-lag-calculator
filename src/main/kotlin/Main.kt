@@ -12,6 +12,11 @@ import kotlinx.serialization.json.Json
 import libyears.LibyearCalculator
 import libyears.LibyearConfig
 import org.apache.logging.log4j.kotlin.logger
+import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
+import org.jetbrains.kotlinx.kandy.dsl.plot
+import org.jetbrains.kotlinx.kandy.letsplot.export.save
+import org.jetbrains.kotlinx.kandy.letsplot.feature.layout
+import org.jetbrains.kotlinx.kandy.letsplot.layers.bars
 import org.slf4j.MDC
 import util.DbConfig
 import util.StorageConfig
@@ -62,6 +67,7 @@ class Libyears : CliktCommand() {
     private val storeAnalyzerResultsInDb by option().flag(default = false)
     private val storeLibyearResultsInFile by option().flag(default = true)
     private val storeLibyearResultsInDb by option().flag(default = false)
+    private val storeLibyearGraphs by option().flag(default = true)
 
     private val logLevel: Level by option(help = "Set the verbosity level of log output.").switch(
         "--error" to Level.ERROR,
@@ -137,6 +143,7 @@ class Libyears : CliktCommand() {
                         storeLibyearResultsInFile = storeLibyearResultsInFile,
                         storeAnalyzerResultsInDb = storeAnalyzerResultsInDb,
                         storeAnalyzerResultsInFile = storeAnalyzerResultsInFile,
+                        storeLibyearGraphs = storeLibyearGraphs,
                         dbConfig = dbConfig
                     )
                 )

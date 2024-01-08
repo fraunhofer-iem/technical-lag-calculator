@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import libyears.model.AggregatedResults
+import visualization.Visualizer
 import java.nio.file.Path
 import java.util.*
 
@@ -17,6 +18,7 @@ data class StorageConfig(
     val storeAnalyzerResultsInDb: Boolean,
     val storeLibyearResultsInFile: Boolean,
     val storeLibyearResultsInDb: Boolean,
+    val storeLibyearGraphs: Boolean,
 ) {
     val storeAnalyzerResults = storeAnalyzerResultsInFile || storeAnalyzerResultsInDb
 }
@@ -69,6 +71,49 @@ suspend fun storeResults(
                     aggregatedResults
                 )
             outputFileAggregate?.writeText(jsonString)
+        }
+    }
+
+    if (config.storeLibyearGraphs) {
+        val graphResults: MutableMap<String, MutableList<Long>> = mutableMapOf()
+        aggregatedResults.results.forEach {
+            it.packageManagerToScopes.forEach { (packageManager, scopeToLibyears) ->
+                scopeToLibyears.forEach { (scope, libyearResult) ->
+                    val keyTransitive = "$packageManager-$scope-transitive"
+                    val keyDirect = "$packageManager-$scope-direct"
+                    val keyDirectPerDependency = "$packageManager-$scope-direct-per-dependency"
+                    val keyTransitivePerDependency = "$packageManager-$scope-transitive-per-dependency"
+                    val keyDirectDependencies = "$packageManager-$scope-direct-number-dependencies"
+                    val keyTransitiveDependencies = "$packageManager-$scope-transitive-number-dependencies"
+                    fun addToResult(key: String, value: Long) {
+                        if (!graphResults.contains(key)) {
+                            graphResults[key] = mutableListOf(value)
+                        } else {
+                            graphResults[key]?.add(value)
+                        }
+                    }
+                    addToResult(keyDirect, libyearResult.direct.libyears)
+                    addToResult(keyTransitive, libyearResult.transitive.libyears)
+                    addToResult(
+                        keyDirectPerDependency,
+                        libyearResult.direct.libyears / libyearResult.direct.numberOfDependencies
+                    )
+                    addToResult(
+                        keyTransitivePerDependency,
+                        libyearResult.transitive.libyears / libyearResult.transitive.numberOfDependencies
+                    )
+                    addToResult(keyTransitiveDependencies, libyearResult.transitive.numberOfDependencies.toLong())
+                    addToResult(keyDirectDependencies, libyearResult.direct.numberOfDependencies.toLong())
+                }
+            }
+        }
+
+        graphResults.forEach { (name, values) ->
+            Visualizer.createAndStoreLineDiagram(
+                outputFilePath = config.outputPath?.resolve("$name.png")?.toAbsolutePath().toString(),
+                name = name,
+                values = values.toList(),
+            )
         }
 
     }
