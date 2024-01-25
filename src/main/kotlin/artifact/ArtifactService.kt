@@ -37,7 +37,7 @@ class ArtifactService(
 
             val versions = ioScope.async {
                 depsClient.getVersionsForPackage(
-                    type = packageRef.type,
+                    ecosystem = packageRef.type,
                     namespace = packageRef.namespace,
                     name = packageRef.name
                 )

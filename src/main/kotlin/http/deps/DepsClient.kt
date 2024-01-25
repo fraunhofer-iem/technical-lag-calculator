@@ -28,9 +28,9 @@ class DepsClient(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 
-    suspend fun getVersionsForPackage(type: String, namespace: String, name: String): List<VersionDto> {
+    suspend fun getVersionsForPackage(ecosystem: String, namespace: String = "", name: String): List<VersionDto> {
         val requestUrl: String? = getRequestUrl(
-            type = type,
+            ecosystem = ecosystem,
             namespace = namespace,
             name = name
         )
@@ -80,8 +80,8 @@ class DepsClient(
         NPM("/")
     }
 
-    private suspend fun getRequestUrl(type: String, name: String, namespace: String): String? {
-        return when (type.lowercase()) {
+    private suspend fun getRequestUrl(ecosystem: String, name: String, namespace: String): String? {
+        return when (ecosystem.lowercase()) {
             "maven", "gradle" -> {
                 val urlNamespace = concatNamespaceAndName(
                     name = name,

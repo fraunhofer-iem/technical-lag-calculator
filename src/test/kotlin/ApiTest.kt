@@ -41,7 +41,7 @@ class ApiTest {
                     httpClient = httpClient
                 )
                 val versions = apiClient.getVersionsForPackage(
-                    type = "npm",
+                    ecosystem = "npm",
                     namespace = "",
                     name = "vite"
                 )
@@ -88,12 +88,12 @@ class ApiTest {
             )
 
             apiClient.getVersionsForPackage(
-                type = "npm",
+                ecosystem = "npm",
                 namespace = "@test",
                 name = "@vite"
             )
             apiClient.getVersionsForPackage(
-                type = "maven",
+                ecosystem = "maven",
                 namespace = "@test",
                 name = "@vite"
             )

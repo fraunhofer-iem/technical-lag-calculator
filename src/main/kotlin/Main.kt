@@ -30,7 +30,7 @@ import kotlin.time.measureTime
 
 //TODO: update result file and folder names for easier usability (use last part of url + time)
 //TODO: ignore dependencies in "test" folders
-
+//TODO: libyear over time is currently flawed, as we currently available versions into account (which would be future for older analyzes)
 class DbOptions : OptionGroup() {
     val dbUrl by option(
         envvar = "DB_URL", help = "Optional path to store a file based database which contains" +
