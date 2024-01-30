@@ -3,10 +3,20 @@ package visualization
 import org.jetbrains.kotlinx.kandy.dsl.plot
 import org.jetbrains.kotlinx.kandy.letsplot.export.save
 import org.jetbrains.kotlinx.kandy.letsplot.feature.layout
+import org.jetbrains.kotlinx.kandy.letsplot.layers.bars
 import org.jetbrains.kotlinx.kandy.letsplot.layers.line
 
 object Visualizer {
 
+    fun createAndStoreHistogram(histogram: Map<Long, Int>, outputFilePath: String) {
+        plot {
+            bars {
+                x(histogram.keys)
+                y(histogram.values)
+            }
+            layout.title = "Vulnerability Published Date over Time"
+        }.save(outputFilePath)
+    }
 
     fun createAndStoreLineDiagram(
         outputFilePath: String,

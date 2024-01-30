@@ -1,4 +1,4 @@
-package vulnerabilities.dto
+package vulnerabilities.dto.osv
 
 
 import kotlinx.serialization.SerialName
@@ -7,9 +7,9 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Affected(
     @SerialName("database_specific")
-    val databaseSpecific: DatabaseSpecific?,
+    val databaseSpecific: DatabaseSpecific? = null,
     @SerialName("package")
-    val packageX: Package?,
+    val packageX: PackageX,
     @SerialName("ranges")
-    val ranges: List<Range?>?
+    val ranges: MutableList<Range> = mutableListOf()
 )

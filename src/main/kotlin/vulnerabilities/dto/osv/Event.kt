@@ -1,4 +1,4 @@
-package vulnerabilities.dto
+package vulnerabilities.dto.osv
 
 
 import kotlinx.serialization.SerialName
@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Event(
     @SerialName("fixed")
-    val fixed: String?,
+    val fixed: String? = null,
     @SerialName("introduced")
-    val introduced: String?
+    val introduced: String = "-1",
 )

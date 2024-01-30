@@ -1,5 +1,6 @@
 import ch.qos.logback.classic.Level
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.groups.OptionGroup
 import com.github.ajalt.clikt.parameters.groups.cooccurring
 import com.github.ajalt.clikt.parameters.options.*
@@ -12,16 +13,14 @@ import kotlinx.serialization.json.Json
 import libyears.LibyearCalculator
 import libyears.LibyearConfig
 import org.apache.logging.log4j.kotlin.logger
-import org.jetbrains.kotlinx.dataframe.api.dataFrameOf
-import org.jetbrains.kotlinx.kandy.dsl.plot
-import org.jetbrains.kotlinx.kandy.letsplot.export.save
-import org.jetbrains.kotlinx.kandy.letsplot.feature.layout
-import org.jetbrains.kotlinx.kandy.letsplot.layers.bars
 import org.slf4j.MDC
 import util.DbConfig
 import util.StorageConfig
 import util.configureRootLogger
 import util.storeResults
+import visualization.Visualizer
+import vulnerabilities.VulnerabilityAnalyzer
+import vulnerabilities.VulnerabilityVersionDownloader
 import java.nio.file.Path
 import java.util.*
 import kotlin.io.path.createDirectories
@@ -156,10 +155,49 @@ class Libyears : CliktCommand() {
     }
 }
 
+class GetVersions : CliktCommand() {
+    private val inputPath by option(
+        envvar = "INPUT_PATH", help = "Path to the folder in which the vulnerability information are stored."
+    )
+        .path(mustExist = false, canBeFile = false)
+        .required()
+
+    override fun run() = runBlocking {
+        val vulnerabilityVersionDownloader = VulnerabilityVersionDownloader()
+        vulnerabilityVersionDownloader.storeVersionsForVulnerablePackages(inputPath)
+    }
+}
+
+class AnalyzeVersions : CliktCommand() {
+    private val inputPath by option(
+        envvar = "INPUT_PATH",
+        help = "Path to the folder in which the combined version and vulnerability information are stored."
+    )
+        .path(mustExist = false, canBeFile = false)
+        .required()
+
+    override fun run() = runBlocking {
+        val vulnerabilityAnalyzer =
+            VulnerabilityAnalyzer(inputPath)
+//        vulnerabilityAnalyzer.analyze()
+        val histogram = vulnerabilityAnalyzer.histogram()
+        Visualizer.createAndStoreHistogram(
+            histogram,
+            inputPath.resolve("histogram-noOutlierGreater900.png").toString()
+        )
+    }
+}
+
+class Tool : CliktCommand() {
+    override fun run() {
+        echo("Starting tool")
+    }
+}
+
 
 fun main(args: Array<String>) {
-    val libyearCommand = Libyears()
-    libyearCommand.main(args)
+    val tool = Tool()
+    tool.subcommands(Libyears(), GetVersions(), AnalyzeVersions()).main(args)
 }
 
 fun getConfigFromPath(path: Path): GitConfig {
