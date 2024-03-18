@@ -1,8 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.9.22"
-    kotlin("plugin.serialization") version "1.9.22"
+    kotlin("jvm") version "1.9.23"
+    kotlin("plugin.serialization") version "1.9.23"
     application
 }
 
@@ -41,14 +41,14 @@ kotlin {
 
 
 val exposedVersion = "0.47.0"
-val ortVersion = "15.3.0"
-val ktorVersion = "2.3.7"
-val kotlinCoroutines = "1.7.3"
-val logback = "1.4.14"
-val log4j = "2.22.1"
+val ortVersion = "18.0.0"
+val ktorVersion = "2.3.9"
+val kotlinCoroutines = "1.8.0"
+val logback = "1.5.3"
+val log4j = "2.23.1"
 
 dependencies {
-    implementation("com.google.guava:guava:33.0.0-jre")
+    implementation("com.google.guava:guava:33.1.0-jre")
     implementation("com.github.ajalt.clikt:clikt:4.2.2")
     implementation("org.apache.logging.log4j:log4j-api:$log4j")
     implementation("org.apache.logging.log4j:log4j-api-kotlin:1.4.0")
@@ -72,7 +72,7 @@ dependencies {
     implementation("org.ossreviewtoolkit.plugins.packagecurationproviders:clearly-defined-package-curation-provider:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.packagemanagers:python-package-manager:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.versioncontrolsystems:git-version-control-system:$ortVersion")
-    implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:6.9.0.202403050737-r")
     implementation("org.jetbrains.kotlinx:kandy-lets-plot:0.5.0")
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-crypt:$exposedVersion")
@@ -82,7 +82,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-json:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-money:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-spring-boot-starter:$exposedVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutines")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:$kotlinCoroutines")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutines")
@@ -90,19 +90,19 @@ dependencies {
     implementation("io.ktor:ktor-client-cio-jvm:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-    runtimeOnly("org.postgresql:postgresql:42.7.1")
-    runtimeOnly("org.xerial:sqlite-jdbc:3.44.1.0")
+    runtimeOnly("org.postgresql:postgresql:42.7.3")
+    runtimeOnly("org.xerial:sqlite-jdbc:3.45.2.0")
     runtimeOnly("org.ossreviewtoolkit.plugins.packagecurationproviders:file-package-curation-provider:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.utils:common-utils:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.utils:ort-utils:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.plugins.packagemanagers:gradle-model:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.plugins.packageconfigurationproviders:dir-package-configuration-provider:$ortVersion")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.22")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.23")
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinCoroutines")
-    testImplementation("io.mockk:mockk:1.13.9")
-    testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.16.1")
-    testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.1")
+    testImplementation("io.mockk:mockk:1.13.10")
+    testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.0")
+    testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.0")
 }
 
 tasks.test {
