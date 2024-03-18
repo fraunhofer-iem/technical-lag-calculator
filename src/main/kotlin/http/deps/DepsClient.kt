@@ -2,6 +2,7 @@ package http.deps
 
 import artifact.model.VersionDto
 import http.deps.model.DepsResponseDto
+import http.deps.model.DepsTreeResponseDto
 import http.deps.model.Version
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -29,7 +30,7 @@ class DepsClient(
 ) {
 
     suspend fun getVersionsForPackage(ecosystem: String, namespace: String = "", name: String): List<VersionDto> {
-        val requestUrl: String? = getRequestUrl(
+        val requestUrl: String? = getVersionsRequestUrl(
             ecosystem = ecosystem,
             namespace = namespace,
             name = name
@@ -58,6 +59,38 @@ class DepsClient(
         }
     }
 
+    suspend fun getDepsForPackage(
+        ecosystem: String,
+        namespace: String = "",
+        name: String,
+        version: String
+    ): DepsTreeResponseDto? {
+        val requestUrl: String? = getDependenciesRequestUrl(
+            ecosystem = ecosystem,
+            namespace = namespace,
+            name = name,
+            version = version
+        )
+
+        return if (requestUrl != null) {
+
+            try {
+                val response = httpClient.request(requestUrl)
+                response.body<DepsTreeResponseDto>()
+
+            } catch (exception: Exception) {
+                logger.error { "Exception during http call to $requestUrl. $exception" }
+
+                null
+            }
+
+
+        } else {
+            logger.error { "Currently unsupported package manager" }
+            null
+        }
+    }
+
     private fun versionResponseToDto(version: Version): VersionDto? {
         return if (version.publishedAt != null) {
             try {
@@ -80,24 +113,43 @@ class DepsClient(
         NPM("/")
     }
 
-    private suspend fun getRequestUrl(ecosystem: String, name: String, namespace: String): String? {
+    private suspend fun getVersionsRequestUrl(ecosystem: String, name: String, namespace: String): String? {
+        getNameForEcosystem(name, namespace, ecosystem)?.let { urlNamespace ->
+            return "https://api.deps.dev/v3alpha/systems/$ecosystem/packages/$urlNamespace"
+        }
+        return null
+    }
+
+
+    private suspend fun getDependenciesRequestUrl(
+        ecosystem: String,
+        name: String,
+        namespace: String,
+        version: String
+    ): String? {
+        getNameForEcosystem(name, namespace, ecosystem)?.let { urlNamespace ->
+            return "https://api.deps.dev/v3alpha/systems/$ecosystem/packages/$urlNamespace/versions/$version:dependencies"
+        }
+
+        return null
+    }
+
+    private suspend fun getNameForEcosystem(name: String, namespace: String, ecosystem: String): String? {
         return when (ecosystem.lowercase()) {
             "maven", "gradle" -> {
-                val urlNamespace = concatNamespaceAndName(
+                concatNamespaceAndName(
                     name = name,
                     namespace = namespace,
                     UrlConcatenationSymbol.MAVEN_AND_GRADLE.concatSymbol
                 )
-                "https://api.deps.dev/v3alpha/systems/maven/packages/$urlNamespace"
             }
 
             "npm" -> {
-                val urlNamespace = concatNamespaceAndName(
+                concatNamespaceAndName(
                     name = name,
                     namespace = namespace,
                     UrlConcatenationSymbol.NPM.concatSymbol
                 )
-                "https://api.deps.dev/v3alpha/systems/npm/packages/$urlNamespace"
             }
 
             else -> null

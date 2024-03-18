@@ -6,13 +6,16 @@ import libyears.LibyearCalculator
 import org.apache.logging.log4j.kotlin.logger
 
 data class CreateArtifactDto(
-    var artifactId: String? = null,
+    var nameId: String? = null,
     var groupId: String? = null,
     var usedVersion: String? = null,
     var versionDeferred: Deferred<List<VersionDto>>? = null,
     var isTopLevelDependency: Boolean? = null,
-    val transitiveDependencies: List<Deferred<CreateArtifactDto?>>
+    val transitiveDependencyDeferreds: List<Deferred<CreateArtifactDto?>> = emptyList(),
+    val transitiveDependencies: List<CreateArtifactDto> = emptyList()
 ) {
+
+
     suspend fun toArtifactDto(): ArtifactDto {
         if (artifactIsComplete()) {
 
@@ -26,13 +29,15 @@ data class CreateArtifactDto(
             val usedVersionDto = versions.find { it.versionNumber == usedVersion }
                 ?: VersionDto(versionNumber = usedVersion!!)
 
+            val deferredDeps = transitiveDependencyDeferreds.awaitAll().mapNotNull { it?.toArtifactDto() }
+
             return ArtifactDto(
-                artifactId = artifactId!!,
+                artifactId = nameId!!,
                 groupId = groupId!!,
                 usedVersion = usedVersionDto,
                 isTopLevelDependency = isTopLevelDependency!!,
                 versions = versions,
-                transitiveDependencies = transitiveDependencies.awaitAll().mapNotNull { it?.toArtifactDto() },
+                transitiveDependencies = transitiveDependencies.map { it.toArtifactDto() } + deferredDeps,
                 libyearResult = LibyearCalculator.calculateDifferenceForPackage(usedVersionDto, versions),
             )
         }
@@ -41,7 +46,7 @@ data class CreateArtifactDto(
     }
 
     private fun artifactIsComplete(): Boolean {
-        return artifactId != null &&
+        return nameId != null &&
                 groupId != null &&
                 usedVersion != null &&
                 isTopLevelDependency != null

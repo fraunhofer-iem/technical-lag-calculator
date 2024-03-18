@@ -1,54 +1,222 @@
 package libyears
 
 
+import artifact.ArtifactService
 import artifact.model.ArtifactDto
 import artifact.model.VersionDto
+import artifact.model.VersionTypes
 import dependencies.DependencyAnalyzer
 import dependencies.model.AnalyzerResultDto
-import dependencies.model.DependencyGraphDto
 import io.github.z4kn4fein.semver.Version
 import io.github.z4kn4fein.semver.toVersion
-import libyears.model.*
-import org.apache.logging.log4j.kotlin.logger
+import kotlinx.serialization.Serializable
+import libyears.model.LibyearResultDto
+import libyears.model.LibyearStatus
 import util.TimeHelper.getDifferenceInDays
 import java.io.File
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 
 data class LibyearConfig(
     val projectPath: File,
 )
 
+@Serializable
+data class LibyearStatsSimulation(
+    val current: LibyearStats,
+    val minor: LibyearStats?,
+    val patch: LibyearStats?,
+    val major: LibyearStats?
+)
+
+@Serializable
+data class LibyearStats(
+    val libyear: Long,
+    val transitiveLibyears: Long = 0L,
+    val numberOfTransitiveDependencies: Int = 0,
+    val avgLibyears: Double = libyear.toDouble(),
+    val stdDev: Double = 0.0,
+    val variance: Double = 0.0,
+    val libyearSum: Long = 0L
+)
+
 class LibyearCalculator {
 
-
-    private val results: MutableList<LibyearSumsForPackageManagerAndScopes> = mutableListOf()
     private val dependencyAnalyzer = DependencyAnalyzer()
+    private val artifactService = ArtifactService()
     suspend fun run(
         config: LibyearConfig
     ) {
         dependencyAnalyzer.getAnalyzerResult(config.projectPath)?.let { dependencyAnalyzerResult ->
+            dependencyAnalyzerResult.dependencyGraphDto.packageManagerToScopes.forEach { (pkgManager, scope) ->
+                scope.scopesToDependencies.forEach { (scopeName, directDependencies) ->
 
-            val libyearAggregates =
-                printDependencyGraph(dependencyAnalyzerResult.dependencyGraphDto)
+                    val libyearsFlatted = directDependencies.flatMap { flattenTree(it) }
+                    val flatFiltered = libyearsFlatted.filter { it != 0L }
 
-            results.add(libyearAggregates)
+
+
+
+
+                    val aggregated = if (flatFiltered.isEmpty()) {
+                        LibyearStats(
+                        libyear = 0,
+                        transitiveLibyears = flatFiltered.sum(),
+                        numberOfTransitiveDependencies = libyearsFlatted.count()
+                    )
+                    } else {
+                        val mean = flatFiltered.average()
+                        val variance = flatFiltered.map { (it - mean).pow(2) }.average()
+                        val stdDev = sqrt(variance)
+                        println("Overall scores for scope $scopeName: Avg: $mean, stdDev: $stdDev, no elements: ${flatFiltered.count()}")
+                        LibyearStats(
+                            libyear = 0,
+                            avgLibyears = mean,
+                            variance = variance,
+                            stdDev = stdDev,
+                            transitiveLibyears = flatFiltered.sum(),
+                            numberOfTransitiveDependencies = libyearsFlatted.count()
+                        )
+                    }
+
+                    println(aggregated)
+
+                    val simulatedUpdates = directDependencies.map { dep ->
+                        val highestPossibleMinor =
+                            getApplicableVersion(dep.usedVersion, dep.versions, VersionTypes.Minor)
+                        val highestPossibleMajor =
+                            getApplicableVersion(dep.usedVersion, dep.versions, VersionTypes.Major)
+                        val highestPossiblePatch =
+                            getApplicableVersion(dep.usedVersion, dep.versions, VersionTypes.Patch)
+                        println("Update possibilities $highestPossiblePatch, $highestPossibleMajor, $highestPossibleMinor")
+
+                        val current = getSubtreeLibyearStats(dep)
+
+                        val updatedSubTreeMinor = artifactService.getDependencyTreeForPkg(
+                            pkgManager,
+                            dep.groupId,
+                            dep.artifactId,
+                            highestPossibleMinor.toString()
+                        )
+
+                        val minor = updatedSubTreeMinor?.let {
+                            getSubtreeLibyearStats(it)
+                        }
+
+                        val updatedSubTreePatch = artifactService.getDependencyTreeForPkg(
+                            pkgManager,
+                            dep.groupId,
+                            dep.artifactId,
+                            highestPossiblePatch.toString()
+                        )
+                        val patch = updatedSubTreePatch?.let {
+                            getSubtreeLibyearStats(it)
+                        }
+
+                        val updatedSubTreeMajor = artifactService.getDependencyTreeForPkg(
+                            pkgManager,
+                            dep.groupId,
+                            dep.artifactId,
+                            highestPossibleMajor.toString()
+                        )
+
+                        val major = updatedSubTreeMajor?.let {
+                            getSubtreeLibyearStats(it)
+                        }
+
+                        Pair(
+                            dep,
+                            LibyearStatsSimulation(
+                                current = current,
+                                minor = minor,
+                                major = major,
+                                patch = patch,
+                            )
+                        )
+                    }
+
+                    // updating which direct dependency provides the greatest improvement?
+                    val highestImprovement = simulatedUpdates.maxBy { simulation ->
+
+                        listOf(simulation.second.patch, simulation.second.minor, simulation.second.major).mapNotNull { it }.maxOf {
+                            simulation.second.current.libyearSum - it.libyearSum
+                        }
+                    }
+                    println("Highest improvement $highestImprovement")
+                }
+            }
+
         }
     }
 
 
-    fun getAllLibyearResults(): AggregatedResults {
-        val transitiveDeps =
-            results.flatMap { it.packageManagerToScopes.flatMap { it.value.map { it.value.transitive } } }
-        val directDeps =
-            results.flatMap { it.packageManagerToScopes.flatMap { it.value.map { it.value.direct } } }
-        return AggregatedResults(
-            results,
-            // TODO: these values seem to be somehow off. Need to investigate this
-            cvsDirectLibyears = directDeps.map { it.libyears },
-            csvTransitiveLibyears = transitiveDeps.map { it.libyears },
-            csvDirectNumberOfDeps = directDeps.map { it.numberOfDependencies },
-            csvTransitiveNumberOfDeps = transitiveDeps.map { it.numberOfDependencies }
+    private fun getSubtreeLibyearStats(artifact: ArtifactDto): LibyearStats {
+        val libyear = artifact.libyearResult.libyear ?: 0
+        // This is important ! We decided to filter out every current library with no libyear attached
+        // to get a better idea of the std. dev. of the libraries which have libyears
+        val flattenTree = flattenTree(artifact = artifact)
+        val flatFiltered = flattenTree.filter { it != 0L }
+        if (flatFiltered.isEmpty()) {
+            return LibyearStats(
+                libyear = libyear,
+                numberOfTransitiveDependencies = flattenTree.count(),
+            )
+        }
+        val mean = flatFiltered.average()
+        val variance = flatFiltered.map { (it - mean).pow(2) }.average()
+        val stdDev = sqrt(variance)
+
+        println("Libyears for Subtree with version: ${artifact.usedVersion.versionNumber}")
+        println("Values $flatFiltered")
+        println("Avg: $mean, variance: $variance, stdDev: $stdDev, no elements: ${flatFiltered.count()}")
+
+        val transitiveLibyears = flatFiltered.sum()
+        return LibyearStats(
+            libyear = libyear,
+            avgLibyears = mean,
+            variance = variance,
+            stdDev = stdDev,
+            transitiveLibyears = transitiveLibyears,
+            numberOfTransitiveDependencies = flattenTree.count(),
+            libyearSum = libyear + transitiveLibyears
         )
+    }
+
+    private fun flattenTree(
+        artifact: ArtifactDto,
+        libyears: MutableList<Long> = mutableListOf()
+    ): MutableList<Long> {
+        artifact.libyearResult.libyear?.let { libyears.add(it) }
+        artifact.transitiveDependencies.forEach { flattenTree(it, libyears) }
+        return libyears
+    }
+
+    /**
+     * Returns the highest matching version from the given versions array with the same version type as the
+     * given version's type.
+     */
+    private fun getApplicableVersion(version: VersionDto, versions: List<VersionDto>, type: VersionTypes): String? {
+        val semvers = versions.map { it.versionNumber.toVersion(strict = false) }
+        val semver = version.versionNumber.toVersion(strict = false)
+
+        val highestVersion = when (type) {
+            VersionTypes.Minor -> {
+                semvers.filter { it.isStable && it.major == semver.major }
+                    .maxWithOrNull(compareBy({ it.minor }, { it.patch }))
+            }
+
+            VersionTypes.Major -> {
+                semvers.filter { it.isStable }
+                    .maxWithOrNull(compareBy({ it.major }, { it.minor }, { it.patch }))
+            }
+
+            VersionTypes.Patch -> {
+                semvers.filter { it.isStable && it.major == semver.major && it.minor == semver.minor }
+                    .maxBy { it.patch }
+            }
+        }
+        return highestVersion?.toString()
     }
 
     fun getAllAnalyzerResults(): List<AnalyzerResultDto> {
@@ -56,63 +224,6 @@ class LibyearCalculator {
     }
 
     companion object {
-        fun printDependencyGraph(dependencyGraphDto: DependencyGraphDto): LibyearSumsForPackageManagerAndScopes {
-            val packageManagerToScopes: MutableMap<String, MutableMap<String, LibyearsAndDependencyCount>> =
-                mutableMapOf()
-
-            dependencyGraphDto.packageManagerToScopes.forEach { (packageManager, scopes) ->
-                logger.info { "\n\nLibyears for $packageManager" }
-                packageManagerToScopes[packageManager] = mutableMapOf()
-                scopes.scopesToDependencies.forEach { (scope, artifacts) ->
-                    logger.info { "Libyears in scope $scope" }
-
-                    val directDependencies = artifacts.filter {
-                        it.libyearResult.libyear != null && it.isTopLevelDependency
-                    }
-
-                    val directResult = LibyearSumsResult(
-                        libyears = directDependencies.sumOf { it.libyearResult.libyear!! },
-                        numberOfDependencies = directDependencies.count()
-                    )
-
-                    logger.info {
-                        "Direct dependency libyears: ${directResult.libyears} days " +
-                                "and ${directResult.numberOfDependencies} dependencies."
-                    }
-
-                    val transitiveDependencyResult = artifacts.map {
-                        calculateTransitiveLibyearsAndCount(it)
-                    }
-
-                    val transitiveDependencySum = transitiveDependencyResult.sumOf { it.libyears }
-                    val transitiveDependencyCount = transitiveDependencyResult.sumOf { it.numberOfDependencies }
-                    val transitiveResult = LibyearSumsResult(
-                        libyears = transitiveDependencySum,
-                        numberOfDependencies = transitiveDependencyCount
-                    )
-                    logger.info {
-                        "Direct dependency libyears: $transitiveDependencySum days " +
-                                "and $transitiveDependencyCount dependencies."
-                    }
-
-                    packageManagerToScopes[packageManager]?.set(
-                        scope,
-                        LibyearsAndDependencyCount(direct = directResult, transitive = transitiveResult)
-                    )
-                }
-            }
-
-            logger.info { "Warnings for dependencies older than 180 days:" }
-            dependencyGraphDto.packageManagerToScopes.values.forEach {
-                it.scopesToDependencies.values.forEach {
-                    it.forEach { artifact ->
-                        printLibyearWarning(artifact)
-                    }
-                }
-            }
-
-            return LibyearSumsForPackageManagerAndScopes(packageManagerToScopes.mapValues { it.value.toMap() })
-        }
 
         /**
          * Returns the newest applicable, stable version compared to the given current version.
@@ -189,7 +300,7 @@ class LibyearCalculator {
                 )
 
                 return if (differenceInDays <= 0) {
-                    LibyearResultDto(libyear = differenceInDays, status = newestVersion.first)
+                    LibyearResultDto(libyear = -1 * differenceInDays, status = newestVersion.first)
                 } else {
                     LibyearResultDto(libyear = 0, status = LibyearStatus.NEWER_THAN_DEFAULT)
                 }
@@ -198,35 +309,6 @@ class LibyearCalculator {
             return LibyearResultDto(status = LibyearStatus.NO_RESULT)
         }
 
-        private fun printLibyearWarning(artifact: ArtifactDto) {
-            if (artifact.libyearResult.libyear != null && artifact.libyearResult.libyear < -180) {
-                logger.warn {
-                    "Dependency ${artifact.groupId}/${artifact.artifactId}" +
-                            "is ${artifact.libyearResult} days old."
-                }
-                val newestVersion = getNewestVersion(artifact.versions)
-                logger.warn {
-                    "The used version is ${artifact.usedVersion} and " +
-                            "the newest version ${newestVersion.second.versionNumber}"
-                }
-            }
-            artifact.transitiveDependencies.forEach { printLibyearWarning(it) }
-        }
 
-        private fun calculateTransitiveLibyearsAndCount(artifact: ArtifactDto): LibyearSumsResult {
-            var sumLibyears = artifact.libyearResult.libyear ?: 0
-            var transitiveDependencyCount = 0
-
-            for (dependency in artifact.transitiveDependencies) {
-                val result = calculateTransitiveLibyearsAndCount(dependency)
-                sumLibyears += result.libyears
-                transitiveDependencyCount += 1 + result.numberOfDependencies
-            }
-
-            return LibyearSumsResult(
-                libyears = sumLibyears,
-                numberOfDependencies = transitiveDependencyCount
-            )
-        }
     }
 }

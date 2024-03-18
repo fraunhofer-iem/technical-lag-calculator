@@ -5,6 +5,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import util.TimeHelper.msToDateString
 
+enum class VersionTypes {
+    Minor, Major, Patch
+}
+
 @Serializable
 data class VersionDto(
     val versionNumber: String,

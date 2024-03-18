@@ -10,9 +10,9 @@ data class PackageX(
     @SerialName("ecosystem")
     val ecosystem: String? = null,
     @SerialName("name")
-    val name: String? = null,
+    val name: String,
     @SerialName("purl")
     val purl: String? = null,
     @SerialName("versions")
-    var versions: MutableList<VersionDto>? = mutableListOf()
+    var versions: MutableList<VersionDto> = mutableListOf()
 )

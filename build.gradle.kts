@@ -40,8 +40,8 @@ kotlin {
 }
 
 
-val exposedVersion = "0.46.0"
-val ortVersion = "14.0.0"
+val exposedVersion = "0.47.0"
+val ortVersion = "15.3.0"
 val ktorVersion = "2.3.7"
 val kotlinCoroutines = "1.7.3"
 val logback = "1.4.14"
@@ -91,6 +91,7 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     runtimeOnly("org.postgresql:postgresql:42.7.1")
+    runtimeOnly("org.xerial:sqlite-jdbc:3.44.1.0")
     runtimeOnly("org.ossreviewtoolkit.plugins.packagecurationproviders:file-package-curation-provider:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.utils:common-utils:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.utils:ort-utils:$ortVersion")

@@ -14,11 +14,7 @@ import libyears.LibyearCalculator
 import libyears.LibyearConfig
 import org.apache.logging.log4j.kotlin.logger
 import org.slf4j.MDC
-import util.DbConfig
-import util.StorageConfig
-import util.configureRootLogger
-import util.storeResults
-import visualization.Visualizer
+import util.*
 import vulnerabilities.VulnerabilityAnalyzer
 import vulnerabilities.VulnerabilityVersionDownloader
 import java.nio.file.Path
@@ -27,9 +23,6 @@ import kotlin.io.path.createDirectories
 import kotlin.io.path.pathString
 import kotlin.time.measureTime
 
-//TODO: update result file and folder names for easier usability (use last part of url + time)
-//TODO: ignore dependencies in "test" folders
-//TODO: libyear over time is currently flawed, as we currently available versions into account (which would be future for older analyzes)
 class DbOptions : OptionGroup() {
     val dbUrl by option(
         envvar = "DB_URL", help = "Optional path to store a file based database which contains" +
@@ -38,8 +31,8 @@ class DbOptions : OptionGroup() {
                 "If the path doesn't exist it will be created."
     ).required()
 
-    val userName by option(envvar = "DB_USER", help = "Username of database user").required()
-    val password by option(envvar = "DB_PW", help = "Password for given database user").required()
+    val userName by option(envvar = "DB_USER", help = "Username of database user")
+    val password by option(envvar = "DB_PW", help = "Password for given database user")
 }
 
 @Serializable
@@ -77,7 +70,10 @@ class Libyears : CliktCommand() {
 
     private val logMode by option().choice("console", "file", "consoleAndFile").default("console")
 
+
     override fun run(): Unit = runBlocking {
+
+        // Setup logging and corresponding output paths
         configureRootLogger(logLevel, logMode)
         val outputPathWrapper = outputPath.resolve("libyearResults-${Date().time}")
         outputPathWrapper.createDirectories()
@@ -88,15 +84,14 @@ class Libyears : CliktCommand() {
                     " and db url ${dbOptions?.dbUrl}"
         }
 
+        // Load configs
         val dbConfig = dbOptions?.let {
             DbConfig(
                 url = it.dbUrl,
-                userName = it.userName,
-                password = it.password
+                userName = it.userName ?: "",
+                password = it.password ?: ""
             )
         }
-
-
         val gits = getConfigFromPath(gitConfigFile)
 
 
@@ -108,11 +103,12 @@ class Libyears : CliktCommand() {
                 val repoName = gitUrl.split("/").last()
 
 
+                // Setup logging to store the log file in the cloned git repository
                 val gitCheckoutPath = outputPathWrapper.resolve("$repoName-${Date().time}")
                 MDC.put("outputFile", gitCheckoutPath.toAbsolutePath().resolve(repoName).pathString)
                 println(MDC.getCopyOfContextMap())
-
                 gitCheckoutPath.createDirectories()
+
                 val gitHelper = GitHelper(gitUrl, outDir = gitCheckoutPath.toFile())
                 val libyearCalculator = LibyearCalculator()
 
@@ -133,19 +129,19 @@ class Libyears : CliktCommand() {
                 MDC.put("outputFile", defaultLogPath)
 
 
-                storeResults(
-                    results = libyearCalculator.getAllAnalyzerResults(),
-                    aggregatedResults = libyearCalculator.getAllLibyearResults(),
-                    config = StorageConfig(
-                        outputPath = gitCheckoutPath,
-                        storeLibyearResultsInDb = storeLibyearResultsInDb,
-                        storeLibyearResultsInFile = storeLibyearResultsInFile,
-                        storeAnalyzerResultsInDb = storeAnalyzerResultsInDb,
-                        storeAnalyzerResultsInFile = storeAnalyzerResultsInFile,
-                        storeLibyearGraphs = storeLibyearGraphs,
-                        dbConfig = dbConfig
-                    )
-                )
+//                storeResults(
+//                    results = libyearCalculator.getAllAnalyzerResults(),
+//                    aggregatedResults = libyearCalculator.getAllLibyearResults(),
+//                    config = StorageConfig(
+//                        outputPath = gitCheckoutPath,
+//                        storeLibyearResultsInDb = storeLibyearResultsInDb,
+//                        storeLibyearResultsInFile = storeLibyearResultsInFile,
+//                        storeAnalyzerResultsInDb = storeAnalyzerResultsInDb,
+//                        storeAnalyzerResultsInFile = storeAnalyzerResultsInFile,
+//                        storeLibyearGraphs = storeLibyearGraphs,
+//                        dbConfig = dbConfig
+//                    )
+//                )
                 MDC.put("outputFile", outputPathWrapper.toAbsolutePath().pathString)
             }
         }
@@ -169,6 +165,9 @@ class GetVersions : CliktCommand() {
 }
 
 class AnalyzeVersions : CliktCommand() {
+
+    private val dbOptions by DbOptions().cooccurring()
+
     private val inputPath by option(
         envvar = "INPUT_PATH",
         help = "Path to the folder in which the combined version and vulnerability information are stored."
@@ -177,20 +176,36 @@ class AnalyzeVersions : CliktCommand() {
         .required()
 
     override fun run() = runBlocking {
-        val vulnerabilityAnalyzer =
-            VulnerabilityAnalyzer(inputPath)
-//        vulnerabilityAnalyzer.analyze()
-        val histogram = vulnerabilityAnalyzer.histogram()
-        Visualizer.createAndStoreHistogram(
-            histogram,
-            inputPath.resolve("histogram-noOutlierGreater900.png").toString()
-        )
+
+        val dbConfig = dbOptions?.let {
+            DbConfig(
+                url = it.dbUrl,
+                userName = it.userName,
+                password = it.password
+            )
+        }
+        if (dbConfig != null) {
+            initSqlLiteDb(dbConfig)
+            val vulnerabilityAnalyzer =
+                VulnerabilityAnalyzer(inputPath)
+            vulnerabilityAnalyzer.dbExport()
+        }
+//        val vulnerabilityAnalyzer =
+//            VulnerabilityAnalyzer(inputPath)
+////        vulnerabilityAnalyzer.analyze()
+//        val histogram = vulnerabilityAnalyzer.histogram()
+//        Visualizer.createAndStoreHistogram(
+//            histogram,
+//            inputPath.resolve("histogram-noOutlierGreater900.png").toString()
+//        )
     }
 }
 
 class Tool : CliktCommand() {
+
     override fun run() {
-        echo("Starting tool")
+        echo("Starting tool and setting up logging")
+
     }
 }
 

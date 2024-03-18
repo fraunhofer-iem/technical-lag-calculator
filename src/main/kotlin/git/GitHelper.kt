@@ -10,13 +10,25 @@ import util.TimeHelper.isWithinOneYear
 import java.io.File
 import java.util.*
 
-class GitHelper(repoUrl: String, outDir: File) : Iterable<String> {
+class GitHelper(private val git: Git) : Iterable<String> {
 
-    private val git = Git.cloneRepository()
-        .setCloneSubmodules(true)
-        .setURI(repoUrl)
-        .setDirectory(outDir)
-        .call()
+    constructor(repoUrl: String, outDir: File) : this(cloneGit(repoUrl, outDir))
+    constructor(repoDir: File) : this(openLocalGit(repoDir))
+
+    companion object {
+        private fun cloneGit(repoUrl: String, outDir: File): Git {
+            return Git.cloneRepository()
+                .setCloneSubmodules(true)
+                .setURI(repoUrl)
+                .setDirectory(outDir)
+                .call()
+        }
+
+        private fun openLocalGit(file: File): Git {
+            return Git.open(file)
+        }
+    }
+
 
     private val commitFilter = DateFilter(Date().toInstant().toEpochMilli())
 

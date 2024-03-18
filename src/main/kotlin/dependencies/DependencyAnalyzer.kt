@@ -2,11 +2,7 @@ package dependencies
 
 import artifact.ArtifactService
 import artifact.model.PackageReferenceDto
-import dependencies.db.AnalyzerResult
 import dependencies.model.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger
 import org.ossreviewtoolkit.analyzer.Analyzer
 import org.ossreviewtoolkit.analyzer.PackageManagerFactory
@@ -19,10 +15,8 @@ import org.ossreviewtoolkit.model.config.RepositoryConfiguration
 import org.ossreviewtoolkit.model.utils.PackageCurationProvider
 import org.ossreviewtoolkit.plugins.packagecurationproviders.api.PackageCurationProviderFactory
 import org.ossreviewtoolkit.plugins.packagecurationproviders.api.SimplePackageCurationProvider
-import util.dbQuery
 import java.io.File
-import java.nio.file.Path
-import java.util.*
+
 
 data class DependencyAnalyzerConfig(
     val analyzerConfiguration: AnalyzerConfiguration,
@@ -106,6 +100,7 @@ class DependencyAnalyzer(
 
     private suspend fun transformDependencyGraph(dependencyGraphs: Map<String, DependencyGraph>): DependencyGraphDto {
         val transformedGraph = dependencyGraphs.map { (packageManager, graph) ->
+
             val transformedScope = graph.createScopes().associate { scope ->
 
                 val transformedDependencies = scope.dependencies.mapNotNull { packageRef ->
@@ -126,11 +121,7 @@ class DependencyAnalyzer(
 
     companion object {
         private fun createDefaultConfig(): DependencyAnalyzerConfig {
-            //TODO: check if we want to enable this
-            // NPM failed to resolve dependencies for path 'package.json':
-            // IllegalArgumentException: No lockfile found in '.'. This potentially
-            // results in unstable versions of dependencies. To support this, enable
-            // the 'allowDynamicVersions' option in 'config.yml'.
+
             val ortConfig = OrtConfiguration()
             val analyzerConfiguration = ortConfig.analyzer.copy(allowDynamicVersions = true)
             val repositoryConfiguration = RepositoryConfiguration()

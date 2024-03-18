@@ -9,5 +9,5 @@ data class Event(
     @SerialName("fixed")
     val fixed: String? = null,
     @SerialName("introduced")
-    val introduced: String = "-1",
+    val introduced: String? = null,
 )
