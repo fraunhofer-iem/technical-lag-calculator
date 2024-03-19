@@ -3,11 +3,13 @@ package util
 import dependencies.db.AnalyzerResult
 import dependencies.model.AnalyzerResultDto
 import dependencies.model.DependencyGraphDto
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import libyears.model.AggregatedResults
 import visualization.Visualizer
+import java.io.File
 import java.nio.file.Path
 import java.util.*
 
@@ -24,7 +26,21 @@ data class StorageConfig(
 }
 
 
-//TODO: implement db storage for libyear results
+suspend fun storeAnalyzerResultInFile(
+    outputDirectory: File,
+    result: AnalyzerResultDto,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
+    val outputFile = outputDirectory.resolve("${Date().time}-analyzerResult.json")
+    withContext(dispatcher) {
+        outputFile.createNewFile()
+        val json = Json { prettyPrint = false }
+        val jsonString =
+            json.encodeToString(AnalyzerResultDto.serializer(), result)
+        outputFile.writeText(jsonString)
+    }
+}
+
 suspend fun storeResults(
     results: List<AnalyzerResultDto> = listOf(),
     aggregatedResults: AggregatedResults,

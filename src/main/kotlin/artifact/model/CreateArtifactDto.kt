@@ -10,7 +10,6 @@ data class CreateArtifactDto(
     var groupId: String? = null,
     var usedVersion: String? = null,
     var versionDeferred: Deferred<List<VersionDto>>? = null,
-    var isTopLevelDependency: Boolean? = null,
     val transitiveDependencyDeferreds: List<Deferred<CreateArtifactDto?>> = emptyList(),
     val transitiveDependencies: List<CreateArtifactDto> = emptyList()
 ) {
@@ -35,10 +34,8 @@ data class CreateArtifactDto(
                 artifactId = nameId!!,
                 groupId = groupId!!,
                 usedVersion = usedVersionDto,
-                isTopLevelDependency = isTopLevelDependency!!,
                 versions = versions,
-                transitiveDependencies = transitiveDependencies.map { it.toArtifactDto() } + deferredDeps,
-                libyearResult = LibyearCalculator.calculateDifferenceForPackage(usedVersionDto, versions),
+                transitiveDependencies = transitiveDependencies.map { it.toArtifactDto() } + deferredDeps
             )
         }
 
@@ -48,7 +45,6 @@ data class CreateArtifactDto(
     private fun artifactIsComplete(): Boolean {
         return nameId != null &&
                 groupId != null &&
-                usedVersion != null &&
-                isTopLevelDependency != null
+                usedVersion != null
     }
 }

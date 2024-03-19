@@ -21,7 +21,6 @@ class ArtifactService(
 
         return getDependencyVersionInformation(
             packageRef = rootPackage,
-            isTransitiveDependency = false,
             seen = mutableSetOf()
         )?.toArtifactDto() // The toDto call resolves all deferreds
     }
@@ -77,7 +76,6 @@ class ArtifactService(
             nameId = nameAndNamespace.second,
             groupId = nameAndNamespace.first,
             usedVersion = node.versionKey.version,
-            isTopLevelDependency = (node.relation == "SELF"),
             transitiveDependencies = transitiveNodes,
             versionDeferred = ioScope.async {
                 return@async depsClient.getVersionsForPackage(
@@ -92,7 +90,6 @@ class ArtifactService(
 
     private suspend fun getDependencyVersionInformation(
         packageRef: PackageReferenceDto,
-        isTransitiveDependency: Boolean = true,
         seen: MutableSet<PackageReferenceDto>,
     ): CreateArtifactDto? {
         return if (seen.contains(packageRef)) {
@@ -121,7 +118,6 @@ class ArtifactService(
                 nameId = packageRef.name,
                 groupId = packageRef.namespace,
                 usedVersion = packageRef.version,
-                isTopLevelDependency = !isTransitiveDependency,
                 versionDeferred = versions,
                 transitiveDependencyDeferreds = transitiveDependencies
             )

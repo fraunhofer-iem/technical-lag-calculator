@@ -10,9 +10,7 @@ data class ArtifactDto(
     val groupId: String,
     val usedVersion: VersionDto,
     val versions: List<VersionDto> = listOf(),
-    val isTopLevelDependency: Boolean,
     val transitiveDependencies: List<ArtifactDto> = listOf(),
-    val libyearResult: LibyearResultDto,
 )
 
 @Serializable

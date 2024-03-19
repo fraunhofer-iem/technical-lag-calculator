@@ -63,7 +63,6 @@ class DependencyAnalyzer(
     }
 
 
-
     private fun runAnalyzer(
         projectPath: File,
     ): RawAnalyzerResult {

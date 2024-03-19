@@ -7,12 +7,16 @@ import org.slf4j.LoggerFactory
 const val CONSOLE_APPENDER = "STDOUT"
 const val FILE_APPENDER = "SIFT"
 
-fun configureRootLogger(logLevel: Level, logMode: String) {
+fun configureRootLogger(logLevel: Level, logMode: String = "") {
     val rootLogger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
     rootLogger.level = logLevel
 
     when(logMode) {
         "console" -> rootLogger.detachAppender(FILE_APPENDER)
         "file" -> rootLogger.detachAppender(CONSOLE_APPENDER)
+        "off" -> {
+            rootLogger.detachAppender(CONSOLE_APPENDER)
+            rootLogger.detachAppender(FILE_APPENDER)
+        }
     }
 }
