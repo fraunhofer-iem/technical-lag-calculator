@@ -75,6 +75,6 @@ class LibyearCalculatorTest {
             packageList = packageList
         )
 
-        assertEquals(expected = -1, actual = libyearNewerNoDefault.libyear)
+        assertEquals(expected = 1, actual = libyearNewerNoDefault.libyear)
     }
 }

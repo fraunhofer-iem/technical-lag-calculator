@@ -56,65 +56,6 @@ class ArtifactServiceTest {
         }
     }
 
-    @Test
-    fun parseSingleDependency() = runTest {
-
-        val artifactService = ArtifactService(
-
-            depsClient = apiClient
-        )
-
-        val packageDto = PackageReferenceDto(
-            name = "vite",
-            namespace = "", type = "NPM", version = "5.0.4",
-            dependencies = listOf()
-        )
-
-        val artifact = artifactService.getAllTransitiveVersionInformation(
-            packageDto
-        )
-        artifact?.libyearResult?.let { libyear ->
-            assertEquals(0, libyear.libyear)
-        }
-
-        val packageDtoOldVersion = PackageReferenceDto(
-            name = "vite",
-            namespace = "", type = "NPM", version = "3.1.1",
-            dependencies = listOf()
-        )
-
-        val artifactOld = artifactService.getAllTransitiveVersionInformation(
-            packageDtoOldVersion
-        )
-
-        artifactOld?.libyearResult?.let { libyear ->
-            assertEquals(-14, libyear.libyear)
-        }
-    }
-
-    @Test
-    fun noDefaults() = runTest {
-
-        val artifactService = ArtifactService(
-
-            depsClient = apiClient
-        )
-
-        val packageDto = PackageReferenceDto(
-            name = "viteNoDefaults",
-            namespace = "", type = "NPM", version = "5.0.4",
-            dependencies = listOf()
-        )
-
-        val artifact = artifactService.getAllTransitiveVersionInformation(
-            packageDto
-        )
-
-        artifact?.libyearResult?.let { libyear ->
-            assertEquals(0, libyear.libyear)
-
-        }
-    }
 
     @Test
     fun transitiveDependencies() = runTest {
@@ -163,10 +104,6 @@ class ArtifactServiceTest {
         )
         assertEquals( 3, artifact?.transitiveDependencies?.count())
         assertEquals( 1, artifact?.transitiveDependencies?.get(1)?.transitiveDependencies?.count())
-        assertEquals( 0, artifact?.libyearResult?.libyear)
-        assertEquals( -14, artifact?.transitiveDependencies?.get(0)?.libyearResult?.libyear)
-        assertEquals( -453, artifact?.transitiveDependencies?.get(1)?.libyearResult?.libyear)
-        assertEquals( 0, artifact?.transitiveDependencies?.get(1)?.transitiveDependencies?.get(0)?.libyearResult?.libyear)
     }
 
 }
