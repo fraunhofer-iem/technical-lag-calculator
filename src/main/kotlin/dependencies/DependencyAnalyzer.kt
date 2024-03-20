@@ -43,7 +43,7 @@ class DependencyAnalyzer(
     suspend fun getAnalyzerResult(projectPath: File): AnalyzerResultDto? {
         return try {
             val rawAnalyzerResult = runAnalyzer(projectPath)
-            val transformedGraph = transformDependencyGraph(rawAnalyzerResult.dependencyGraphs)
+            val transformedGraph = transformDependencyGraph(rawAnalyzerResult.dependencyGraphs, true)
 
             val result = AnalyzerResultDto(
                 dependencyGraphDto = transformedGraph,
@@ -53,7 +53,7 @@ class DependencyAnalyzer(
             results.add(result)
             result
         } catch (exception: Exception) {
-            logger.error { "ORT failed with exception $exception" }
+            logger.error { "ORT failed with exception $exception. ${exception.message}" }
             null
         }
     }
@@ -97,23 +97,34 @@ class DependencyAnalyzer(
         )
     }
 
-    private suspend fun transformDependencyGraph(dependencyGraphs: Map<String, DependencyGraph>): DependencyGraphDto {
+    private suspend fun transformDependencyGraph(
+        dependencyGraphs: Map<String, DependencyGraph>,
+        simulateUpdates: Boolean = false
+    ): DependencyGraphDto {
         val transformedGraph = dependencyGraphs.map { (packageManager, graph) ->
 
             val transformedScope = graph.createScopes().associate { scope ->
 
-                val transformedDependencies = scope.dependencies.mapNotNull { packageRef ->
+                val directDependencies = scope.dependencies.mapNotNull { packageRef ->
 
-                    artifactService.getAllTransitiveVersionInformation(
-                        rootPackage = PackageReferenceDto.initFromPackageRef(packageRef)
+                    artifactService.directDependencyPackageReferenceToArtifact(
+                        rootPackage = PackageReferenceDto.initFromPackageRef(packageRef),
                     )
                 }
-
-                scope.name to transformedDependencies
+                if (simulateUpdates)
+                    scope.name to directDependencies.map {
+                        artifactService.simulateUpdateForArtifact(
+                            packageManager,
+                            it
+                        )
+                    }
+                else {
+                    scope.name to directDependencies
+                }
             }
-
             packageManager to ScopedDependencyDto(transformedScope)
         }.toMap()
+
 
         return DependencyGraphDto(transformedGraph)
     }

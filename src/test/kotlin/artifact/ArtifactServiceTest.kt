@@ -99,7 +99,7 @@ class ArtifactServiceTest {
             )
         )
 
-        val artifact = artifactService.getAllTransitiveVersionInformation(
+        val artifact = artifactService.directDependencyPackageReferenceToArtifact(
             packageDto
         )
         assertEquals( 3, artifact?.transitiveDependencies?.count())

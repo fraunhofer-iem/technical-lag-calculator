@@ -192,32 +192,7 @@ class LibyearCalculator {
 //        return libyears
 //    }
 
-    /**
-     * Returns the highest matching version from the given versions array with the same version type as the
-     * given version's type.
-     */
-    private fun getApplicableVersion(version: VersionDto, versions: List<VersionDto>, type: VersionTypes): String? {
-        val semvers = versions.map { it.versionNumber.toVersion(strict = false) }
-        val semver = version.versionNumber.toVersion(strict = false)
 
-        val highestVersion = when (type) {
-            VersionTypes.Minor -> {
-                semvers.filter { it.isStable && it.major == semver.major }
-                    .maxWithOrNull(compareBy({ it.minor }, { it.patch }))
-            }
-
-            VersionTypes.Major -> {
-                semvers.filter { it.isStable }
-                    .maxWithOrNull(compareBy({ it.major }, { it.minor }, { it.patch }))
-            }
-
-            VersionTypes.Patch -> {
-                semvers.filter { it.isStable && it.major == semver.major && it.minor == semver.minor }
-                    .maxBy { it.patch }
-            }
-        }
-        return highestVersion?.toString()
-    }
 
     fun getAllAnalyzerResults(): List<AnalyzerResultDto> {
         return dependencyAnalyzer.getAllAnalyzerResults()

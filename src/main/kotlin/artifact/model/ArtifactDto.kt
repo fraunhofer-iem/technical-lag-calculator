@@ -2,7 +2,6 @@ package artifact.model
 
 import kotlinx.serialization.Serializable
 import libyears.LibyearStats
-import libyears.model.LibyearResultDto
 
 @Serializable
 data class ArtifactDto(
@@ -10,7 +9,15 @@ data class ArtifactDto(
     val groupId: String,
     val usedVersion: VersionDto,
     val versions: List<VersionDto> = listOf(),
+    val updatePossibilities: UpdatePossibilities? = null,
     val transitiveDependencies: List<ArtifactDto> = listOf(),
+)
+
+@Serializable
+data class UpdatePossibilities(
+    val minor: ArtifactDto? = null,
+    val major: ArtifactDto? = null,
+    val patch: ArtifactDto? = null
 )
 
 @Serializable

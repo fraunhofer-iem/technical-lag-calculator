@@ -1,5 +1,6 @@
 package util
 
+import commands.ProjectPaths
 import dependencies.db.AnalyzerResult
 import dependencies.model.AnalyzerResultDto
 import dependencies.model.DependencyGraphDto
@@ -30,14 +31,31 @@ suspend fun storeAnalyzerResultInFile(
     outputDirectory: File,
     result: AnalyzerResultDto,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
-) {
+): File {
     val outputFile = outputDirectory.resolve("${Date().time}-analyzerResult.json")
-    withContext(dispatcher) {
+    return withContext(dispatcher) {
         outputFile.createNewFile()
         val json = Json { prettyPrint = false }
         val jsonString =
             json.encodeToString(AnalyzerResultDto.serializer(), result)
         outputFile.writeText(jsonString)
+        return@withContext outputFile
+    }
+}
+
+suspend fun storeResultFilePathsInFile(
+    outputDirectory: File,
+    paths: ProjectPaths,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
+): File {
+    val outputFile = outputDirectory.resolve("dependencyGraphs.json")
+    return withContext(dispatcher) {
+        outputFile.createNewFile()
+        val json = Json { prettyPrint = false }
+        val jsonString =
+            json.encodeToString(ProjectPaths.serializer(), paths)
+        outputFile.writeText(jsonString)
+        return@withContext outputFile
     }
 }
 

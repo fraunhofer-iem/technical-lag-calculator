@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class DepsTreeResponseDto(
     @SerialName("edges")
-    val edges: List<Edge> = listOf(),
+    val edges: MutableList<Edge> = mutableListOf(),
     @SerialName("error")
     val error: String?,
     /**

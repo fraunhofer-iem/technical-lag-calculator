@@ -1,43 +1,132 @@
 package artifact
 
-import artifact.model.ArtifactDto
-import artifact.model.CreateArtifactDto
-import artifact.model.PackageReferenceDto
+import artifact.model.*
 import http.deps.DepsClient
 import http.deps.model.DepsTreeResponseDto
 import http.deps.model.Node
+import io.github.z4kn4fein.semver.toVersion
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import org.apache.logging.log4j.kotlin.logger
 
 class ArtifactService(
     private val depsClient: DepsClient = DepsClient(),
     private val ioScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) {
 
-    suspend fun getAllTransitiveVersionInformation(
-        rootPackage: PackageReferenceDto,
+    suspend fun directDependencyPackageReferenceToArtifact(
+        rootPackage: PackageReferenceDto
     ): ArtifactDto? {
 
         return getDependencyVersionInformation(
             packageRef = rootPackage,
             seen = mutableSetOf()
         )?.toArtifactDto() // The toDto call resolves all deferreds
+
     }
 
-    suspend fun getDependencyTreeForPkg(
+    suspend fun simulateUpdateForArtifact(ecosystem: String, artifactDto: ArtifactDto): ArtifactDto {
+        try {
+            logger.info { "Simulate update for ${artifactDto.artifactId}" }
+            val highestPossibleMinor =
+                getApplicableVersion(artifactDto.usedVersion, artifactDto.versions, VersionTypes.Minor)
+            val highestPossibleMajor =
+                getApplicableVersion(artifactDto.usedVersion, artifactDto.versions, VersionTypes.Major)
+            val highestPossiblePatch =
+                getApplicableVersion(artifactDto.usedVersion, artifactDto.versions, VersionTypes.Patch)
+            logger.info { "Update possibilities $highestPossiblePatch, $highestPossibleMajor, $highestPossibleMinor" }
+
+            val updatedSubTreeMinor = getDependencyTreeForPkg(
+                ecosystem,
+                artifactDto.groupId,
+                artifactDto.artifactId,
+                highestPossibleMinor
+            )
+
+            logger.info { "Subtree minor updated" }
+
+            val updatedSubTreeMajor = getDependencyTreeForPkg(
+                ecosystem,
+                artifactDto.groupId,
+                artifactDto.artifactId,
+                highestPossibleMajor
+            )
+
+            val updatedSubTreePatch = getDependencyTreeForPkg(
+                ecosystem,
+                artifactDto.groupId,
+                artifactDto.artifactId,
+                highestPossiblePatch
+            )
+
+            val updatePossibilities = UpdatePossibilities(
+                minor = updatedSubTreeMinor,
+                major = updatedSubTreeMajor,
+                patch = updatedSubTreePatch
+            )
+
+            return ArtifactDto(
+                artifactId = artifactDto.artifactId,
+                groupId = artifactDto.groupId,
+                usedVersion = artifactDto.usedVersion,
+                versions = artifactDto.versions,
+                transitiveDependencies = artifactDto.transitiveDependencies,
+                updatePossibilities = updatePossibilities
+            )
+        } catch (exception: Exception) {
+            logger.warn { "Get update possibilities failed with $exception" }
+            return artifactDto
+        }
+    }
+
+    /**
+     * Returns the highest matching version from the given versions array with the same version type as the
+     * given version's type.
+     */
+    private fun getApplicableVersion(version: VersionDto, versions: List<VersionDto>, type: VersionTypes): String? {
+        val semvers = versions.map { it.versionNumber.toVersion(strict = false) }
+        val semver = version.versionNumber.toVersion(strict = false)
+
+        val highestVersion = when (type) {
+            VersionTypes.Minor -> {
+                semvers.filter { it.isStable && it.major == semver.major }
+                    .maxWithOrNull(compareBy({ it.minor }, { it.patch }))
+            }
+
+            VersionTypes.Major -> {
+                semvers.filter { it.isStable }
+                    .maxWithOrNull(compareBy({ it.major }, { it.minor }, { it.patch }))
+            }
+
+            VersionTypes.Patch -> {
+                semvers.filter { it.isStable && it.major == semver.major && it.minor == semver.minor }
+                    .maxByOrNull { it.patch }
+            }
+        }
+        return highestVersion?.toString()
+    }
+
+    private suspend fun getDependencyTreeForPkg(
         ecosystem: String,
         namespace: String = "",
         name: String,
-        version: String
+        version: String?
     ): ArtifactDto? {
 
+        if (version == null) {
+            return null
+        }
         depsClient.getDepsForPackage(
             ecosystem = ecosystem,
             namespace = namespace,
             name = name,
             version = version
         )?.let { depsTreeResponse ->
+            logger.info { "Deps for package $namespace $name retrieved. Node size: ${depsTreeResponse.nodes.size}" }
+
+            removeCycles(depsTreeResponse)
+
             if (depsTreeResponse.nodes.isNotEmpty()) {
                 return getCreateArtifactFromVersion(
                     ecosystem,
@@ -52,6 +141,35 @@ class ArtifactService(
 
         return null
     }
+
+    private fun removeCycles(tree: DepsTreeResponseDto) {
+        val visited = BooleanArray(tree.nodes.size)
+        val adjacencyList = Array(tree.nodes.size) { mutableListOf<Int>() }
+
+        // Build adjacency list from edges
+        for (edge in tree.edges) {
+            adjacencyList[edge.fromNode].add(edge.toNode)
+        }
+
+        fun dfs(node: Int, parent: Int) {
+            if (visited[node]) {
+                // Cycle detected, remove edge
+                tree.edges.removeIf { it.fromNode == parent && it.toNode == node }
+                return
+            }
+            visited[node] = true
+            for (adjNode in adjacencyList[node].toList()) {
+                dfs(adjNode, node)
+            }
+            visited[node] = false // Backtrack
+        }
+
+        // Perform DFS traversal from each node
+        for (i in visited.indices) {
+            dfs(i, -1)
+        }
+    }
+
 
     private suspend fun getCreateArtifactFromVersion(
         ecosystem: String,

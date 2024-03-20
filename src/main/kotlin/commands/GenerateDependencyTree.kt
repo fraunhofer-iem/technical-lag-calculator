@@ -10,7 +10,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger
 import util.storeAnalyzerResultInFile
+import util.storeResultFilePathsInFile
 import java.io.File
+import kotlin.io.path.createDirectories
+import kotlin.time.measureTime
 
 
 @Serializable
@@ -32,7 +35,8 @@ class GenerateDependencyTree : CliktCommand() {
     private val outputPath by option(
         help = "Path in which all analyzer results are stored"
     )
-        .path(mustExist = false, mustBeReadable = true, canBeFile = false)
+        .path(mustExist = false, canBeFile = false)
+        .required()
 
     override fun run(): Unit = runBlocking {
 
@@ -40,30 +44,34 @@ class GenerateDependencyTree : CliktCommand() {
         logger.info { "Running ORT on projects $projectPaths" }
         val dependencyAnalyzer = DependencyAnalyzer()
 
-        projectPaths.paths.forEach { path ->
+
+        outputPath.createDirectories()
+
+        val resultFiles = projectPaths.paths.mapNotNull { path ->
             try {
                 val file = File(path)
                 if (file.exists() && file.isDirectory) {
                     val result = dependencyAnalyzer.getAnalyzerResult(file)
 
                     if (result != null) {
-                        val outputPath = if (outputPath != null) {
-                            outputPath!!.toFile()
-                        } else {
-                            file
-                        }
-
-                        storeAnalyzerResultInFile(outputPath, result)
+                        storeAnalyzerResultInFile(outputPath.toFile(), result)
                     } else {
                         logger.warn("Couldn't retrieve result for $path")
+                        null
                     }
                 } else {
                     logger.error("Given path $path is not a directory or doesn't exist.")
+                    null
                 }
             } catch (error: Error) {
                 logger.error("Dependency Analyzer failed with error $error")
+                null
             }
-        }
+        }.map { it.path }
+
+
+        storeResultFilePathsInFile(outputPath.toFile(), ProjectPaths(resultFiles))
+
     }
 
 }

@@ -2,7 +2,6 @@ package artifact.model
 
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.awaitAll
-import libyears.LibyearCalculator
 import org.apache.logging.log4j.kotlin.logger
 
 data class CreateArtifactDto(
@@ -10,6 +9,7 @@ data class CreateArtifactDto(
     var groupId: String? = null,
     var usedVersion: String? = null,
     var versionDeferred: Deferred<List<VersionDto>>? = null,
+    val versions: List<VersionDto> = emptyList(),
     val transitiveDependencyDeferreds: List<Deferred<CreateArtifactDto?>> = emptyList(),
     val transitiveDependencies: List<CreateArtifactDto> = emptyList()
 ) {
@@ -18,7 +18,7 @@ data class CreateArtifactDto(
     suspend fun toArtifactDto(): ArtifactDto {
         if (artifactIsComplete()) {
 
-            val versions = try {
+            val versionsResolved = try {
                 versionDeferred?.await()
             } catch (exception: Exception) {
                 logger.error { "API version job failed with error $exception" }
@@ -34,7 +34,7 @@ data class CreateArtifactDto(
                 artifactId = nameId!!,
                 groupId = groupId!!,
                 usedVersion = usedVersionDto,
-                versions = versions,
+                versions = versions + versionsResolved,
                 transitiveDependencies = transitiveDependencies.map { it.toArtifactDto() } + deferredDeps
             )
         }

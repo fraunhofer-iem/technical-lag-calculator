@@ -1,10 +1,8 @@
 //package commands
 //
 //import com.github.ajalt.clikt.core.CliktCommand
-//import com.github.ajalt.clikt.parameters.groups.cooccurring
 //import com.github.ajalt.clikt.parameters.options.*
 //import com.github.ajalt.clikt.parameters.types.path
-//import commands.options.DbOptions
 //import git.GitHelper
 //import kotlinx.coroutines.runBlocking
 //import kotlinx.serialization.Serializable
@@ -13,7 +11,6 @@
 //import libyears.LibyearConfig
 //import org.apache.logging.log4j.kotlin.logger
 //import org.slf4j.MDC
-//import util.DbConfig
 //import java.nio.file.Path
 //import java.util.*
 //import kotlin.io.path.createDirectories
@@ -24,31 +21,29 @@
 //@Serializable
 //data class GitConfig(val urls: List<String>)
 //
+///**
+// * Input: Exported analyzer results containing a dependency graph annotated with version information
+// *
+// * Output: Libyears annotated to the dependency graph
+// */
 //class Libyears : CliktCommand() {
-//    private val dbOptions by DbOptions().cooccurring()
 //
-//    private val gitConfigFile by option(
-//        envvar = "GIT_CONFIG_PATH", help = "Path to the file containing the URLs of" +
-//                "the repositories which should be analyzed."
+//    private val inputPaths by option(
+//        help = "Path to the file containing the Paths of" +
+//                "the files to be analyzed."
 //    )
 //        .path(mustExist = true, mustBeReadable = true, canBeFile = true)
 //        .required()
 //
 //    private val outputPath by option(
-//        envvar = "OUTPUT_PATH", help = "Path to the folder to store the JSON results" +
-//                "of the created dependency graph. If the path doesn't exist it will be created."
+//        help = "Path in which all analyzer results are stored"
 //    )
-//        .path(mustExist = false, canBeFile = false)
-//        .required()
-//
-//    private val storeAnalyzerResultsInFile by option().flag(default = false)
-//    private val storeAnalyzerResultsInDb by option().flag(default = false)
-//    private val storeLibyearResultsInFile by option().flag(default = true)
-//    private val storeLibyearResultsInDb by option().flag(default = false)
-//    private val storeLibyearGraphs by option().flag(default = true)
+//        .path(mustExist = false, mustBeReadable = true, canBeFile = false)
 //
 //
 //    override fun run(): Unit = runBlocking {
+//
+//        val projectPaths = Json.decodeFromString<ProjectPaths>(inputPaths.toFile().readText())
 //
 //        // Setup logging and corresponding output paths
 //        val defaultLogPath = MDC.get("outputFile") ?: ""
@@ -58,16 +53,6 @@
 //            "Running libyears for projects in $gitConfigFile and output path $outputPathWrapper" +
 //                    " and db url ${dbOptions?.dbUrl}"
 //        }
-//
-//        // Load configs
-//        val dbConfig = dbOptions?.let {
-//            DbConfig(
-//                url = it.dbUrl,
-//                userName = it.userName ?: "",
-//                password = it.password ?: ""
-//            )
-//        }
-//        val gits = getConfigFromPath(gitConfigFile)
 //
 //
 //        val runtime = measureTime {

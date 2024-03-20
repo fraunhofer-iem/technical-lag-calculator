@@ -7,6 +7,7 @@ import http.deps.model.Version
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.serialization.kotlinx.json.*
@@ -24,6 +25,11 @@ class DepsClient(
             json(
                 Json { ignoreUnknownKeys = true }
             )
+        }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 15000
+            connectTimeoutMillis = 15000
+            socketTimeoutMillis = 15000
         }
     },
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO

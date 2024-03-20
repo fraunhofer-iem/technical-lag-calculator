@@ -10,6 +10,7 @@ import util.configureRootLogger
 import java.util.*
 import kotlin.io.path.createDirectories
 import kotlin.io.path.pathString
+import kotlin.time.measureTime
 
 
 class Tool : CliktCommand() {
@@ -57,6 +58,9 @@ class Tool : CliktCommand() {
 
 
 fun main(args: Array<String>) {
-    val tool = Tool()
-    tool.subcommands(GenerateDependencyTree()).main(args)
+    val runtime = measureTime {
+        val tool = Tool()
+        tool.subcommands(GenerateDependencyTree()).main(args)
+    }
+    println("Tool run took $runtime")
 }
