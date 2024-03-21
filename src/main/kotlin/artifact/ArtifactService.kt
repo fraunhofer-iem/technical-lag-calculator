@@ -7,12 +7,13 @@ import http.deps.model.Node
 import io.github.z4kn4fein.semver.toVersion
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import org.apache.logging.log4j.kotlin.logger
 
-class ArtifactService(
+class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
     private val depsClient: DepsClient = DepsClient(),
-    private val ioScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+    private val ioScope: CoroutineScope = CoroutineScope(Dispatchers.IO.limitedParallelism(15))
 ) {
 
     suspend fun directDependencyPackageReferenceToArtifact(
@@ -190,18 +191,21 @@ class ArtifactService(
             Pair("", nameAndNamespaceSplit[0])
         }
 
+        val versions = ioScope.async {
+            depsClient.getVersionsForPackage(
+                ecosystem = ecosystem,
+                namespace = nameAndNamespace.first,
+                name = nameAndNamespace.second
+            )
+        }
+
+
         return CreateArtifactDto(
             nameId = nameAndNamespace.second,
             groupId = nameAndNamespace.first,
             usedVersion = node.versionKey.version,
             transitiveDependencies = transitiveNodes,
-            versionDeferred = ioScope.async {
-                return@async depsClient.getVersionsForPackage(
-                    ecosystem = ecosystem,
-                    namespace = nameAndNamespace.first,
-                    name = nameAndNamespace.second
-                )
-            }
+            versionDeferred = versions
         )
     }
 

@@ -6,7 +6,8 @@ import http.deps.model.DepsTreeResponseDto
 import http.deps.model.Version
 import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.engine.cio.*
+import io.ktor.client.engine.apache.*
+import io.ktor.client.engine.apache5.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
@@ -20,7 +21,13 @@ import util.TimeHelper.dateToMs
 import java.net.URLEncoder
 
 class DepsClient(
-    private val httpClient: HttpClient = HttpClient(CIO) {
+    private val httpClient: HttpClient = HttpClient(Apache) {
+        engine {
+            followRedirects = true
+            socketTimeout = 10_000
+            connectTimeout = 10_000
+            connectionRequestTimeout = 20_000
+        }
         install(ContentNegotiation) {
             json(
                 Json { ignoreUnknownKeys = true }
@@ -31,9 +38,17 @@ class DepsClient(
             connectTimeoutMillis = 15000
             socketTimeoutMillis = 15000
         }
+        install(HttpRequestRetry) {
+            retryOnExceptionOrServerErrors(5)
+            exponentialDelay()
+        }
     },
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
+
+    fun close() {
+        httpClient.close()
+    }
 
     suspend fun getVersionsForPackage(ecosystem: String, namespace: String = "", name: String): List<VersionDto> {
         val requestUrl: String? = getVersionsRequestUrl(
@@ -45,7 +60,7 @@ class DepsClient(
         return if (requestUrl != null) {
 
             val responseDto = try {
-                val response = httpClient.request(requestUrl)
+                val response = httpClient.get(requestUrl)
 
                 val currentResponse = response.body<DepsResponseDto>()
 
@@ -83,7 +98,6 @@ class DepsClient(
             try {
                 val response = httpClient.request(requestUrl)
                 response.body<DepsTreeResponseDto>()
-
             } catch (exception: Exception) {
                 logger.error { "Exception during http call to $requestUrl. $exception" }
 
@@ -109,7 +123,7 @@ class DepsClient(
                 null
             }
         } else {
-            logger.warn { "Insufficient data in maven response to create version dto $version" }
+            logger.warn { "Insufficient data in response to create version dto $version" }
             null
         }
     }
@@ -121,7 +135,7 @@ class DepsClient(
 
     private suspend fun getVersionsRequestUrl(ecosystem: String, name: String, namespace: String): String? {
         getNameForEcosystem(name, namespace, ecosystem)?.let { urlNamespace ->
-            return "https://api.deps.dev/v3alpha/systems/$ecosystem/packages/$urlNamespace"
+            return "https://api.deps.dev/v3/systems/$ecosystem/packages/$urlNamespace"
         }
         return null
     }
@@ -134,7 +148,7 @@ class DepsClient(
         version: String
     ): String? {
         getNameForEcosystem(name, namespace, ecosystem)?.let { urlNamespace ->
-            return "https://api.deps.dev/v3alpha/systems/$ecosystem/packages/$urlNamespace/versions/$version:dependencies"
+            return "https://api.deps.dev/v3/systems/$ecosystem/packages/$urlNamespace/versions/$version:dependencies"
         }
 
         return null
