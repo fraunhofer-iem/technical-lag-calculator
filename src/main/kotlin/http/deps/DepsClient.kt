@@ -7,13 +7,13 @@ import http.deps.model.Version
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.apache.*
-import io.ktor.client.engine.apache5.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger
@@ -48,6 +48,7 @@ class DepsClient(
 
     fun close() {
         httpClient.close()
+        ioDispatcher.cancel()
     }
 
     suspend fun getVersionsForPackage(ecosystem: String, namespace: String = "", name: String): List<VersionDto> {

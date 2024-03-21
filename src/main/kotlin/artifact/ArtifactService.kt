@@ -5,15 +5,14 @@ import http.deps.DepsClient
 import http.deps.model.DepsTreeResponseDto
 import http.deps.model.Node
 import io.github.z4kn4fein.semver.toVersion
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 import org.apache.logging.log4j.kotlin.logger
 
 class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
     private val depsClient: DepsClient = DepsClient(),
-    private val ioScope: CoroutineScope = CoroutineScope(Dispatchers.IO.limitedParallelism(15))
+    // It is important to limit the parallelization of the IO scope, which is used to make server
+    // requests, or else the server at some point will tell us to go away.
+    private val ioScope: CoroutineScope = CoroutineScope(Dispatchers.IO.limitedParallelism(10))
 ) {
 
     suspend fun directDependencyPackageReferenceToArtifact(
@@ -25,6 +24,11 @@ class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
             seen = mutableSetOf()
         )?.toArtifactDto() // The toDto call resolves all deferreds
 
+    }
+
+    fun close() {
+        depsClient.close()
+        ioScope.cancel()
     }
 
     suspend fun simulateUpdateForArtifact(ecosystem: String, artifactDto: ArtifactDto): ArtifactDto {
@@ -44,8 +48,6 @@ class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
                 artifactDto.artifactId,
                 highestPossibleMinor
             )
-
-            logger.info { "Subtree minor updated" }
 
             val updatedSubTreeMajor = getDependencyTreeForPkg(
                 ecosystem,

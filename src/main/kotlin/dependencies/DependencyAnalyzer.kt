@@ -62,6 +62,9 @@ class DependencyAnalyzer(
         return results
     }
 
+    fun close() {
+        artifactService.close()
+    }
 
     private fun runAnalyzer(
         projectPath: File,

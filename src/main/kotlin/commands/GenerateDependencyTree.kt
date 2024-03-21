@@ -70,6 +70,8 @@ class GenerateDependencyTree : CliktCommand() {
         }.map { it.path }
 
 
+        dependencyAnalyzer.close()
+
         storeResultFilePathsInFile(outputPath.toFile(), ProjectPaths(resultFiles))
 
     }
