@@ -41,7 +41,7 @@ kotlin {
 
 
 val exposedVersion = "0.47.0"
-val ortVersion = "18.0.0"
+val ortVersion = "20.0.0"
 val ktorVersion = "2.3.9"
 val kotlinCoroutines = "1.8.0"
 val logback = "1.5.3"
