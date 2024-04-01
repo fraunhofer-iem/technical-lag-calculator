@@ -49,7 +49,7 @@ val log4j = "2.23.1"
 
 dependencies {
     implementation("com.google.guava:guava:33.1.0-jre")
-    implementation("com.github.ajalt.clikt:clikt:4.2.2")
+    implementation("com.github.ajalt.clikt:clikt:4.3.0")
     implementation("org.apache.logging.log4j:log4j-api:$log4j")
     implementation("org.apache.logging.log4j:log4j-api-kotlin:1.4.0")
     implementation("org.apache.logging.log4j:log4j-to-slf4j:$log4j")
