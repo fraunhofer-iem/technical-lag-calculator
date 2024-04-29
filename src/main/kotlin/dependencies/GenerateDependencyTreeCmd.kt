@@ -1,20 +1,16 @@
-package commands
+package dependencies
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
-import dependencies.DependencyAnalyzer
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger
-import util.storeAnalyzerResultInFile
-import util.storeResultFilePathsInFile
+import util.StoreResultHelper
 import java.io.File
 import kotlin.io.path.createDirectories
-import kotlin.time.measureTime
-
 
 @Serializable
 data class ProjectPaths(val paths: List<String>)
@@ -24,6 +20,8 @@ data class ProjectPaths(val paths: List<String>)
  * Output: AnalyzerResultDto(s)
  */
 class GenerateDependencyTree : CliktCommand() {
+
+    //TODO: check for duplicate versions and reuse those
 
     private val projectListPath by option(
         help = "Path to the file containing the Paths of" +
@@ -47,20 +45,19 @@ class GenerateDependencyTree : CliktCommand() {
 
         outputPath.createDirectories()
 
-        val resultFiles = projectPaths.paths.mapNotNull { path ->
+        val resultFiles = projectPaths.paths.map { File(it) }.mapNotNull { file ->
             try {
-                val file = File(path)
                 if (file.exists() && file.isDirectory) {
                     val result = dependencyAnalyzer.getAnalyzerResult(file)
 
                     if (result != null) {
-                        storeAnalyzerResultInFile(outputPath.toFile(), result)
+                        StoreResultHelper.storeAnalyzerResultInFile(outputPath.toFile(), result)
                     } else {
-                        logger.warn("Couldn't retrieve result for $path")
+                        logger.warn("Couldn't retrieve result for $file")
                         null
                     }
                 } else {
-                    logger.error("Given path $path is not a directory or doesn't exist.")
+                    logger.error("Given path $file is not a directory or doesn't exist.")
                     null
                 }
             } catch (error: Error) {
@@ -72,7 +69,7 @@ class GenerateDependencyTree : CliktCommand() {
 
         dependencyAnalyzer.close()
 
-        storeResultFilePathsInFile(outputPath.toFile(), ProjectPaths(resultFiles))
+        StoreResultHelper.storeResultFilePathsInFile(outputPath.toFile(), ProjectPaths(resultFiles))
 
     }
 

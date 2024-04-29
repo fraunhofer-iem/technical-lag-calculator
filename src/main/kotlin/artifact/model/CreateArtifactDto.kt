@@ -24,8 +24,8 @@ data class CreateArtifactDto(
                 logger.error { "API version job failed with error $exception" }
                 null
             } ?: emptyList()
-
-            val usedVersionDto = versions.find { it.versionNumber == usedVersion }
+            val allVersions = versions + versionsResolved
+            val usedVersionDto = allVersions.find { it.versionNumber == usedVersion }
                 ?: VersionDto(versionNumber = usedVersion!!)
 
             val deferredDeps = transitiveDependencyDeferreds.awaitAll().mapNotNull { it?.toArtifactDto() }
@@ -34,7 +34,7 @@ data class CreateArtifactDto(
                 artifactId = nameId!!,
                 groupId = groupId!!,
                 usedVersion = usedVersionDto,
-                versions = versions + versionsResolved,
+                versions = allVersions,
                 transitiveDependencies = transitiveDependencies.map { it.toArtifactDto() } + deferredDeps
             )
         }

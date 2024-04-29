@@ -58,10 +58,6 @@ class DependencyAnalyzer(
         }
     }
 
-    fun getAllAnalyzerResults(): List<AnalyzerResultDto> {
-        return results
-    }
-
     fun close() {
         artifactService.close()
     }

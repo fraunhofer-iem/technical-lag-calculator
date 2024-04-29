@@ -1,50 +1,38 @@
 package libyears
 
 
-import artifact.ArtifactService
-import artifact.model.ArtifactDto
-import artifact.model.VersionDto
-import artifact.model.VersionTypes
-import dependencies.DependencyAnalyzer
-import dependencies.model.AnalyzerResultDto
-import io.github.z4kn4fein.semver.Version
-import io.github.z4kn4fein.semver.toVersion
+import dependencies.model.DependencyGraphDto
 import kotlinx.serialization.Serializable
-import libyears.model.LibyearResultDto
-import libyears.model.LibyearStatus
-import util.TimeHelper.getDifferenceInDays
 import java.io.File
-import kotlin.math.pow
-import kotlin.math.sqrt
 
 
-data class LibyearConfig(
-    val projectPath: File,
-)
+//data class LibyearConfig(
+//    val projectPath: File,
+//)
+//
+//@Serializable
+//data class LibyearStatsSimulation(
+//    val current: LibyearStats,
+//    val minor: LibyearStats?,
+//    val patch: LibyearStats?,
+//    val major: LibyearStats?
+//)
 
-@Serializable
-data class LibyearStatsSimulation(
-    val current: LibyearStats,
-    val minor: LibyearStats?,
-    val patch: LibyearStats?,
-    val major: LibyearStats?
-)
 
-@Serializable
-data class LibyearStats(
-    val libyear: Long,
-    val transitiveLibyears: Long = 0L,
-    val numberOfTransitiveDependencies: Int = 0,
-    val avgLibyears: Double = libyear.toDouble(),
-    val stdDev: Double = 0.0,
-    val variance: Double = 0.0,
-    val libyearSum: Long = 0L
-)
 
 class LibyearCalculator {
 
-    private val dependencyAnalyzer = DependencyAnalyzer()
-    private val artifactService = ArtifactService()
+
+//    fun calculateLibyearsForNode(dependencyGraphDto: DependencyGraphDto) {
+//        dependencyGraphDto.packageManagerToScopes.forEach { (pkgManager, scopes) ->
+//            scopes.scopesToDependencies.forEach { (scope, deps) ->
+//                deps.forEach { dep ->
+//                    val libyear = calculateDifferenceForPackage(dep.usedVersion, dep.versions)
+//
+//                }
+//            }
+//        }
+//    }
 //    suspend fun run(
 //        config: LibyearConfig
 //    ) {
@@ -192,98 +180,4 @@ class LibyearCalculator {
 //        return libyears
 //    }
 
-
-
-    fun getAllAnalyzerResults(): List<AnalyzerResultDto> {
-        return dependencyAnalyzer.getAllAnalyzerResults()
-    }
-
-    companion object {
-
-        /**
-         * Returns the newest applicable, stable version compared to the given current version.
-         * If a version is explicitly tagged as default this version is used for the comparison.
-         * If not the stable version with the highest version number is used.
-         * Throws if the current version doesn't follow the semver format.
-         */
-        private fun getNewestApplicableVersion(
-            currentVersion: VersionDto,
-            packageList: List<VersionDto>
-        ): Pair<LibyearStatus, VersionDto> {
-            val current = currentVersion.versionNumber.toVersion(strict = false)
-            current.isPreRelease
-            val versions = if (current.isStable) {
-                getSortedSemVersions(packageList).filter { it.second.isStable && !it.second.isPreRelease }
-            } else {
-                getSortedSemVersions(packageList).filter { !it.second.isPreRelease }
-            }
-
-            val newestVersion = versions.last()
-
-            versions.find { it.first.isDefault }?.let { defaultVersion ->
-                return if (defaultVersion.second > current) {
-                    Pair(LibyearStatus.SEM_VERSION_WITH_DEFAULT, defaultVersion.first)
-                } else {
-                    Pair(LibyearStatus.SEM_VERSION_WITH_DEFAULT, currentVersion)
-                }
-            }
-
-            if (newestVersion.second > current) {
-                return Pair(LibyearStatus.SEM_VERSION_WITHOUT_DEFAULT, newestVersion.first)
-            }
-            return Pair(LibyearStatus.SEM_VERSION_WITHOUT_DEFAULT, currentVersion)
-        }
-
-        private fun getSortedSemVersions(packageList: List<VersionDto>): List<Pair<VersionDto, Version>> {
-            return packageList.mapNotNull {
-                try {
-                    Pair(it, it.versionNumber.toVersion(strict = false))
-                } catch (exception: Exception) {
-                    null
-                }
-            }.sortedBy { it.second }
-        }
-
-        private fun getNewestVersion(packageList: List<VersionDto>): Pair<LibyearStatus, VersionDto> {
-            // If available we use the release date of the default version for comparison
-            // as this is the recommended version of the maintainers
-            val newestVersionByDate = packageList.maxBy { it.releaseDate }
-            val defaultVersion = packageList.filter { it.isDefault }
-
-            return if (defaultVersion.count() == 1) {
-                Pair(LibyearStatus.DATE_WITH_DEFAULT, defaultVersion.first())
-            } else {
-                Pair(LibyearStatus.DATE_WITHOUT_DEFAULT, newestVersionByDate)
-            }
-        }
-
-        fun calculateDifferenceForPackage(
-            currentVersion: VersionDto,
-            packageList: List<VersionDto>
-        ): LibyearResultDto {
-
-            if (packageList.contains(currentVersion) && currentVersion.releaseDate != -1L) {
-                val newestVersion = try {
-                    getNewestApplicableVersion(currentVersion, packageList)
-                } catch (exception: Exception) {
-                    getNewestVersion(packageList)
-                }
-
-                val differenceInDays = getDifferenceInDays(
-                    currentVersion = currentVersion.releaseDate,
-                    newestVersion = newestVersion.second.releaseDate
-                )
-
-                return if (differenceInDays <= 0) {
-                    LibyearResultDto(libyear = -1 * differenceInDays, status = newestVersion.first)
-                } else {
-                    LibyearResultDto(libyear = 0, status = LibyearStatus.NEWER_THAN_DEFAULT)
-                }
-            }
-
-            return LibyearResultDto(status = LibyearStatus.NO_RESULT)
-        }
-
-
-    }
 }

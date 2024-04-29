@@ -1,9 +1,13 @@
 import ch.qos.logback.classic.Level
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
-import com.github.ajalt.clikt.parameters.options.*
+import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.switch
 import com.github.ajalt.clikt.parameters.types.path
-import commands.GenerateDependencyTree
+import dependencies.GenerateDependencyTree
+import libyears.Libyears
 import org.apache.logging.log4j.kotlin.logger
 import org.slf4j.MDC
 import util.configureRootLogger
@@ -39,13 +43,13 @@ class Tool : CliktCommand() {
             outputPathWrapper.createDirectories()
             val defaultLogPath = outputPathWrapper.toAbsolutePath().pathString
             MDC.put("outputFile", defaultLogPath)
-            if(silent) {
+            if (silent) {
                 configureRootLogger(logLevel, "file")
             } else {
                 configureRootLogger(logLevel)
             }
         } else {
-            if(silent) {
+            if (silent) {
                 configureRootLogger(logLevel, "off")
             } else {
                 configureRootLogger(logLevel, "console")
@@ -60,7 +64,7 @@ class Tool : CliktCommand() {
 fun main(args: Array<String>) {
     val runtime = measureTime {
         val tool = Tool()
-        tool.subcommands(GenerateDependencyTree()).main(args)
+        tool.subcommands(GenerateDependencyTree(), Libyears()).main(args)
     }
     println("Tool run took $runtime")
 }

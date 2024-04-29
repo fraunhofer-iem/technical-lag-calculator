@@ -40,21 +40,21 @@ kotlin {
 }
 
 
-val exposedVersion = "0.47.0"
-val ortVersion = "18.0.0"
-val ktorVersion = "2.3.9"
+val exposedVersion = "0.49.0"
+val ortVersion = "22.1.0"
+val ktorVersion = "2.3.10"
 val kotlinCoroutines = "1.8.0"
-val logback = "1.5.3"
+val logback = "1.5.6"
 val log4j = "2.23.1"
 
 dependencies {
     implementation("com.google.guava:guava:33.1.0-jre")
-    implementation("com.github.ajalt.clikt:clikt:4.2.2")
+    implementation("com.github.ajalt.clikt:clikt:4.3.0")
     implementation("org.apache.logging.log4j:log4j-api:$log4j")
-    implementation("org.apache.logging.log4j:log4j-api-kotlin:1.4.0")
     implementation("org.apache.logging.log4j:log4j-to-slf4j:$log4j")
+    implementation("org.apache.logging.log4j:log4j-api-kotlin:1.4.0")
     implementation("ch.qos.logback:logback-classic:$logback")
-    implementation("io.github.z4kn4fein:semver:1.4.2")
+    implementation("io.github.z4kn4fein:semver:2.0.0")
     implementation("org.ossreviewtoolkit:analyzer:$ortVersion")
     implementation("org.ossreviewtoolkit:model:$ortVersion")
     implementation("org.ossreviewtoolkit:reporter:$ortVersion")
@@ -73,7 +73,7 @@ dependencies {
     implementation("org.ossreviewtoolkit.plugins.packagemanagers:python-package-manager:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.versioncontrolsystems:git-version-control-system:$ortVersion")
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.9.0.202403050737-r")
-    implementation("org.jetbrains.kotlinx:kandy-lets-plot:0.5.0")
+    implementation("org.jetbrains.kotlinx:kandy-lets-plot:0.6.0")
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-crypt:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
@@ -90,9 +90,9 @@ dependencies {
     implementation("io.ktor:ktor-client-apache5:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-    implementation("io.ktor:ktor-client-apache:2.3.9")
+    implementation("io.ktor:ktor-client-apache:$ktorVersion")
     runtimeOnly("org.postgresql:postgresql:42.7.3")
-    runtimeOnly("org.xerial:sqlite-jdbc:3.45.2.0")
+    runtimeOnly("org.xerial:sqlite-jdbc:3.45.3.0")
     runtimeOnly("org.ossreviewtoolkit.plugins.packagecurationproviders:file-package-curation-provider:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.utils:common-utils:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.utils:ort-utils:$ortVersion")
