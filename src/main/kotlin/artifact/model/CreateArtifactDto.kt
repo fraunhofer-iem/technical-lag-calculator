@@ -34,7 +34,7 @@ data class CreateArtifactDto(
                 artifactId = nameId!!,
                 groupId = groupId!!,
                 usedVersion = usedVersionDto,
-                versions = allVersions,
+                allVersions = allVersions,
                 transitiveDependencies = transitiveDependencies.map { it.toArtifactDto() } + deferredDeps
             )
         }

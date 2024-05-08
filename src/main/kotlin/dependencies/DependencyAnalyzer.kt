@@ -1,7 +1,9 @@
 package dependencies
 
 import artifact.ArtifactService
+import artifact.model.ArtifactDto
 import artifact.model.PackageReferenceDto
+import artifact.model.VersionDto
 import dependencies.model.*
 import org.apache.logging.log4j.kotlin.logger
 import org.ossreviewtoolkit.analyzer.Analyzer
@@ -43,7 +45,18 @@ class DependencyAnalyzer(
     suspend fun getAnalyzerResult(projectPath: File): AnalyzerResultDto? {
         return try {
             val rawAnalyzerResult = runAnalyzer(projectPath)
-            val transformedGraph = transformDependencyGraph(rawAnalyzerResult.dependencyGraphs, true)
+            val mainProject = rawAnalyzerResult.repositoryInfo.projects.first()
+            val rootNode = ArtifactDto(
+                artifactId = mainProject.name,
+                groupId = mainProject.namespace,
+                usedVersion = VersionDto(mainProject.version)
+            )
+            val transformedGraph = transformDependencyGraph(
+                rawAnalyzerResult.dependencyGraphs,
+                simulateUpdates = true,
+                rootNode = rootNode
+            )
+
 
             val result = AnalyzerResultDto(
                 dependencyGraphDto = transformedGraph,
@@ -98,7 +111,8 @@ class DependencyAnalyzer(
 
     private suspend fun transformDependencyGraph(
         dependencyGraphs: Map<String, DependencyGraph>,
-        simulateUpdates: Boolean = false
+        simulateUpdates: Boolean = false,
+        rootNode: ArtifactDto,
     ): DependencyGraphDto {
         val transformedGraph = dependencyGraphs.map { (packageManager, graph) ->
 
@@ -109,15 +123,18 @@ class DependencyAnalyzer(
                     artifactService.directDependencyPackageReferenceToArtifact(
                         rootPackage = PackageReferenceDto.initFromPackageRef(packageRef),
                     )
-                }
-                if (simulateUpdates)
-                    scope.name to directDependencies.map {
+                }.toMutableList()
+                if (simulateUpdates) {
+                    val dependenciesWithUpdates = directDependencies.map {
                         artifactService.simulateUpdateForArtifact(
                             packageManager,
                             it
                         )
-                    }
-                else {
+                    }.toMutableList()
+                    dependenciesWithUpdates.addFirst(rootNode)
+                    scope.name to dependenciesWithUpdates
+                } else {
+                    directDependencies.addFirst(rootNode)
                     scope.name to directDependencies
                 }
             }

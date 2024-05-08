@@ -35,11 +35,11 @@ class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
         try {
             logger.info { "Simulate update for ${artifactDto.artifactId}" }
             val highestPossibleMinor =
-                getApplicableVersion(artifactDto.usedVersion, artifactDto.versions, VersionTypes.Minor)
+                getApplicableVersion(artifactDto.usedVersion, artifactDto.allVersions, VersionTypes.Minor)
             val highestPossibleMajor =
-                getApplicableVersion(artifactDto.usedVersion, artifactDto.versions, VersionTypes.Major)
+                getApplicableVersion(artifactDto.usedVersion, artifactDto.allVersions, VersionTypes.Major)
             val highestPossiblePatch =
-                getApplicableVersion(artifactDto.usedVersion, artifactDto.versions, VersionTypes.Patch)
+                getApplicableVersion(artifactDto.usedVersion, artifactDto.allVersions, VersionTypes.Patch)
             logger.info { "Update possibilities $highestPossiblePatch, $highestPossibleMajor, $highestPossibleMinor" }
 
             val updatedSubTreeMinor = getDependencyTreeForPkg(
@@ -73,7 +73,7 @@ class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
                 artifactId = artifactDto.artifactId,
                 groupId = artifactDto.groupId,
                 usedVersion = artifactDto.usedVersion,
-                versions = artifactDto.versions,
+                allVersions = artifactDto.allVersions,
                 transitiveDependencies = artifactDto.transitiveDependencies,
                 updatePossibilities = updatePossibilities
             )

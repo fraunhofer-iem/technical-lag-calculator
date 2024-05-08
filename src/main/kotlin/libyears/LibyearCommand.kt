@@ -1,5 +1,6 @@
 package libyears
 
+import artifact.model.ArtifactDto
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
@@ -12,7 +13,6 @@ import org.apache.logging.log4j.kotlin.logger
 import org.slf4j.MDC
 import java.io.File
 import kotlin.io.path.createDirectories
-
 
 
 /**
@@ -46,13 +46,20 @@ class Libyears : CliktCommand() {
         logger.info { "Running libyears for projects in $projectPaths and output path $outputPath" }
 
         outputPath.createDirectories()
-
+        fun recursivePrint(artifactDto: ArtifactDto) {
+            println(artifactDto)
+            artifactDto.transitiveDependencies.forEach {
+                recursivePrint(it)
+            }
+        }
         projectPaths.paths.map { File(it) }.forEach { resultFile ->
             val analyzerResult = Json.decodeFromString<AnalyzerResultDto>(resultFile.readText())
             analyzerResult.dependencyGraphDto.packageManagerToScopes.forEach { (pkg, scopedDeps) ->
                 scopedDeps.scopesToDependencies.forEach { (scope, deps) ->
-                    deps.forEach {
-                        println(it.stats)
+                    if (scope != "devDependencies") {
+                        deps.forEach {
+                            recursivePrint(it)
+                        }
                     }
                 }
             }
