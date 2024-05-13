@@ -11,7 +11,7 @@ enum class VersionTypes {
 @Serializable
 data class VersionDto(
     val versionNumber: String,
-    val releaseDate: Long = -1,
+    val releaseDate: Long,
     @Transient
     val released: String = msToDateString(releaseDate),
     val isDefault: Boolean = false

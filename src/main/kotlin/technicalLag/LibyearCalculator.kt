@@ -1,4 +1,4 @@
-package libyears
+package technicalLag
 
 
 import dependencies.model.DependencyGraphDto

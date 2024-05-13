@@ -8,7 +8,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import libyears.model.AggregatedResults
+import technicalLag.model.AggregatedResults
 import visualization.Visualizer
 import java.io.File
 import java.nio.file.Path

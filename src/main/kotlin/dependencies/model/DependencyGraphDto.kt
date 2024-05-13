@@ -10,5 +10,5 @@ data class DependencyGraphDto(
 
 @Serializable
 data class ScopedDependencyDto(
-    val scopesToDependencies: Map<String, List<ArtifactDto>>,
+    val scopesToRoot: Map<String, ArtifactDto>,
 )

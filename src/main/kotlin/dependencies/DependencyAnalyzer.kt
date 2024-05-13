@@ -18,6 +18,7 @@ import org.ossreviewtoolkit.model.utils.PackageCurationProvider
 import org.ossreviewtoolkit.plugins.packagecurationproviders.api.PackageCurationProviderFactory
 import org.ossreviewtoolkit.plugins.packagecurationproviders.api.SimplePackageCurationProvider
 import java.io.File
+import java.util.*
 
 
 data class DependencyAnalyzerConfig(
@@ -46,10 +47,12 @@ class DependencyAnalyzer(
         return try {
             val rawAnalyzerResult = runAnalyzer(projectPath)
             val mainProject = rawAnalyzerResult.repositoryInfo.projects.first()
+            val usedVersion = VersionDto(mainProject.version, releaseDate = Date().time)
             val rootNode = ArtifactDto(
                 artifactId = mainProject.name,
                 groupId = mainProject.namespace,
-                usedVersion = VersionDto(mainProject.version)
+                usedVersion = usedVersion,
+                allVersions = listOf(usedVersion),
             )
             val transformedGraph = transformDependencyGraph(
                 rawAnalyzerResult.dependencyGraphs,
@@ -114,35 +117,45 @@ class DependencyAnalyzer(
         simulateUpdates: Boolean = false,
         rootNode: ArtifactDto,
     ): DependencyGraphDto {
+
         val transformedGraph = dependencyGraphs.map { (packageManager, graph) ->
 
             val transformedScope = graph.createScopes().associate { scope ->
 
-                val directDependencies = scope.dependencies.mapNotNull { packageRef ->
+                val initialDependencies = scope.dependencies.mapNotNull { packageRef ->
 
                     artifactService.directDependencyPackageReferenceToArtifact(
                         rootPackage = PackageReferenceDto.initFromPackageRef(packageRef),
                     )
-                }.toMutableList()
-                if (simulateUpdates) {
-                    val dependenciesWithUpdates = directDependencies.map {
+                }
+
+                val directDependencies = if (simulateUpdates) {
+                    initialDependencies.map {
                         artifactService.simulateUpdateForArtifact(
                             packageManager,
                             it
                         )
-                    }.toMutableList()
-                    dependenciesWithUpdates.addFirst(rootNode)
-                    scope.name to dependenciesWithUpdates
+                    }
                 } else {
-                    directDependencies.addFirst(rootNode)
-                    scope.name to directDependencies
+                    initialDependencies
                 }
+
+                scope.name to ArtifactDto(
+                    artifactId = rootNode.artifactId,
+                    groupId = rootNode.groupId,
+                    usedVersion = rootNode.usedVersion,
+                    transitiveDependencies = directDependencies,
+                    allVersions = listOf(rootNode.usedVersion)
+                )
+
             }
-            packageManager to ScopedDependencyDto(transformedScope)
+            val scopedDependencyDto = ScopedDependencyDto(transformedScope)
+            packageManager to scopedDependencyDto
         }.toMap()
 
 
         return DependencyGraphDto(transformedGraph)
+
     }
 
     companion object {

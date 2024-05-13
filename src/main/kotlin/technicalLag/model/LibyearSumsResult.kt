@@ -1,4 +1,4 @@
-package libyears.model
+package technicalLag.model
 
 import kotlinx.serialization.Serializable
 

@@ -26,17 +26,18 @@ data class CreateArtifactDto(
             } ?: emptyList()
             val allVersions = versions + versionsResolved
             val usedVersionDto = allVersions.find { it.versionNumber == usedVersion }
-                ?: VersionDto(versionNumber = usedVersion!!)
 
-            val deferredDeps = transitiveDependencyDeferreds.awaitAll().mapNotNull { it?.toArtifactDto() }
+            if (usedVersionDto != null) {
+                val deferredDeps = transitiveDependencyDeferreds.awaitAll().mapNotNull { it?.toArtifactDto() }
 
-            return ArtifactDto(
-                artifactId = nameId!!,
-                groupId = groupId!!,
-                usedVersion = usedVersionDto,
-                allVersions = allVersions,
-                transitiveDependencies = transitiveDependencies.map { it.toArtifactDto() } + deferredDeps
-            )
+                return ArtifactDto(
+                    artifactId = nameId!!,
+                    groupId = groupId!!,
+                    usedVersion = usedVersionDto,
+                    allVersions = allVersions,
+                    transitiveDependencies = transitiveDependencies.map { it.toArtifactDto() } + deferredDeps
+                )
+            }
         }
 
         throw Exception("Transformation of incomplete artifact not possible.")

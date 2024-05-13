@@ -1,4 +1,4 @@
-package libyears
+package technicalLag
 
 import artifact.model.ArtifactDto
 import com.github.ajalt.clikt.core.CliktCommand
@@ -20,7 +20,7 @@ import kotlin.io.path.createDirectories
  *
  * Output: Libyears annotated to the dependency graph
  */
-class Libyears : CliktCommand() {
+class TechnicalLag : CliktCommand() {
 
     private val inputPath by option(
         help = "Path to the file containing the Paths of" +
@@ -52,36 +52,18 @@ class Libyears : CliktCommand() {
                 recursivePrint(it)
             }
         }
-        projectPaths.paths.map { File(it) }.forEach { resultFile ->
+        projectPaths.paths.mapNotNull { File(it) }.forEach { resultFile ->
             val analyzerResult = Json.decodeFromString<AnalyzerResultDto>(resultFile.readText())
             analyzerResult.dependencyGraphDto.packageManagerToScopes.forEach { (pkg, scopedDeps) ->
-                scopedDeps.scopesToDependencies.forEach { (scope, deps) ->
+                scopedDeps.scopesToRoot.forEach { (scope, deps) ->
                     if (scope != "devDependencies") {
-                        deps.forEach {
-                            recursivePrint(it)
-                        }
+//                        depsforEach {
+                            recursivePrint(deps)
+//                            StoreResultHelper.storeStatsInFile(outputPath.toFile(), it.stats)
+//                        }
                     }
                 }
             }
-            // 1. annotate each node with its libyear
-
-            // 2. For comparison with the original approach
-            // Calculate the sum of libyears for:
-            // i) the whole tree
-            // ii) seperated into prod und dev
-            // iii) seperated into direct and transitive
-            // iv) check in the original paper how they did the risk calculation based on
-            // release sequences and mirror that
-            // 3. Simulations and more precise calculations
-            // argue that ii) and iii) are the most sensible thing to do and calculate
-            // that for all update possibilities
-            // v) for all nodes calculate the libyear stats:
-            // avgLibyears
-            // variance
-            // stdDev
-            // transitiveLibyears
-            // numberOfTransitiveDependencies
-
 
         }
 //

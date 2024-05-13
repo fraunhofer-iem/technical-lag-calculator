@@ -1,4 +1,4 @@
-package libyears.model
+package technicalLag.model
 
 import artifact.model.VersionDto
 import kotlinx.serialization.Serializable

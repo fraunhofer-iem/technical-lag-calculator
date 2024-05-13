@@ -1,4 +1,4 @@
-package libyears.model
+package technicalLag.model
 
 enum class TechnicalLagResultStatus {
     NO_RESULT,

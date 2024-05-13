@@ -3,9 +3,9 @@ package artifact.model
 import io.github.z4kn4fein.semver.Version
 import io.github.z4kn4fein.semver.toVersion
 import kotlinx.serialization.Serializable
-import libyears.model.TechnicalLagDto
-import libyears.model.TechnicalLagResultStatus
-import libyears.model.TechnicalLagUpdatePossibilitiesDto
+import technicalLag.model.TechnicalLagDto
+import technicalLag.model.TechnicalLagResultStatus
+import technicalLag.model.TechnicalLagUpdatePossibilitiesDto
 import util.TimeHelper
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -20,12 +20,39 @@ data class TechnicalLagStatsUpdatePossibilitiesDto(
 
 @Serializable
 data class TechnicalLagStatsDto(
-    val technicalLag: TechnicalLagDto,
+    val technicalLag: TechnicalLagDto? = null,
     val transitiveLibyears: List<Long> = emptyList(),
-    val avgLibyears: Double = transitiveLibyears.average(),
-    val variance: Double = transitiveLibyears.map { (it - avgLibyears).pow(2) }.average(),
+    val transitiveMissedReleases: List<Int> = emptyList(),
+    val transitiveDistance: List<Triple<Int, Int, Int>> = emptyList(),
+    val avgMissedReleases: Double = if(transitiveMissedReleases.isNotEmpty()) transitiveMissedReleases.average() else 0.0,
+    val avgDistance: Triple<Int, Int, Int> = calculateAvgReleaseDistance(transitiveDistance),
+    val avgLibyears: Double = if (transitiveLibyears.isNotEmpty()) transitiveLibyears.average() else 0.0,
+    val variance: Double = if (transitiveLibyears.isNotEmpty()) transitiveLibyears.map { (it - avgLibyears).pow(2) }.average() else 0.0,
     val stdDev: Double = sqrt(variance),
-)
+) {
+
+    companion object {
+        private fun calculateAvgReleaseDistance(distances: List<Triple<Int, Int, Int>>): Triple<Int, Int, Int> {
+            return if (distances.isNotEmpty()) {
+                val sumOfDistances = distances.reduce { acc, triple ->
+                    Triple(
+                        acc.first + triple.first,
+                        acc.second + triple.second,
+                        acc.third + triple.third
+                    )
+                }
+                Triple(
+                    sumOfDistances.first / distances.size,
+                    sumOfDistances.second / distances.size,
+                    sumOfDistances.third / distances.size,
+                )
+            } else {
+                Triple(0, 0, 0)
+            }
+        }
+    }
+
+}
 
 @Serializable
 data class UpdatePossibilities(
@@ -39,8 +66,8 @@ data class ArtifactDto(
     val artifactId: String,
     val groupId: String,
     val usedVersion: VersionDto,
-    val allVersions: List<VersionDto> = listOf(),
-    val updatePossibilities: UpdatePossibilities? = null,
+    val allVersions: List<VersionDto>,
+    val updatePossibilities: UpdatePossibilities? = null, //TODO: for the transitive libyears we have duplicate entries
     val transitiveDependencies: List<ArtifactDto> = listOf()
 ) {
 
@@ -57,13 +84,47 @@ data class ArtifactDto(
         return "$groupId:$artifactId@${usedVersion.versionNumber} \n" +
                 "Technical Lag major (${technicalLag.major?.version?.versionNumber})- time lag in days: ${technicalLag.major?.libyear}, number of missed releases: ${technicalLag.major?.numberOfMissedReleases} \n" +
                 "Transitive Lag: avg. time lag in days: ${stats.major?.avgLibyears}. Std dev. ${stats.major?.stdDev}. All time lag: ${stats.major?.transitiveLibyears}.\n" +
+                "version lag: avg. # of missed releases ${stats.major?.avgMissedReleases}. avg. release distance ${stats.major?.avgDistance}\n\n" +
                 "Technical Lag minor (${technicalLag.minor?.version?.versionNumber})- time lag in days: ${technicalLag.minor?.libyear}, number of missed releases: ${technicalLag.minor?.numberOfMissedReleases} \n" +
                 "Transitive Lag: avg. time lag in days: ${stats.minor?.avgLibyears}. Std dev. ${stats.minor?.stdDev}. All time lag: ${stats.minor?.transitiveLibyears}.\n" +
+                "version lag: avg. # of missed releases ${stats.minor?.avgMissedReleases}. avg. release distance ${stats.minor?.avgDistance}\n\n" +
                 "Technical Lag patch (${technicalLag.patch?.version?.versionNumber})- time lag in days: ${technicalLag.patch?.libyear}, number of missed releases: ${technicalLag.patch?.numberOfMissedReleases} \n" +
                 "Transitive Lag: avg. time lag in days: ${stats.patch?.avgLibyears}. Std dev. ${stats.patch?.stdDev}. All time lag: ${stats.patch?.transitiveLibyears}.\n\n" +
-                "After applying major update: ${updatePossibilities?.major}\n" +
-                "After applying minor update: ${updatePossibilities?.minor}\n" +
-                "After applying patch update: ${updatePossibilities?.patch}\n"
+                "version lag: avg. # of missed releases ${stats.patch?.avgMissedReleases}. avg. release distance ${stats.patch?.avgDistance}\n\n" +
+                updatePossibilities?.let {
+                    "After applying major update: ${it.major}\n" +
+                            "After applying minor update: ${it.minor}\n" +
+                            "After applying patch update: ${it.patch}\n"
+                } + "\n\n"
+    }
+
+    private fun calculateTechnicalLagStats(
+        technicalLag: TechnicalLagDto?,
+        transitiveStats: List<TechnicalLagStatsDto>
+    ): TechnicalLagStatsDto {
+
+        val transitiveLibyears: MutableList<Long> = mutableListOf()
+        val transitiveMissedReleases: MutableList<Int> = mutableListOf()
+        val transitiveReleaseDistance: MutableList<Triple<Int, Int, Int>> = mutableListOf()
+
+        transitiveStats.forEach { stat ->
+            transitiveLibyears.addAll(stat.transitiveLibyears)
+            transitiveMissedReleases.addAll(stat.transitiveMissedReleases)
+            transitiveReleaseDistance.addAll(stat.transitiveDistance)
+        }
+
+        if (technicalLag != null) {
+            transitiveLibyears.add(technicalLag.libyear)
+            transitiveMissedReleases.add(technicalLag.numberOfMissedReleases)
+            transitiveReleaseDistance.add(technicalLag.distance)
+        }
+
+        return TechnicalLagStatsDto(
+            technicalLag = technicalLag,
+            transitiveLibyears = transitiveLibyears,
+            transitiveMissedReleases = transitiveMissedReleases,
+            transitiveDistance = transitiveReleaseDistance
+        )
     }
 
     private fun setSubtreeStats(): TechnicalLagStatsUpdatePossibilitiesDto {
@@ -76,68 +137,37 @@ data class ArtifactDto(
                 major = technicalLag.major?.let { TechnicalLagStatsDto(it) },
             )
         } else {
-            val transitiveLibyears = transitiveDependencies.map { it.setSubtreeStats() }
+
+            val minorStats: MutableList<TechnicalLagStatsDto> = mutableListOf()
+            val patchStats: MutableList<TechnicalLagStatsDto> = mutableListOf()
+            val majorStats: MutableList<TechnicalLagStatsDto> = mutableListOf()
+
+            transitiveDependencies.forEach {
+                val subtreeStats = it.setSubtreeStats()
+                subtreeStats.minor?.let { it1 -> minorStats.add(it1) }
+                subtreeStats.major?.let { it1 -> majorStats.add(it1) }
+                subtreeStats.patch?.let { it1 -> patchStats.add(it1) }
+            }
 
             TechnicalLagStatsUpdatePossibilitiesDto(
-                minor = technicalLag.minor?.let { technicalLag ->
-                    TechnicalLagStatsDto(
-                        technicalLag = technicalLag,
-                        transitiveLibyears = transitiveLibyears.flatMap { transitiveLibyear ->
-                            val minorLibyears =
-                                transitiveLibyear.minor?.transitiveLibyears?.toMutableList() ?: mutableListOf()
+                minor = calculateTechnicalLagStats(technicalLag.minor, minorStats),
+                major = calculateTechnicalLagStats(technicalLag.major, majorStats),
+                patch = calculateTechnicalLagStats(technicalLag.patch, patchStats)
 
-                            transitiveLibyear.minor?.let { minorLag ->
-                                minorLibyears.add(minorLag.technicalLag.libyear)
-                            }
-                            minorLibyears
-                        }
-                    )
-                },
-                patch = technicalLag.patch?.let { technicalLag ->
-                    TechnicalLagStatsDto(
-                        technicalLag = technicalLag,
-                        transitiveLibyears = transitiveLibyears.flatMap { transitiveLibyear ->
-                            val patchLibyears =
-                                transitiveLibyear.patch?.transitiveLibyears?.toMutableList() ?: mutableListOf()
-
-                            transitiveLibyear.patch?.let { minorLag ->
-                                patchLibyears.add(minorLag.technicalLag.libyear)
-                            }
-                            patchLibyears
-                        }
-                    )
-                },
-                major = technicalLag.major?.let { technicalLag ->
-                    TechnicalLagStatsDto(
-                        technicalLag = technicalLag,
-                        transitiveLibyears = transitiveLibyears.flatMap { transitiveLibyear ->
-                            val majorLibyears =
-                                transitiveLibyear.major?.transitiveLibyears?.toMutableList() ?: mutableListOf()
-
-                            transitiveLibyear.major?.let { minorLag ->
-                                majorLibyears.add(minorLag.technicalLag.libyear)
-                            }
-                            majorLibyears
-                        }
-                    )
-                },
-
-                )
+            )
 
         }
     }
 
-    private val technicalLag: TechnicalLagUpdatePossibilitiesDto by lazy {
-        calculateTechnicalLag()
+    val technicalLag: TechnicalLagUpdatePossibilitiesDto by lazy {
+        setTechnicalLag()
     }
 
-    private val stats: TechnicalLagStatsUpdatePossibilitiesDto by lazy {
+    val stats: TechnicalLagStatsUpdatePossibilitiesDto by lazy {
         setSubtreeStats()
     }
 
-    // TODO: This needs refactoring. we want to separate libyear calculation and release distance
-    // we need a dedicated calculation based on available versions
-    private fun calculateTechnicalLag(): TechnicalLagUpdatePossibilitiesDto {
+    private fun setTechnicalLag(): TechnicalLagUpdatePossibilitiesDto {
 
         if (validVersions.contains(usedVersion) && usedVersion.releaseDate != -1L) {
 
@@ -168,6 +198,7 @@ data class ArtifactDto(
         usedVersion: VersionDto,
         versions: List<Pair<VersionDto, Version>>
     ): TechnicalLagDto? {
+
         val newestVersion = try {
             getNewestApplicableVersion(usedVersion, versions)
         } catch (exception: Exception) {
@@ -180,7 +211,7 @@ data class ArtifactDto(
         )
 
         val missedReleases =
-            versions.indexOfFirst { it.first == usedVersion } - versions.indexOfFirst { it.first == newestVersion.second }
+             versions.indexOfFirst { it.first == newestVersion.second } - versions.indexOfFirst { it.first == usedVersion }
 
         val current = usedVersion.versionNumber.toVersion(strict = false)
         val newest = newestVersion.second.versionNumber.toVersion(strict = false)
