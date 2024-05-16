@@ -20,7 +20,7 @@ import kotlin.io.path.createDirectories
 /**
  * Input: Exported analyzer results containing a dependency graph annotated with version information
  *
- * Output: Libyears annotated to the dependency graph
+ * Output: Technical lag annotated to the dependency graph
  */
 class TechnicalLag : CliktCommand() {
 

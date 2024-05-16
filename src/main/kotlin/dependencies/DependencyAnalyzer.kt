@@ -3,6 +3,7 @@ package dependencies
 import artifact.ArtifactService
 import artifact.model.ArtifactDto
 import artifact.model.PackageReferenceDto
+import artifact.model.UpdatePossibilities
 import artifact.model.VersionDto
 import dependencies.model.*
 import org.apache.logging.log4j.kotlin.logger
@@ -145,6 +146,29 @@ class DependencyAnalyzer(
                     groupId = rootNode.groupId,
                     usedVersion = rootNode.usedVersion,
                     transitiveDependencies = directDependencies,
+                    updatePossibilities = UpdatePossibilities(
+                        minor = ArtifactDto(
+                            artifactId = rootNode.artifactId,
+                            groupId = rootNode.groupId,
+                            usedVersion = rootNode.usedVersion,
+                            transitiveDependencies = directDependencies.mapNotNull { it.updatePossibilities.minor },
+                            allVersions = listOf(rootNode.usedVersion)
+                        ),
+                        patch = ArtifactDto(
+                            artifactId = rootNode.artifactId,
+                            groupId = rootNode.groupId,
+                            usedVersion = rootNode.usedVersion,
+                            transitiveDependencies = directDependencies.mapNotNull { it.updatePossibilities.patch },
+                            allVersions = listOf(rootNode.usedVersion)
+                        ),
+                        major = ArtifactDto(
+                            artifactId = rootNode.artifactId,
+                            groupId = rootNode.groupId,
+                            usedVersion = rootNode.usedVersion,
+                            transitiveDependencies = directDependencies.mapNotNull { it.updatePossibilities.major },
+                            allVersions = listOf(rootNode.usedVersion)
+                        )
+                    ),
                     allVersions = listOf(rootNode.usedVersion)
                 )
 

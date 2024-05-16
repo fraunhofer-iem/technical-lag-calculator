@@ -1,10 +1,11 @@
 package artifact.model
 
+import artifact.model.VersionDto.Companion.getNewestApplicableVersion
+import artifact.model.VersionDto.Companion.getSortedSemVersions
 import io.github.z4kn4fein.semver.Version
 import io.github.z4kn4fein.semver.toVersion
 import kotlinx.serialization.Serializable
 import technicalLag.model.TechnicalLagDto
-import technicalLag.model.TechnicalLagResultStatus
 import technicalLag.model.TechnicalLagUpdatePossibilitiesDto
 import util.TimeHelper
 import kotlin.math.pow
@@ -27,7 +28,11 @@ data class TechnicalLagStatsDto(
     val avgTransitiveMissedReleases: Double = if (transitiveMissedReleases.isNotEmpty()) transitiveMissedReleases.average() else 0.0,
     val avgTransitiveDistance: Triple<Double, Double, Double> = calculateAvgReleaseDistance(transitiveDistance),
     val avgTransitiveLibyears: Double = if (transitiveLibyears.isNotEmpty()) transitiveLibyears.average() else 0.0,
-    val variance: Double = if (transitiveLibyears.isNotEmpty()) transitiveLibyears.map { (it - avgTransitiveLibyears).pow(2) }
+    val variance: Double = if (transitiveLibyears.isNotEmpty()) transitiveLibyears.map {
+        (it - avgTransitiveLibyears).pow(
+            2
+        )
+    }
         .average() else 0.0,
     val stdDev: Double = sqrt(variance),
 ) {
@@ -85,9 +90,9 @@ data class ArtifactWithStatsDto(
         usedVersion = artifact.usedVersion,
         allVersions = artifact.allVersions,
         updatePossibilitiesWithStats = UpdatePossibilitiesWithStats(
-            minor = artifact.updatePossibilities.minor?.let {ArtifactWithStatsDto(it)},
-            major = artifact.updatePossibilities.major?.let {ArtifactWithStatsDto(it)},
-            patch = artifact.updatePossibilities.patch?.let {ArtifactWithStatsDto(it)},
+            minor = artifact.updatePossibilities.minor?.let { ArtifactWithStatsDto(it) },
+            major = artifact.updatePossibilities.major?.let { ArtifactWithStatsDto(it) },
+            patch = artifact.updatePossibilities.patch?.let { ArtifactWithStatsDto(it) },
         ),
         transitiveDependencies = artifact.transitiveDependencies.map { ArtifactWithStatsDto(it) },
         stats = artifact.stats,
@@ -128,7 +133,8 @@ data class ArtifactDto(
                     "After applying major update: ${it.major}\n" +
                             "After applying minor update: ${it.minor}\n" +
                             "After applying patch update: ${it.patch}\n"
-                } + "\n\n"
+                } +
+                "\n\n"
     }
 
     private fun calculateTechnicalLagStats(
@@ -202,7 +208,6 @@ data class ArtifactDto(
 
         if (validVersions.contains(usedVersion)) {
 
-
             val current = usedVersion.versionNumber.toVersion(strict = false)
             val filteredVersion = if (current.isStable) {
                 getSortedSemVersions(validVersions).filter { it.second.isStable && !it.second.isPreRelease }
@@ -215,6 +220,7 @@ data class ArtifactDto(
             val patch = calculateTechnicalLag(
                 usedVersion,
                 filteredVersion.filter { it.second.major == current.major && it.second.minor == current.minor })
+
             return TechnicalLagUpdatePossibilitiesDto(
                 minor = minor,
                 patch = patch,
@@ -259,37 +265,5 @@ data class ArtifactDto(
         )
     }
 
-    /**
-     * Returns the newest applicable, stable version compared to the given current version.
-     * If a version is explicitly tagged as default this version is used for the comparison.
-     * If not the stable version with the highest version number is used.
-     * Throws if the current version doesn't follow the semver format.
-     */
-    private fun getNewestApplicableVersion(
-        currentVersion: VersionDto,
-        versions: List<Pair<VersionDto, Version>>
-    ): Pair<TechnicalLagResultStatus, VersionDto> {
 
-        val current = currentVersion.versionNumber.toVersion(strict = false)
-        val newestVersion = versions.last()
-
-        versions.find { it.first.isDefault }?.let { defaultVersion ->
-            return if (defaultVersion.second > current) {
-                Pair(TechnicalLagResultStatus.SEM_VERSION_WITH_DEFAULT, defaultVersion.first)
-            } else {
-                Pair(TechnicalLagResultStatus.SEM_VERSION_WITH_DEFAULT, currentVersion)
-            }
-        }
-
-        if (newestVersion.second > current) {
-            return Pair(TechnicalLagResultStatus.SEM_VERSION_WITHOUT_DEFAULT, newestVersion.first)
-        }
-        return Pair(TechnicalLagResultStatus.SEM_VERSION_WITHOUT_DEFAULT, currentVersion)
-    }
-
-    private fun getSortedSemVersions(packageList: List<VersionDto>): List<Pair<VersionDto, Version>> {
-        return packageList.map {
-            Pair(it, it.versionNumber.toVersion(strict = false))
-        }.sortedBy { it.second }
-    }
 }
