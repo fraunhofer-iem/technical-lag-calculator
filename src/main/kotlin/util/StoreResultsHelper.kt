@@ -1,5 +1,7 @@
 package util
 
+import artifact.model.ArtifactDto
+import artifact.model.ArtifactWithStatsDto
 import dependencies.ProjectPaths
 import dependencies.db.AnalyzerResult
 import dependencies.model.AnalyzerResultDto
@@ -29,7 +31,7 @@ data class StorageConfig(
 
 class StoreResultHelper {
     companion object {
-        private val json = Json { prettyPrint = false }
+        private val json = Json { prettyPrint = true }
 
         suspend fun storeAnalyzerResultInFile(
             outputDirectory: File,
@@ -42,6 +44,21 @@ class StoreResultHelper {
 
                 val jsonString =
                     json.encodeToString(AnalyzerResultDto.serializer(), result)
+                outputFile.writeText(jsonString)
+                return@withContext outputFile
+            }
+        }
+
+        suspend fun storeStatsInFile(
+            outputDirectory: File, scope: String, artifactDto: ArtifactWithStatsDto,
+            dispatcher: CoroutineDispatcher = Dispatchers.IO
+        ): File {
+            val outputFile = outputDirectory.resolve("${Date().time}-${scope}-stats.json")
+            return withContext(dispatcher) {
+                outputFile.createNewFile()
+
+                val jsonString =
+                    json.encodeToString(ArtifactWithStatsDto.serializer(), artifactDto)
                 outputFile.writeText(jsonString)
                 return@withContext outputFile
             }

@@ -1,6 +1,7 @@
 package technicalLag
 
 import artifact.model.ArtifactDto
+import artifact.model.ArtifactWithStatsDto
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
@@ -11,6 +12,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger
 import org.slf4j.MDC
+import util.StoreResultHelper
 import java.io.File
 import kotlin.io.path.createDirectories
 
@@ -52,15 +54,15 @@ class TechnicalLag : CliktCommand() {
                 recursivePrint(it)
             }
         }
-        projectPaths.paths.mapNotNull { File(it) }.forEach { resultFile ->
+        projectPaths.paths.map { File(it) }.forEach { resultFile ->
             val analyzerResult = Json.decodeFromString<AnalyzerResultDto>(resultFile.readText())
             analyzerResult.dependencyGraphDto.packageManagerToScopes.forEach { (pkg, scopedDeps) ->
-                scopedDeps.scopesToRoot.forEach { (scope, deps) ->
+                scopedDeps.scopesToRoot.forEach { (scope, dep) ->
                     if (scope != "devDependencies") {
-//                        depsforEach {
-                            recursivePrint(deps)
-//                            StoreResultHelper.storeStatsInFile(outputPath.toFile(), it.stats)
-//                        }
+                            recursivePrint(dep)
+                            StoreResultHelper.storeStatsInFile(outputPath.toFile(), scope,
+                                ArtifactWithStatsDto(dep)
+                                )
                     }
                 }
             }
