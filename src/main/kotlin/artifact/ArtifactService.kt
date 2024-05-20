@@ -7,6 +7,7 @@ import http.deps.model.Node
 import io.github.z4kn4fein.semver.toVersion
 import kotlinx.coroutines.*
 import org.apache.logging.log4j.kotlin.logger
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
     private val depsClient: DepsClient = DepsClient(),
@@ -15,15 +16,71 @@ class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
     private val ioScope: CoroutineScope = CoroutineScope(Dispatchers.IO.limitedParallelism(10))
 ) {
 
-    suspend fun directDependencyPackageReferenceToArtifact(
+    private val mutex = ReentrantReadWriteLock()
+    private val artifactToVersion: MutableMap<String, List<VersionDto>> = mutableMapOf()
+
+    suspend fun getArtifactToVersionsMap(
+        artifacts: List<ArtifactDto>,
+        ecosystem: String
+    ): Map<String, List<VersionDto>> {
+        artifacts.flatMap { artifact ->
+            addVersionsForArtifact(artifact, ecosystem)
+        }.joinAll()
+        val result = artifactToVersion.toMap()
+        artifactToVersion.clear()
+        return result
+    }
+
+    private fun containsArtifactId(artifactId: String): Boolean {
+        mutex.readLock().lock()
+        try {
+            return artifactToVersion.contains(artifactId)
+        } finally {
+            mutex.readLock().unlock()
+        }
+    }
+
+    private suspend fun addVersionsForArtifact(
+        artifact: ArtifactDto,
+        ecosystem: String,
+        jobList: MutableList<Job> = mutableListOf()
+    ): List<Job> {
+
+        val id = "${artifact.groupId}:${artifact.artifactId}"
+
+
+
+        if (!containsArtifactId(id)) {
+            jobList.add(ioScope.launch {
+                val versions = depsClient.getVersionsForPackage(
+                    ecosystem = ecosystem,
+                    namespace = artifact.groupId,
+                    name = artifact.artifactId
+                )
+                mutex.writeLock().lock()
+                try {
+                    artifactToVersion[id] = versions
+                } finally {
+                    mutex.writeLock().unlock()
+                }
+            })
+            if (artifact.transitiveDependencies.isNotEmpty()) {
+                artifact.transitiveDependencies.flatMap { addVersionsForArtifact(it, ecosystem, jobList) }
+            }
+        }
+
+        return jobList
+    }
+
+
+    fun directDependencyPackageReferenceToArtifact(
         rootPackage: PackageReferenceDto
     ): ArtifactDto? {
 
         return getDependencyVersionInformation(
             packageRef = rootPackage,
             seen = mutableSetOf()
-        )?.toArtifactDto() // The toDto call resolves all deferreds
-
+        )
     }
 
     fun close() {
@@ -31,16 +88,23 @@ class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
         ioScope.cancel()
     }
 
-    suspend fun simulateUpdateForArtifact(ecosystem: String, artifactDto: ArtifactDto): ArtifactDto {
+    suspend fun simulateUpdateForArtifact(
+        ecosystem: String,
+        artifactDto: ArtifactDto,
+        usedVersion: VersionDto,
+        allVersions: List<VersionDto>
+    ): UpdatePossibilities {
         try {
             logger.info { "Simulate update for ${artifactDto.artifactId}" }
             val highestPossibleMinor =
-                getApplicableVersion(artifactDto.usedVersion, artifactDto.allVersions, VersionTypes.Minor)
+                getApplicableVersion(usedVersion, allVersions, VersionTypes.Minor)
             val highestPossibleMajor =
-                getApplicableVersion(artifactDto.usedVersion, artifactDto.allVersions, VersionTypes.Major)
+                getApplicableVersion(usedVersion, allVersions, VersionTypes.Major)
             val highestPossiblePatch =
-                getApplicableVersion(artifactDto.usedVersion, artifactDto.allVersions, VersionTypes.Patch)
+                getApplicableVersion(usedVersion, allVersions, VersionTypes.Patch)
             logger.info { "Update possibilities $highestPossiblePatch, $highestPossibleMajor, $highestPossibleMinor" }
+
+            // TODO: we need to merge this existing code with the updated version storage data structure
 
             val updatedSubTreeMinor = getDependencyTreeForPkg(
                 ecosystem,
@@ -63,23 +127,15 @@ class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
                 highestPossiblePatch
             )
 
-            val updatePossibilities = UpdatePossibilities(
+            return UpdatePossibilities(
                 minor = updatedSubTreeMinor,
                 major = updatedSubTreeMajor,
                 patch = updatedSubTreePatch
             )
 
-            return ArtifactDto(
-                artifactId = artifactDto.artifactId,
-                groupId = artifactDto.groupId,
-                usedVersion = artifactDto.usedVersion,
-                allVersions = artifactDto.allVersions,
-                transitiveDependencies = artifactDto.transitiveDependencies,
-                updatePossibilities = updatePossibilities
-            )
         } catch (exception: Exception) {
             logger.warn { "Get update possibilities failed with $exception" }
-            return artifactDto
+            return UpdatePossibilities()
         }
     }
 
@@ -136,11 +192,9 @@ class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
                     depsTreeResponse,
                     0,
                     depsTreeResponse.nodes.first()
-                ).toArtifactDto()
-
+                )
             }
         }
-
 
         return null
     }
@@ -174,12 +228,12 @@ class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
     }
 
 
-    private suspend fun getCreateArtifactFromVersion(
+    private fun getCreateArtifactFromVersion(
         ecosystem: String,
         tree: DepsTreeResponseDto,
         idx: Int,
         node: Node
-    ): CreateArtifactDto {
+    ): ArtifactDto {
 
         val transitiveNodes = tree.edges
             .filter { it.fromNode == idx }
@@ -193,58 +247,38 @@ class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
             Pair("", nameAndNamespaceSplit[0])
         }
 
-        val versions = ioScope.async {
-            depsClient.getVersionsForPackage(
-                ecosystem = ecosystem,
-                namespace = nameAndNamespace.first,
-                name = nameAndNamespace.second
-            )
-        }
-
-
-        return CreateArtifactDto(
-            nameId = nameAndNamespace.second,
+        return ArtifactDto(
+            artifactId = nameAndNamespace.second,
             groupId = nameAndNamespace.first,
             usedVersion = node.versionKey.version,
             transitiveDependencies = transitiveNodes,
-            versionDeferred = versions
         )
     }
 
 
-    private suspend fun getDependencyVersionInformation(
+    private fun getDependencyVersionInformation(
         packageRef: PackageReferenceDto,
         seen: MutableSet<PackageReferenceDto>,
-    ): CreateArtifactDto? {
+    ): ArtifactDto? {
         return if (seen.contains(packageRef)) {
             null
         } else {
             seen.add(packageRef)
 
-            val versions = ioScope.async {
-                depsClient.getVersionsForPackage(
-                    ecosystem = packageRef.type,
-                    namespace = packageRef.namespace,
-                    name = packageRef.name
+            val transitiveDependencies = packageRef.dependencies.mapNotNull {
+                getDependencyVersionInformation(
+                    packageRef = it,
+                    seen = seen
                 )
             }
 
-            val transitiveDependencies = packageRef.dependencies.map {
-                ioScope.async {
-                    getDependencyVersionInformation(
-                        packageRef = it,
-                        seen = seen
-                    )
-                }
-            }
-
-            return CreateArtifactDto(
-                nameId = packageRef.name,
+            return ArtifactDto(
+                artifactId = packageRef.name,
                 groupId = packageRef.namespace,
                 usedVersion = packageRef.version,
-                versionDeferred = versions,
-                transitiveDependencyDeferreds = transitiveDependencies
+                transitiveDependencies = transitiveDependencies
             )
         }
     }
 }
+

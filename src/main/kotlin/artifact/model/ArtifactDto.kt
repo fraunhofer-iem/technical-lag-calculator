@@ -78,8 +78,8 @@ data class UpdatePossibilitiesWithStats(
 data class ArtifactWithStatsDto(
     val artifactId: String,
     val groupId: String,
-    val usedVersion: VersionDto,
-    val allVersions: List<VersionDto>,
+//    val usedVersion: VersionDto,
+//    val allVersions: List<VersionDto>,
     val updatePossibilitiesWithStats: UpdatePossibilitiesWithStats,
     val transitiveDependencies: List<ArtifactWithStatsDto>,
     val stats: TechnicalLagStatsUpdatePossibilitiesDto
@@ -87,8 +87,8 @@ data class ArtifactWithStatsDto(
     constructor(artifact: ArtifactDto) : this(
         artifactId = artifact.artifactId,
         groupId = artifact.groupId,
-        usedVersion = artifact.usedVersion,
-        allVersions = artifact.allVersions,
+//        usedVersion = artifact.usedVersion,
+//        allVersions = artifact.allVersions,
         updatePossibilitiesWithStats = UpdatePossibilitiesWithStats(
             minor = artifact.updatePossibilities.minor?.let { ArtifactWithStatsDto(it) },
             major = artifact.updatePossibilities.major?.let { ArtifactWithStatsDto(it) },
@@ -103,23 +103,22 @@ data class ArtifactWithStatsDto(
 data class ArtifactDto(
     val artifactId: String,
     val groupId: String,
-    val usedVersion: VersionDto,
-    val allVersions: List<VersionDto>,
+    val usedVersion: String,
     val updatePossibilities: UpdatePossibilities = UpdatePossibilities(),
     val transitiveDependencies: List<ArtifactDto> = listOf()
 ) {
 
-    private val validVersions = allVersions.mapNotNull {
-        try {
-            it.versionNumber.toVersion(strict = false)
-            it
-        } catch (e: Exception) {
-            null
-        }
-    }
+//    private val validVersions = allVersions.mapNotNull {
+//        try {
+//            it.versionNumber.toVersion(strict = false)
+//            it
+//        } catch (e: Exception) {
+//            null
+//        }
+//    }
 
     override fun toString(): String {
-        return "$groupId:$artifactId@${usedVersion.versionNumber} \n" +
+        return "$groupId:$artifactId@${usedVersion} \n" +
                 "Technical Lag major (${stats.major.technicalLag?.version?.versionNumber})- time lag in days: ${stats.major.technicalLag?.libyear}, number of missed releases: ${stats.major.technicalLag?.numberOfMissedReleases} \n" +
                 "Transitive Lag: avg. time lag in days: ${stats.major.avgTransitiveLibyears}. Std dev. ${stats.major.stdDev}. All time lag: ${stats.major.transitiveLibyears}.\n" +
                 "version lag: avg. # of missed releases ${stats.major.avgTransitiveMissedReleases}. avg. release distance ${stats.major.avgTransitiveDistance}\n\n" +
@@ -208,7 +207,7 @@ data class ArtifactDto(
 
         if (validVersions.contains(usedVersion)) {
 
-            val current = usedVersion.versionNumber.toVersion(strict = false)
+            val current = usedVersion.toVersion(strict = false)
             val filteredVersion = if (current.isStable) {
                 getSortedSemVersions(validVersions).filter { it.second.isStable && !it.second.isPreRelease }
             } else {

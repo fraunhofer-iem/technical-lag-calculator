@@ -4,7 +4,6 @@ import artifact.ArtifactService
 import artifact.model.ArtifactDto
 import artifact.model.PackageReferenceDto
 import artifact.model.UpdatePossibilities
-import artifact.model.VersionDto
 import dependencies.model.*
 import org.apache.logging.log4j.kotlin.logger
 import org.ossreviewtoolkit.analyzer.Analyzer
@@ -19,7 +18,6 @@ import org.ossreviewtoolkit.model.utils.PackageCurationProvider
 import org.ossreviewtoolkit.plugins.packagecurationproviders.api.PackageCurationProviderFactory
 import org.ossreviewtoolkit.plugins.packagecurationproviders.api.SimplePackageCurationProvider
 import java.io.File
-import java.util.*
 
 
 data class DependencyAnalyzerConfig(
@@ -48,24 +46,26 @@ class DependencyAnalyzer(
         return try {
             val rawAnalyzerResult = runAnalyzer(projectPath)
             val mainProject = rawAnalyzerResult.repositoryInfo.projects.first()
-            val usedVersion = VersionDto(mainProject.version, releaseDate = Date().time)
+
             val rootNode = ArtifactDto(
                 artifactId = mainProject.name,
                 groupId = mainProject.namespace,
-                usedVersion = usedVersion,
-                allVersions = listOf(usedVersion),
+                usedVersion = mainProject.version,
             )
+
             val transformedGraph = transformDependencyGraph(
                 rawAnalyzerResult.dependencyGraphs,
                 simulateUpdates = true,
                 rootNode = rootNode
             )
 
+            val versions = artifactService.getArtifactToVersionsMap(rootNode.transitiveDependencies, mainProject.type)
 
             val result = AnalyzerResultDto(
                 dependencyGraphDto = transformedGraph,
                 repositoryInfo = rawAnalyzerResult.repositoryInfo,
-                environmentInfo = rawAnalyzerResult.environmentInfo
+                environmentInfo = rawAnalyzerResult.environmentInfo,
+                versions = versions.map { VersionMap(it.key, it.value) }
             )
             results.add(result)
             result
@@ -131,12 +131,12 @@ class DependencyAnalyzer(
                 }
 
                 val directDependencies = if (simulateUpdates) {
-                    initialDependencies.map {
-                        artifactService.simulateUpdateForArtifact(
-                            packageManager,
-                            it
-                        )
-                    }
+//                    initialDependencies.map {
+//                        artifactService.simulateUpdateForArtifact(
+//                            packageManager,
+//                            it
+//                        )
+//                    }
                 } else {
                     initialDependencies
                 }
@@ -145,31 +145,27 @@ class DependencyAnalyzer(
                     artifactId = rootNode.artifactId,
                     groupId = rootNode.groupId,
                     usedVersion = rootNode.usedVersion,
-                    transitiveDependencies = directDependencies,
+                    transitiveDependencies = initialDependencies,
                     updatePossibilities = UpdatePossibilities(
                         minor = ArtifactDto(
                             artifactId = rootNode.artifactId,
                             groupId = rootNode.groupId,
                             usedVersion = rootNode.usedVersion,
-                            transitiveDependencies = directDependencies.mapNotNull { it.updatePossibilities.minor },
-                            allVersions = listOf(rootNode.usedVersion)
+//                            transitiveDependencies = directDependencies.mapNotNull { it.updatePossibilities.minor },
                         ),
                         patch = ArtifactDto(
                             artifactId = rootNode.artifactId,
                             groupId = rootNode.groupId,
                             usedVersion = rootNode.usedVersion,
-                            transitiveDependencies = directDependencies.mapNotNull { it.updatePossibilities.patch },
-                            allVersions = listOf(rootNode.usedVersion)
+//                            transitiveDependencies = directDependencies.mapNotNull { it.updatePossibilities.patch },
                         ),
                         major = ArtifactDto(
                             artifactId = rootNode.artifactId,
                             groupId = rootNode.groupId,
                             usedVersion = rootNode.usedVersion,
-                            transitiveDependencies = directDependencies.mapNotNull { it.updatePossibilities.major },
-                            allVersions = listOf(rootNode.usedVersion)
+//                            transitiveDependencies = directDependencies.mapNotNull { it.updatePossibilities.major },
                         )
                     ),
-                    allVersions = listOf(rootNode.usedVersion)
                 )
 
             }
