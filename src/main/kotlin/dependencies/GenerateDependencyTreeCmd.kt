@@ -21,8 +21,6 @@ data class ProjectPaths(val paths: List<String>)
  */
 class GenerateDependencyTree : CliktCommand() {
 
-    //TODO: check for duplicate versions and reuse those
-
     private val projectListPath by option(
         help = "Path to the file containing the Paths of" +
                 "the repositories which will be analyzed."

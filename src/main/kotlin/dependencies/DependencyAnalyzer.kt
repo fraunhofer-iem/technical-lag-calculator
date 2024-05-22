@@ -1,15 +1,16 @@
 package dependencies
 
 import artifact.ArtifactService
-import artifact.model.ArtifactDto
-import artifact.model.PackageReferenceDto
-import artifact.model.UpdatePossibilities
+import artifact.model.*
 import dependencies.model.*
+import http.deps.DepsClient
+import kotlinx.coroutines.*
 import org.apache.logging.log4j.kotlin.logger
 import org.ossreviewtoolkit.analyzer.Analyzer
 import org.ossreviewtoolkit.analyzer.PackageManagerFactory
 import org.ossreviewtoolkit.analyzer.determineEnabledPackageManagers
 import org.ossreviewtoolkit.model.DependencyGraph
+import org.ossreviewtoolkit.model.PackageReference
 import org.ossreviewtoolkit.model.ResolvedPackageCurations
 import org.ossreviewtoolkit.model.config.AnalyzerConfiguration
 import org.ossreviewtoolkit.model.config.OrtConfiguration
@@ -34,10 +35,14 @@ private data class RawAnalyzerResult(
 )
 
 
-class DependencyAnalyzer(
+class DependencyAnalyzer @OptIn(ExperimentalCoroutinesApi::class) constructor(
     private val artifactService: ArtifactService = ArtifactService(),
     private val config: DependencyAnalyzerConfig = createDefaultConfig(),
-    private val analyzer: Analyzer = Analyzer(config = config.analyzerConfiguration)
+    private val analyzer: Analyzer = Analyzer(config = config.analyzerConfiguration),
+    private val depsClient: DepsClient = DepsClient(),
+    // It is important to limit the parallelization of the IO scope, which is used to make server
+    // requests, or else the server at some point will tell us to go away.
+    private val ioScope: CoroutineScope = CoroutineScope(Dispatchers.IO.limitedParallelism(10))
 ) {
 
     private val results: MutableList<AnalyzerResultDto> = mutableListOf()
@@ -47,25 +52,22 @@ class DependencyAnalyzer(
             val rawAnalyzerResult = runAnalyzer(projectPath)
             val mainProject = rawAnalyzerResult.repositoryInfo.projects.first()
 
-            val rootNode = ArtifactDto(
-                artifactId = mainProject.name,
-                groupId = mainProject.namespace,
-                usedVersion = mainProject.version,
-            )
 
-            val transformedGraph = transformDependencyGraph(
+            val transformedGraphs = transformDependencyGraph(
                 rawAnalyzerResult.dependencyGraphs,
-                simulateUpdates = true,
-                rootNode = rootNode
             )
-
-            val versions = artifactService.getArtifactToVersionsMap(rootNode.transitiveDependencies, mainProject.type)
 
             val result = AnalyzerResultDto(
-                dependencyGraphDto = transformedGraph,
+                dependencyGraphDtos = transformedGraphs.map {
+                    DependencyGraphsDto(
+                        dependencyGraphs = it,
+                        version = mainProject.version,
+                        artifactId = mainProject.name,
+                        groupId = mainProject.namespace
+                    )
+                },
                 repositoryInfo = rawAnalyzerResult.repositoryInfo,
                 environmentInfo = rawAnalyzerResult.environmentInfo,
-                versions = versions.map { VersionMap(it.key, it.value) }
             )
             results.add(result)
             result
@@ -113,69 +115,114 @@ class DependencyAnalyzer(
         )
     }
 
+    private suspend fun getArtifactsWithVersions(ecosystem: String, artifacts: List<Artifact>): List<Artifact> {
+        val artifactDeferred: List<Deferred<Artifact>> = artifacts.map { artifact ->
+            ioScope.async {
+                val versions = depsClient.getVersionsForPackage(
+                    ecosystem = ecosystem,
+                    namespace = artifact.groupId,
+                    name = artifact.artifactId
+                )
+                Artifact(
+                    artifactId = artifact.artifactId,
+                    groupId = artifact.groupId,
+                    versions = versions
+                )
+            }
+        }
+
+        return artifactDeferred.awaitAll()
+    }
+
     private suspend fun transformDependencyGraph(
-        dependencyGraphs: Map<String, DependencyGraph>,
-        simulateUpdates: Boolean = false,
-        rootNode: ArtifactDto,
-    ): DependencyGraphDto {
+        dependencyGraphs: Map<String, DependencyGraph>
+    ): List<DependencyGraphs> {
 
-        val transformedGraph = dependencyGraphs.map { (packageManager, graph) ->
 
-            val transformedScope = graph.createScopes().associate { scope ->
+        return dependencyGraphs.map { (packageManager, graph) ->
 
-                val initialDependencies = scope.dependencies.mapNotNull { packageRef ->
-
-                    artifactService.directDependencyPackageReferenceToArtifact(
-                        rootPackage = PackageReferenceDto.initFromPackageRef(packageRef),
+            val seen: MutableMap<String, Int> = mutableMapOf() // maps identifier to artifact idx
+            val uniqueArtifacts: MutableList<Artifact> = mutableListOf()
+            graph.packages.forEach { current ->
+                val ident = current.namespace + current.name
+                if (!seen.contains(ident)) {
+                    seen[ident] = uniqueArtifacts.count()
+                    uniqueArtifacts.add(
+                        Artifact(
+                            artifactId = current.name,
+                            groupId = current.namespace,
+                        )
                     )
                 }
-
-                val directDependencies = if (simulateUpdates) {
-//                    initialDependencies.map {
-//                        artifactService.simulateUpdateForArtifact(
-//                            packageManager,
-//                            it
-//                        )
-//                    }
-                } else {
-                    initialDependencies
-                }
-
-                scope.name to ArtifactDto(
-                    artifactId = rootNode.artifactId,
-                    groupId = rootNode.groupId,
-                    usedVersion = rootNode.usedVersion,
-                    transitiveDependencies = initialDependencies,
-                    updatePossibilities = UpdatePossibilities(
-                        minor = ArtifactDto(
-                            artifactId = rootNode.artifactId,
-                            groupId = rootNode.groupId,
-                            usedVersion = rootNode.usedVersion,
-//                            transitiveDependencies = directDependencies.mapNotNull { it.updatePossibilities.minor },
-                        ),
-                        patch = ArtifactDto(
-                            artifactId = rootNode.artifactId,
-                            groupId = rootNode.groupId,
-                            usedVersion = rootNode.usedVersion,
-//                            transitiveDependencies = directDependencies.mapNotNull { it.updatePossibilities.patch },
-                        ),
-                        major = ArtifactDto(
-                            artifactId = rootNode.artifactId,
-                            groupId = rootNode.groupId,
-                            usedVersion = rootNode.usedVersion,
-//                            transitiveDependencies = directDependencies.mapNotNull { it.updatePossibilities.major },
-                        )
-                    ),
-                )
-
             }
-            val scopedDependencyDto = ScopedDependencyDto(transformedScope)
-            packageManager to scopedDependencyDto
-        }.toMap()
+
+            val artifactsWithVersions: List<Artifact> = getArtifactsWithVersions(
+                artifacts = uniqueArtifacts,
+                ecosystem = packageManager
+            )
+            uniqueArtifacts.clear()
 
 
-        return DependencyGraphDto(transformedGraph)
+            val graphs = graph.createScopes().associate { scope ->
+                val directDependencyIndices = mutableListOf<Int>()
+                val nodes = mutableListOf<ArtifactNode>()
+                val edges = mutableListOf<ArtifactNodeEdge>()
 
+                val seenPkgs: MutableSet<PackageReference> = mutableSetOf()
+                scope.dependencies.forEach { packageRef ->
+
+                    fun packageRefToArtifact(namespace: String, name: String) {
+                        val ident = namespace + name
+
+                        val idx = seen[ident] ?: -1
+                        val artifact = artifactsWithVersions[idx]
+                        val usedVersionIdx =
+                            artifact.versions.indexOfFirst { it.versionNumber == packageRef.id.version }
+
+                        nodes.add(
+                            ArtifactNode(
+                                artifactIdx = idx,
+                                usedVersionIdx = usedVersionIdx
+                            )
+                        )
+
+                        packageRef.dependencies.forEach { dependency ->
+                            val depIdent = dependency.id.namespace + dependency.id.name
+                            val depIdx = seen[depIdent] ?: -1
+                            edges.add(
+                                ArtifactNodeEdge(
+                                    from = idx,
+                                    to = depIdx
+                                )
+                            )
+
+                            if (!seenPkgs.contains(dependency)) { // TODO: test if this is actually correct and generates a complete tree
+                                seenPkgs.add(dependency)
+                                packageRefToArtifact(
+                                    namespace = dependency.id.namespace,
+                                    name = dependency.id.name
+                                )
+                            }
+                        }
+                    }
+                    seenPkgs.add(packageRef)
+                    packageRefToArtifact(name = packageRef.id.name, namespace = packageRef.id.namespace)
+                    directDependencyIndices.addLast(seen[packageRef.id.namespace + packageRef.id.name])
+
+                }
+                scope.name to DependencyGraph(
+                    nodes = nodes,
+                    edges = edges,
+                    directDependencyIndices = directDependencyIndices
+                )
+            }
+
+            DependencyGraphs(
+                ecosystem = packageManager,
+                artifacts = artifactsWithVersions,
+                graph = graphs
+            )
+        }
     }
 
     companion object {

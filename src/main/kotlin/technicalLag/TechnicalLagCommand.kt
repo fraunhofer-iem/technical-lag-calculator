@@ -54,20 +54,24 @@ class TechnicalLag : CliktCommand() {
                 recursivePrint(it)
             }
         }
-        projectPaths.paths.map { File(it) }.forEach { resultFile ->
-            val analyzerResult = Json.decodeFromString<AnalyzerResultDto>(resultFile.readText())
-            analyzerResult.dependencyGraphDto.packageManagerToScopes.forEach { (pkg, scopedDeps) ->
-                scopedDeps.scopesToRoot.forEach { (scope, dep) ->
-                    if (scope != "devDependencies") {
-                            recursivePrint(dep)
-                            StoreResultHelper.storeStatsInFile(outputPath.toFile(), scope,
-                                ArtifactWithStatsDto(dep)
-                                )
-                    }
-                }
-            }
+//        projectPaths.paths.map { File(it) }.forEach { resultFile ->
+//            val analyzerResult = Json.decodeFromString<AnalyzerResultDto>(resultFile.readText())
+//            analyzerResult.dependencyGraphDto.packageManagerToScopes.forEach { (pkg, scopedDeps) ->
+//                scopedDeps.scopesToRoot.forEach { (scope, dep) ->
+//                    if (scope != "devDependencies") {
+//                            recursivePrint(dep)
+//                            StoreResultHelper.storeStatsInFile(outputPath.toFile(), scope,
+//                                ArtifactWithStatsDto(dep)
+//                                )
+//                    }
+//                }
+//            }
+//
+//        }
 
-        }
+
+
+
 //
 //        gits.urls.forEach { gitUrl ->
 //            logger.info { "Analyzing git at url $gitUrl" }

@@ -5,11 +5,14 @@ import artifact.model.VersionDto.Companion.getSortedSemVersions
 import io.github.z4kn4fein.semver.Version
 import io.github.z4kn4fein.semver.toVersion
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import technicalLag.model.TechnicalLagDto
 import technicalLag.model.TechnicalLagUpdatePossibilitiesDto
 import util.TimeHelper
 import kotlin.math.pow
 import kotlin.math.sqrt
+
+
 
 
 @Serializable
@@ -205,27 +208,27 @@ data class ArtifactDto(
 
     private fun calculateTechnicalLag(): TechnicalLagUpdatePossibilitiesDto {
 
-        if (validVersions.contains(usedVersion)) {
-
-            val current = usedVersion.toVersion(strict = false)
-            val filteredVersion = if (current.isStable) {
-                getSortedSemVersions(validVersions).filter { it.second.isStable && !it.second.isPreRelease }
-            } else {
-                getSortedSemVersions(validVersions).filter { !it.second.isPreRelease }
-            }
-
-            val major = calculateTechnicalLag(usedVersion, filteredVersion)
-            val minor = calculateTechnicalLag(usedVersion, filteredVersion.filter { it.second.major == current.major })
-            val patch = calculateTechnicalLag(
-                usedVersion,
-                filteredVersion.filter { it.second.major == current.major && it.second.minor == current.minor })
-
-            return TechnicalLagUpdatePossibilitiesDto(
-                minor = minor,
-                patch = patch,
-                major = major,
-            )
-        }
+//        if (validVersions.contains(usedVersion)) {
+//
+//            val current = usedVersion.toVersion(strict = false)
+//            val filteredVersion = if (current.isStable) {
+//                getSortedSemVersions(validVersions).filter { it.second.isStable && !it.second.isPreRelease }
+//            } else {
+//                getSortedSemVersions(validVersions).filter { !it.second.isPreRelease }
+//            }
+//
+//            val major = calculateTechnicalLag(usedVersion, filteredVersion)
+//            val minor = calculateTechnicalLag(usedVersion, filteredVersion.filter { it.second.major == current.major })
+//            val patch = calculateTechnicalLag(
+//                usedVersion,
+//                filteredVersion.filter { it.second.major == current.major && it.second.minor == current.minor })
+//
+//            return TechnicalLagUpdatePossibilitiesDto(
+//                minor = minor,
+//                patch = patch,
+//                major = major,
+//            )
+//        }
 
         return TechnicalLagUpdatePossibilitiesDto()
     }

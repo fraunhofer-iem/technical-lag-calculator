@@ -16,61 +16,8 @@ class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
     private val ioScope: CoroutineScope = CoroutineScope(Dispatchers.IO.limitedParallelism(10))
 ) {
 
-    private val mutex = ReentrantReadWriteLock()
-    private val artifactToVersion: MutableMap<String, List<VersionDto>> = mutableMapOf()
-
-    suspend fun getArtifactToVersionsMap(
-        artifacts: List<ArtifactDto>,
-        ecosystem: String
-    ): Map<String, List<VersionDto>> {
-        artifacts.flatMap { artifact ->
-            addVersionsForArtifact(artifact, ecosystem)
-        }.joinAll()
-        val result = artifactToVersion.toMap()
-        artifactToVersion.clear()
-        return result
-    }
-
-    private fun containsArtifactId(artifactId: String): Boolean {
-        mutex.readLock().lock()
-        try {
-            return artifactToVersion.contains(artifactId)
-        } finally {
-            mutex.readLock().unlock()
-        }
-    }
-
-    private suspend fun addVersionsForArtifact(
-        artifact: ArtifactDto,
-        ecosystem: String,
-        jobList: MutableList<Job> = mutableListOf()
-    ): List<Job> {
-
-        val id = "${artifact.groupId}:${artifact.artifactId}"
 
 
-
-        if (!containsArtifactId(id)) {
-            jobList.add(ioScope.launch {
-                val versions = depsClient.getVersionsForPackage(
-                    ecosystem = ecosystem,
-                    namespace = artifact.groupId,
-                    name = artifact.artifactId
-                )
-                mutex.writeLock().lock()
-                try {
-                    artifactToVersion[id] = versions
-                } finally {
-                    mutex.writeLock().unlock()
-                }
-            })
-            if (artifact.transitiveDependencies.isNotEmpty()) {
-                artifact.transitiveDependencies.flatMap { addVersionsForArtifact(it, ecosystem, jobList) }
-            }
-        }
-
-        return jobList
-    }
 
 
     fun directDependencyPackageReferenceToArtifact(
@@ -81,6 +28,31 @@ class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
             packageRef = rootPackage,
             seen = mutableSetOf()
         )
+    }
+
+    private fun getDependencyVersionInformation(
+        packageRef: PackageReferenceDto,
+        seen: MutableSet<PackageReferenceDto>,
+    ): ArtifactDto? {
+        return if (seen.contains(packageRef)) {
+            null
+        } else {
+            seen.add(packageRef)
+
+            val transitiveDependencies = packageRef.dependencies.mapNotNull {
+                getDependencyVersionInformation(
+                    packageRef = it,
+                    seen = seen
+                )
+            }
+
+            return ArtifactDto(
+                artifactId = packageRef.name,
+                groupId = packageRef.namespace,
+                usedVersion = packageRef.version,
+                transitiveDependencies = transitiveDependencies
+            )
+        }
     }
 
     fun close() {
@@ -256,29 +228,5 @@ class ArtifactService @OptIn(ExperimentalCoroutinesApi::class) constructor(
     }
 
 
-    private fun getDependencyVersionInformation(
-        packageRef: PackageReferenceDto,
-        seen: MutableSet<PackageReferenceDto>,
-    ): ArtifactDto? {
-        return if (seen.contains(packageRef)) {
-            null
-        } else {
-            seen.add(packageRef)
-
-            val transitiveDependencies = packageRef.dependencies.mapNotNull {
-                getDependencyVersionInformation(
-                    packageRef = it,
-                    seen = seen
-                )
-            }
-
-            return ArtifactDto(
-                artifactId = packageRef.name,
-                groupId = packageRef.namespace,
-                usedVersion = packageRef.version,
-                transitiveDependencies = transitiveDependencies
-            )
-        }
-    }
 }
 

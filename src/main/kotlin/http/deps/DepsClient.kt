@@ -1,6 +1,5 @@
 package http.deps
 
-import artifact.model.VersionDto
 import http.deps.model.DepsResponseDto
 import http.deps.model.DepsTreeResponseDto
 import http.deps.model.Version
@@ -53,7 +52,11 @@ class DepsClient(
         ioDispatcher.cancel()
     }
 
-    suspend fun getVersionsForPackage(ecosystem: String, namespace: String = "", name: String): List<VersionDto> {
+    suspend fun getVersionsForPackage(
+        ecosystem: String,
+        namespace: String = "",
+        name: String
+    ): List<artifact.model.Version> {
         val requestUrl: String? = getVersionsRequestUrl(
             ecosystem = ecosystem,
             namespace = namespace,
@@ -114,10 +117,10 @@ class DepsClient(
         }
     }
 
-    private fun versionResponseToDto(version: Version): VersionDto? {
+    private fun versionResponseToDto(version: Version): artifact.model.Version? {
         return if (version.publishedAt != null) {
             try {
-                VersionDto(
+                artifact.model.Version(
                     versionNumber = version.versionKey.version,
                     releaseDate = dateToMs(version.publishedAt),
                     isDefault = version.isDefault ?: false
