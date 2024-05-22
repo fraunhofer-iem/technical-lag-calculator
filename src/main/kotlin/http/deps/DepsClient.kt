@@ -56,7 +56,7 @@ class DepsClient(
         ecosystem: String,
         namespace: String = "",
         name: String
-    ): List<artifact.model.Version> {
+    ): List<artifact.model.ArtifactVersion> {
         val requestUrl: String? = getVersionsRequestUrl(
             ecosystem = ecosystem,
             namespace = namespace,
@@ -88,14 +88,14 @@ class DepsClient(
 
     suspend fun getDepsForPackage(
         ecosystem: String,
-        namespace: String = "",
-        name: String,
+        groupId: String = "",
+        artifactId: String,
         version: String
     ): DepsTreeResponseDto? {
         val requestUrl: String? = getDependenciesRequestUrl(
             ecosystem = ecosystem,
-            namespace = namespace,
-            name = name,
+            namespace = groupId,
+            name = artifactId,
             version = version
         )
 
@@ -117,10 +117,10 @@ class DepsClient(
         }
     }
 
-    private fun versionResponseToDto(version: Version): artifact.model.Version? {
+    private fun versionResponseToDto(version: Version): artifact.model.ArtifactVersion? {
         return if (version.publishedAt != null) {
             try {
-                artifact.model.Version(
+                artifact.model.ArtifactVersion(
                     versionNumber = version.versionKey.version,
                     releaseDate = dateToMs(version.publishedAt),
                     isDefault = version.isDefault ?: false

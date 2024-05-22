@@ -7,9 +7,7 @@ import kotlinx.serialization.Transient
 import technicalLag.model.TechnicalLagResultStatus
 import util.TimeHelper.msToDateString
 
-enum class VersionTypes {
-    Minor, Major, Patch
-}
+
 
 @Serializable
 data class VersionDto(

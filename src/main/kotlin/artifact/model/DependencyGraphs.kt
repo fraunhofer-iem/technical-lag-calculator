@@ -1,11 +1,12 @@
 package artifact.model
 
+import io.github.z4kn4fein.semver.toVersion
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ArtifactNode(
     val artifactIdx: Int, // Index of the artifact in the DependencyGraphs' artifacts list
-    val usedVersionIdx: Int, // Index of the used version in the Artifact's version list
+    val usedVersion: String, // Version of the linked artifact used in this specific node
 )
 
 @Serializable
@@ -18,7 +19,7 @@ data class ArtifactNodeEdge(
 /**
  * A data class representing a dependency graph.
  * The idxes stored in edges reference the graph's nodes.
- * The artifactIdx and usedVersionIdx in each node references the global artifacts list and their versions
+ * The artifactIdx in each node references the global artifacts list
  * stored in DependencyGraphs.
  */
 @Serializable
@@ -38,15 +39,63 @@ data class DependencyGraph(
 data class Artifact(
     val artifactId: String,
     val groupId: String,
-    val versions: List<Version> = listOf(),
+    val versions: List<ArtifactVersion> = listOf(),
 )
 
 @Serializable
-data class Version(
+data class ArtifactVersion(
     val versionNumber: String,
     val releaseDate: Long,
     val isDefault: Boolean = false
-)
+) {
+
+    enum class VersionTypes {
+        Minor, Major, Patch
+    }
+
+    companion object {
+        fun findHighestApplicableVersion(
+            version: String,
+            versions: List<ArtifactVersion>,
+            updateType: VersionTypes
+        ): ArtifactVersion? {
+
+            val semvers = versions.map { it.versionNumber.toVersion(strict = false) }
+            val current = version.toVersion(strict = false)
+
+            val filteredVersions = if (current.isStable) {
+                semvers.filter { it.isStable && !it.isPreRelease }
+            } else {
+                if (current.isPreRelease) {
+                    semvers
+                } else {
+                    semvers.filter { !it.isPreRelease }
+                }
+            }
+
+            when (updateType) {
+                VersionTypes.Minor -> {
+                    filteredVersions.filter { it.major == current.major }
+                        .maxWithOrNull(compareBy({ it.minor }, { it.patch }))
+                }
+
+                VersionTypes.Major -> {
+                    filteredVersions
+                        .maxWithOrNull(compareBy({ it.major }, { it.minor }, { it.patch }))
+                }
+
+                VersionTypes.Patch -> {
+                    filteredVersions.filter { it.major == current.major && it.minor == current.minor }
+                        .maxByOrNull { it.patch }
+                }
+            }?.let { highestVersion ->
+                return versions.find { it.versionNumber == highestVersion.toString() }
+            }
+
+            return null
+        }
+    }
+}
 
 data class DependencyGraphs(
     val artifacts: List<Artifact> = listOf(), // Stores all components and their related metadata

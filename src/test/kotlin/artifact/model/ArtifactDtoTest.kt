@@ -30,7 +30,7 @@ class ArtifactDtoTest {
         assertEquals(0.0, artifact.stats.major.avgTransitiveMissedReleases)
         assertEquals(0.0, artifact.stats.minor.avgTransitiveMissedReleases)
         assertEquals(0.0, artifact.stats.patch.avgTransitiveMissedReleases)
-artifact.stats.major.technicalLag?.libyear
+
         assertEquals(0L, artifact.stats.major.technicalLag?.libyear)
         assertEquals(Triple(0, 0, 0), artifact.stats.major.technicalLag?.distance)
         assertEquals(0, artifact.stats.major.technicalLag?.numberOfMissedReleases)
