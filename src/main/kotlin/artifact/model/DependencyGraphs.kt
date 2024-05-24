@@ -16,6 +16,11 @@ data class ArtifactNodeEdge(
     val to: Int,
 )
 
+data class Dependency(
+    val node: ArtifactNode,
+    val children: List<Dependency>,
+)
+
 /**
  * A data class representing a dependency graph.
  * The idxes stored in edges reference the graph's nodes.
@@ -27,7 +32,41 @@ data class DependencyGraph(
     val nodes: List<ArtifactNode> = listOf(),
     val edges: List<ArtifactNodeEdge> = listOf(),
     val directDependencyIndices: List<Int> = listOf(), // Idx of the nodes' which are direct dependencies of this graph
-)
+) {
+
+    val linkedDirectDependencies by lazy {
+        linkDependencies()
+    }
+
+    /**
+     * Function to resolve the DependencyGraph's nodes and edges lists to create a linked data structure
+     * used for easier access and traversal of the stored data.
+     */
+    private fun linkDependencies(): List<Dependency> {
+        val nodeToChildMap: MutableMap<ArtifactNode, MutableList<ArtifactNode>> = mutableMapOf()
+
+        edges.forEach { edge ->
+            val fromNode = nodes[edge.from]
+
+            if (!nodeToChildMap.contains(fromNode)) {
+                nodeToChildMap[fromNode] = mutableListOf()
+            }
+
+            nodeToChildMap[fromNode]?.add(nodes[edge.to])
+        }
+
+        // Function to build the NodeWithChildren recursively
+        fun buildNodeWithChildren(node: ArtifactNode): Dependency {
+            val children = nodeToChildMap[node]?.map { buildNodeWithChildren(it) } ?: listOf()
+            return Dependency(node, children)
+        }
+
+        return directDependencyIndices.map { idx ->
+            val rootNode = nodes[idx]
+            buildNodeWithChildren(rootNode)
+        }
+    }
+}
 
 /**
  * A data class representing a package used in a dependency.

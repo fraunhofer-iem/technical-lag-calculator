@@ -170,11 +170,11 @@ class DependencyGraphService(
         nodes: MutableList<ArtifactNode>,
         edges: MutableList<ArtifactNodeEdge>,
         seen: MutableSet<PackageReference>
-    ) {
+    ): Int {
         val ident = packageRef.id.namespace + packageRef.id.name
 
         val idx = uniqueArtifacts.identToIdx[ident] ?: -1
-
+        val insertIndex = nodes.count()
         nodes.add(
             ArtifactNode(
                 artifactIdx = idx,
@@ -184,26 +184,25 @@ class DependencyGraphService(
 
         packageRef.dependencies.forEach { dependency ->
 
-            val depIdent = dependency.id.namespace + dependency.id.name
-            val depIdx = uniqueArtifacts.identToIdx[depIdent] ?: -1
-            edges.add(
-                ArtifactNodeEdge(
-                    from = idx,
-                    to = depIdx
-                )
-            )
-
             if (!seen.contains(dependency)) { // TODO: test if this is actually correct and generates a complete tree
                 seen.add(dependency)
-                addPackageRefToNodesAndEdges(
+                val depIdx = addPackageRefToNodesAndEdges(
                     packageRef = dependency,
                     uniqueArtifacts = uniqueArtifacts,
                     nodes = nodes,
                     edges = edges,
                     seen = seen
                 )
+                edges.add(
+                    ArtifactNodeEdge(
+                        from = insertIndex,
+                        to = depIdx
+                    )
+                )
             }
         }
+
+        return insertIndex
     }
 
 

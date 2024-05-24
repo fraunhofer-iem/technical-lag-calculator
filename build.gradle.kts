@@ -1,8 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.9.23"
-    kotlin("plugin.serialization") version "1.9.23"
+    kotlin("jvm") version "2.0.0"
+    kotlin("plugin.serialization") version "2.0.0"
     application
 }
 
@@ -40,16 +40,16 @@ kotlin {
 }
 
 
-val exposedVersion = "0.49.0"
-val ortVersion = "22.4.0"
-val ktorVersion = "2.3.10"
-val kotlinCoroutines = "1.8.0"
+val exposedVersion = "0.50.1"
+val ortVersion = "22.5.0"
+val ktorVersion = "2.3.11"
+val kotlinCoroutines = "1.8.1"
 val logback = "1.5.6"
 val log4j = "2.23.1"
 
 dependencies {
-    implementation("com.google.guava:guava:33.1.0-jre")
-    implementation("com.github.ajalt.clikt:clikt:4.3.0")
+    implementation("com.google.guava:guava:33.2.0-jre")
+    implementation("com.github.ajalt.clikt:clikt:4.4.0")
     implementation("org.apache.logging.log4j:log4j-api:$log4j")
     implementation("org.apache.logging.log4j:log4j-to-slf4j:$log4j")
     implementation("org.apache.logging.log4j:log4j-api-kotlin:1.4.0")
@@ -98,12 +98,12 @@ dependencies {
     runtimeOnly("org.ossreviewtoolkit.utils:ort-utils:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.plugins.packagemanagers:gradle-model:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.plugins.packageconfigurationproviders:dir-package-configuration-provider:$ortVersion")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.23")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.0")
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinCoroutines")
-    testImplementation("io.mockk:mockk:1.13.10")
-    testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.0")
-    testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.0")
+    testImplementation("io.mockk:mockk:1.13.11")
+    testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.1")
+    testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.1")
 }
 
 tasks.test {
