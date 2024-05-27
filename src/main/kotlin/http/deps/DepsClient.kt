@@ -120,7 +120,7 @@ class DepsClient(
     private fun versionResponseToDto(version: Version): artifact.model.ArtifactVersion? {
         return if (version.publishedAt != null) {
             try {
-                artifact.model.ArtifactVersion(
+                artifact.model.ArtifactVersion.create(
                     versionNumber = version.versionKey.version,
                     releaseDate = dateToMs(version.publishedAt),
                     isDefault = version.isDefault ?: false

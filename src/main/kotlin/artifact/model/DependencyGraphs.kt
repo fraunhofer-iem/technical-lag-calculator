@@ -4,10 +4,16 @@ import io.github.z4kn4fein.semver.toVersion
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ArtifactNode(
+data class ArtifactNode private constructor(
     val artifactIdx: Int, // Index of the artifact in the DependencyGraphs' artifacts list
-    val usedVersion: String, // Version of the linked artifact used in this specific node
-)
+    val usedVersion: String,
+) {
+    companion object {
+        fun create(artifactIdx: Int, version: String): ArtifactNode {
+            return ArtifactNode(artifactIdx, ArtifactVersion.validateAndHarmonizeVersionString(version))
+        }
+    }
+}
 
 @Serializable
 data class ArtifactNodeEdge(
@@ -82,7 +88,7 @@ data class Artifact(
 )
 
 @Serializable
-data class ArtifactVersion(
+data class ArtifactVersion private constructor(
     val versionNumber: String,
     val releaseDate: Long,
     val isDefault: Boolean = false
@@ -93,6 +99,18 @@ data class ArtifactVersion(
     }
 
     companion object {
+        fun create(versionNumber: String, releaseDate: Long, isDefault: Boolean = false): ArtifactVersion {
+            return ArtifactVersion(
+                releaseDate = releaseDate,
+                isDefault = false,
+                versionNumber = validateAndHarmonizeVersionString(versionNumber)
+            )
+        }
+
+        fun validateAndHarmonizeVersionString(version: String): String {
+            return version.toVersion(strict = false).toString()
+        }
+
         fun findHighestApplicableVersion(
             version: String,
             versions: List<ArtifactVersion>,

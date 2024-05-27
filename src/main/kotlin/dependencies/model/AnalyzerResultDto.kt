@@ -1,6 +1,5 @@
 package dependencies.model
 
-import artifact.model.DependencyGraphs
 import kotlinx.serialization.Serializable
 
 @Serializable

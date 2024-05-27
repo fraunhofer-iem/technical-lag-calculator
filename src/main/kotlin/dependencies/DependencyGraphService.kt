@@ -3,7 +3,6 @@ package dependencies
 import artifact.model.*
 import http.deps.DepsClient
 import http.deps.model.DepsTreeResponseDto
-import io.github.z4kn4fein.semver.toVersion
 import kotlinx.coroutines.*
 import org.apache.logging.log4j.kotlin.logger
 import org.ossreviewtoolkit.model.DependencyGraph
@@ -70,13 +69,14 @@ class DependencyGraphService(
                 )
             }
 
-            simulateUpdates(
-                DependencyGraphs(
-                    ecosystem = packageManager,
-                    artifacts = uniqueArtifacts.artifacts,
-                    graph = graphs
-                )
+            //TODO: Update function is broken right now and we are not yet settled on how to use it anyways
+//            simulateUpdates(
+            DependencyGraphs(
+                ecosystem = packageManager,
+                artifacts = uniqueArtifacts.artifacts,
+                graph = graphs
             )
+//            )
         }
     }
 
@@ -136,10 +136,15 @@ class DependencyGraphService(
                     ecosystem = ecosystem,
                     namespace = artifact.groupId,
                     name = artifact.artifactId
-                ).mapNotNull {
+                ).mapNotNull { artifactVersion ->
                     try {
-                        it.versionNumber.toVersion(strict = false)
-                        it
+                        ArtifactVersion.create(
+                            releaseDate = artifactVersion.releaseDate,
+                            isDefault = artifactVersion.isDefault,
+                            // this step harmonizes possibly weired version formats like 2.4 or 5
+                            // those are parsed to 2.4.0 and 5.0.0
+                            versionNumber = artifactVersion.versionNumber
+                        )
                     } catch (e: Exception) {
                         null
                     }
@@ -176,9 +181,9 @@ class DependencyGraphService(
         val idx = uniqueArtifacts.identToIdx[ident] ?: -1
         val insertIndex = nodes.count()
         nodes.add(
-            ArtifactNode(
+            ArtifactNode.create(
                 artifactIdx = idx,
-                usedVersion = packageRef.id.version
+                version = packageRef.id.version
             )
         )
 
@@ -208,7 +213,10 @@ class DependencyGraphService(
 
     suspend fun simulateUpdates(graphs: DependencyGraphs): DependencyGraphs {
 
-        val scopeToVersionToTree: MutableMap<String, MutableMap<ArtifactVersion.VersionTypes, DepsTreeResponseDto>> =
+        // TODO: I believe this data structure is incomplete right now. After running the code it only contains
+        //  the nodes which have update possibilities. However, if we can't update something in the graph it
+        //  stays unchanged and therefor the original graph content needs to be copied
+        val scopeToVersionToTree: MutableMap<String, Map<ArtifactVersion.VersionTypes, DepsTreeResponseDto>> =
             mutableMapOf()
 
         graphs.graph.forEach { (scope, graph) ->
@@ -217,13 +225,14 @@ class DependencyGraphService(
                 val artifact = graphs.artifacts[artifactNode.artifactIdx]
                 val currentVersion = artifactNode.usedVersion
 
+                val versionTypesToGraph: MutableMap<ArtifactVersion.VersionTypes, DepsTreeResponseDto> =
+                    mutableMapOf()
                 listOf(
                     ArtifactVersion.VersionTypes.Major,
                     ArtifactVersion.VersionTypes.Minor,
                     ArtifactVersion.VersionTypes.Patch
                 ).forEach { versionTypes ->
-                    val versionTypesToGraph: MutableMap<ArtifactVersion.VersionTypes, DepsTreeResponseDto> =
-                        mutableMapOf()
+
                     ArtifactVersion.findHighestApplicableVersion(
                         version = currentVersion,
                         versions = artifact.versions, updateType = versionTypes
@@ -237,8 +246,8 @@ class DependencyGraphService(
                             versionTypesToGraph[versionTypes] = depsTree
                         }
                     }
-                    scopeToVersionToTree[scope] = versionTypesToGraph
                 }
+                scopeToVersionToTree[scope] = versionTypesToGraph.toMap()
             }
         }
 
@@ -256,7 +265,12 @@ class DependencyGraphService(
             }
         }.toMutableList()
 
-        newArtifacts.removeAll { artifacts.contains(it) }
+        newArtifacts.removeAll { newArtifact ->
+            artifacts.any { existingArtifact ->
+                newArtifact.artifactId == existingArtifact.artifactId &&
+                        newArtifact.groupId == existingArtifact.groupId
+            }
+        }
         val newArtifactsWithVersion = queryArtifactsVersions(ecosystem = graphs.ecosystem, artifacts = newArtifacts)
 
         newArtifactsWithVersion.forEach { artifact ->
@@ -271,9 +285,9 @@ class DependencyGraphService(
                     val nodes = tree.nodes.map { node ->
                         val artifactIdx =
                             artifacts.indexOfFirst { it.groupId == node.getNamespace() && it.artifactId == node.getName() }
-                        ArtifactNode(
+                        ArtifactNode.create(
                             artifactIdx = artifactIdx,
-                            usedVersion = node.versionKey.version
+                            version = node.versionKey.version
                         )
                     }
 

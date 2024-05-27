@@ -2,6 +2,10 @@ package dependencies
 
 import artifact.model.ArtifactVersion
 import http.deps.DepsClient
+import http.deps.model.DepsTreeResponseDto
+import http.deps.model.Edge
+import http.deps.model.Node
+import http.deps.model.VersionKeyX
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -35,7 +39,7 @@ class DependencyGraphServiceTest {
         val refConfig = DependencyReference(2, dependencies = sortedSetOf(refLang, refCollections, refCollectionsLast))
         val refCsv = DependencyReference(3, dependencies = sortedSetOf(refConfig))
         val fragments = sortedSetOf(DependencyGraph.DEPENDENCY_REFERENCE_COMPARATOR, refCsv)
-        val scopeMap = mapOf("scope" to listOf(RootDependencyIndex(3)))
+        val scopeMap = mapOf("scope" to listOf(RootDependencyIndex(3), RootDependencyIndex(1)))
 
         return DependencyGraph(ids, fragments, scopeMap)
     }
@@ -46,12 +50,12 @@ class DependencyGraphServiceTest {
 
         val mockDepsClient = mockk<DepsClient>()
         coEvery { mockDepsClient.getVersionsForPackage(any(), any(), any()) } returns listOf(
-            ArtifactVersion(versionNumber = "3.11", releaseDate = 0L),
-            ArtifactVersion(versionNumber = "4.4.3", releaseDate = 0L),
-            ArtifactVersion(versionNumber = "2.4", releaseDate = 0L),
-            ArtifactVersion(versionNumber = "5", releaseDate = 0L),
-            ArtifactVersion(versionNumber = "2.11", releaseDate = 0L),
-            ArtifactVersion(versionNumber = "5.1.2", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "3.11", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "4.4.3", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "2.4", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "5", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "2.11", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "5.1.2", releaseDate = 0L),
         )
 
         coEvery { mockDepsClient.getDepsForPackage(any(), any(), any(), any()) } returns null
@@ -70,7 +74,7 @@ class DependencyGraphServiceTest {
 
         val transformedGraph = transformedGraphs.first().graph.values.first()
 
-        assertEquals(5, transformedGraph.nodes.count())
+        assertEquals(6, transformedGraph.nodes.count())
 
         // Check if the edges connect the correct nodes which are linked to the correct artifacts
         assertEquals(4, transformedGraph.edges.count())
@@ -80,7 +84,7 @@ class DependencyGraphServiceTest {
         assertEquals("commons-configuration", rootArtifact.artifactId)
 
         val directDeps = transformedGraph.linkedDirectDependencies
-        assertEquals(1, directDeps.count())
+        assertEquals(2, directDeps.count())
         assertEquals(1, directDeps.first().children.count())
         assertEquals(3, directDeps.first().children.first().children.count())
     }
@@ -90,15 +94,59 @@ class DependencyGraphServiceTest {
 
         val mockDepsClient = mockk<DepsClient>()
         coEvery { mockDepsClient.getVersionsForPackage(any(), any(), any()) } returns listOf(
-            ArtifactVersion(versionNumber = "3.11", releaseDate = 0L),
-            ArtifactVersion(versionNumber = "4.4.3", releaseDate = 0L),
-            ArtifactVersion(versionNumber = "2.4", releaseDate = 0L),
-            ArtifactVersion(versionNumber = "5", releaseDate = 0L),
-            ArtifactVersion(versionNumber = "2.11", releaseDate = 0L),
-            ArtifactVersion(versionNumber = "5.1.2", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "3.11", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "3.12", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "4.4.3", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "2.4", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "5", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "2.11", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "5.1.2", releaseDate = 0L),
         )
 
         coEvery { mockDepsClient.getDepsForPackage(any(), any(), any(), any()) } returns null
+        coEvery {
+            mockDepsClient.getDepsForPackage(
+                ecosystem = "npm",
+                groupId = "org.apache.commons",
+                artifactId = "commons-lang3",
+                version = "3.12.0"
+            )
+        } returns DepsTreeResponseDto(
+            nodes = listOf(
+                Node(
+                    bundled = false,
+                    relation = "",
+                    versionKey = VersionKeyX(
+                        name = "org.apache.commons/commons-lang3",
+                        system = "npm",
+                        version = "3.12"
+                    )
+                ),
+                Node(
+                    bundled = false,
+                    relation = "",
+                    versionKey = VersionKeyX(
+                        name = "org.apache.commons/commons-configuration", // existing artifact
+                        system = "npm",
+                        version = "2.11"
+                    )
+                ),
+                Node(
+                    bundled = false,
+                    relation = "",
+                    versionKey = VersionKeyX(
+                        name = "new/artifact", // new artifact
+                        system = "npm",
+                        version = "5.1.2"
+                    )
+                ),
+            ),
+            edges = mutableListOf(
+                Edge(fromNode = 0, toNode = 1, requirement = null),
+                Edge(fromNode = 0, toNode = 2, requirement = null),
+            ),
+            error = null
+        )
 
         val dependencyGraphService = DependencyGraphService(depsClient = mockDepsClient)
         val graph = setupTree()
@@ -106,6 +154,8 @@ class DependencyGraphServiceTest {
         val transformedGraphs = dependencyGraphService.transformDependencyGraph(
             mapOf("npm" to graph)
         )
+
+        println(transformedGraphs.first().graphs)
 
     }
 }
