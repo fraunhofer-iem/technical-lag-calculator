@@ -1,19 +1,15 @@
 package technicalLag
 
-import artifact.model.ArtifactDto
-import artifact.model.ArtifactWithStatsDto
+
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 import dependencies.ProjectPaths
-import dependencies.model.AnalyzerResultDto
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger
 import org.slf4j.MDC
-import util.StoreResultHelper
-import java.io.File
 import kotlin.io.path.createDirectories
 
 
@@ -48,12 +44,7 @@ class TechnicalLag : CliktCommand() {
         logger.info { "Running libyears for projects in $projectPaths and output path $outputPath" }
 
         outputPath.createDirectories()
-        fun recursivePrint(artifactDto: ArtifactDto) {
-            println(artifactDto)
-            artifactDto.transitiveDependencies.forEach {
-                recursivePrint(it)
-            }
-        }
+
 //        projectPaths.paths.map { File(it) }.forEach { resultFile ->
 //            val analyzerResult = Json.decodeFromString<AnalyzerResultDto>(resultFile.readText())
 //            analyzerResult.dependencyGraphDto.packageManagerToScopes.forEach { (pkg, scopedDeps) ->
@@ -68,8 +59,6 @@ class TechnicalLag : CliktCommand() {
 //            }
 //
 //        }
-
-
 
 
 //

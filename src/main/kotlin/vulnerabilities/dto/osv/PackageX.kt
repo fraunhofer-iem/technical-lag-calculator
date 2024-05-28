@@ -1,7 +1,7 @@
 package vulnerabilities.dto.osv
 
 
-import artifact.model.VersionDto
+import dependencies.model.ArtifactVersion
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -14,5 +14,5 @@ data class PackageX(
     @SerialName("purl")
     val purl: String? = null,
     @SerialName("versions")
-    var versions: MutableList<VersionDto> = mutableListOf()
+    var versions: MutableList<ArtifactVersion> = mutableListOf()
 )

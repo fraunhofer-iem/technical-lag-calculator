@@ -1,5 +1,6 @@
 package http.deps
 
+import dependencies.model.ArtifactVersion
 import http.deps.model.DepsResponseDto
 import http.deps.model.DepsTreeResponseDto
 import http.deps.model.Version
@@ -56,7 +57,7 @@ class DepsClient(
         ecosystem: String,
         namespace: String = "",
         name: String
-    ): List<artifact.model.ArtifactVersion> {
+    ): List<ArtifactVersion> {
         val requestUrl: String? = getVersionsRequestUrl(
             ecosystem = ecosystem,
             namespace = namespace,
@@ -117,10 +118,10 @@ class DepsClient(
         }
     }
 
-    private fun versionResponseToDto(version: Version): artifact.model.ArtifactVersion? {
+    private fun versionResponseToDto(version: Version): ArtifactVersion? {
         return if (version.publishedAt != null) {
             try {
-                artifact.model.ArtifactVersion.create(
+                ArtifactVersion.create(
                     versionNumber = version.versionKey.version,
                     releaseDate = dateToMs(version.publishedAt),
                     isDefault = version.isDefault ?: false

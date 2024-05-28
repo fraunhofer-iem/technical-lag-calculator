@@ -1,6 +1,6 @@
 package dependencies
 
-import artifact.model.*
+import dependencies.model.*
 import http.deps.DepsClient
 import http.deps.model.DepsTreeResponseDto
 import kotlinx.coroutines.*
@@ -216,7 +216,7 @@ class DependencyGraphService(
         // TODO: I believe this data structure is incomplete right now. After running the code it only contains
         //  the nodes which have update possibilities. However, if we can't update something in the graph it
         //  stays unchanged and therefor the original graph content needs to be copied
-        val scopeToVersionToTree: MutableMap<String, Map<ArtifactVersion.VersionTypes, DepsTreeResponseDto>> =
+        val scopeToVersionToTree: MutableMap<String, Map<ArtifactVersion.VersionType, DepsTreeResponseDto>> =
             mutableMapOf()
 
         graphs.graph.forEach { (scope, graph) ->
@@ -225,12 +225,12 @@ class DependencyGraphService(
                 val artifact = graphs.artifacts[artifactNode.artifactIdx]
                 val currentVersion = artifactNode.usedVersion
 
-                val versionTypesToGraph: MutableMap<ArtifactVersion.VersionTypes, DepsTreeResponseDto> =
+                val versionTypesToGraph: MutableMap<ArtifactVersion.VersionType, DepsTreeResponseDto> =
                     mutableMapOf()
                 listOf(
-                    ArtifactVersion.VersionTypes.Major,
-                    ArtifactVersion.VersionTypes.Minor,
-                    ArtifactVersion.VersionTypes.Patch
+                    ArtifactVersion.VersionType.Major,
+                    ArtifactVersion.VersionType.Minor,
+                    ArtifactVersion.VersionType.Patch
                 ).forEach { versionTypes ->
 
                     ArtifactVersion.findHighestApplicableVersion(

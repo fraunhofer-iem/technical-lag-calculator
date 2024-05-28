@@ -1,6 +1,5 @@
 package util
 
-import artifact.model.ArtifactWithStatsDto
 import dependencies.ProjectPaths
 import dependencies.model.AnalyzerResultDto
 import kotlinx.coroutines.CoroutineDispatcher
@@ -31,20 +30,6 @@ class StoreResultHelper {
             }
         }
 
-        suspend fun storeStatsInFile(
-            outputDirectory: File, scope: String, artifactDto: ArtifactWithStatsDto,
-            dispatcher: CoroutineDispatcher = Dispatchers.IO
-        ): File {
-            val outputFile = outputDirectory.resolve("${Date().time}-${scope}-stats.json")
-            return withContext(dispatcher) {
-                outputFile.createNewFile()
-
-                val jsonString =
-                    json.encodeToString(ArtifactWithStatsDto.serializer(), artifactDto)
-                outputFile.writeText(jsonString)
-                return@withContext outputFile
-            }
-        }
 
         suspend fun storeResultFilePathsInFile(
             outputDirectory: File,

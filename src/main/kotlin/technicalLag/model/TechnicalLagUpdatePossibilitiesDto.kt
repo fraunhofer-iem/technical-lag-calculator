@@ -1,6 +1,5 @@
 package technicalLag.model
 
-import artifact.model.VersionDto
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -14,6 +13,6 @@ data class TechnicalLagUpdatePossibilitiesDto(
 data class TechnicalLagDto(
     val libyear: Long,
     val distance: Triple<Int, Int, Int>,
-    val version: VersionDto,
+    val version: String,
     val numberOfMissedReleases: Int
 )

@@ -1,6 +1,6 @@
 package dependencies
 
-import artifact.model.ArtifactVersion
+import dependencies.model.ArtifactVersion
 import http.deps.DepsClient
 import http.deps.model.DepsTreeResponseDto
 import http.deps.model.Edge
