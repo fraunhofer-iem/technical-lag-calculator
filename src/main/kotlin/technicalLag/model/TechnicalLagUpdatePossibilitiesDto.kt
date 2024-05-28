@@ -2,12 +2,6 @@ package technicalLag.model
 
 import kotlinx.serialization.Serializable
 
-@Serializable
-data class TechnicalLagUpdatePossibilitiesDto(
-    val minor: TechnicalLagDto? = null,
-    val patch: TechnicalLagDto? = null,
-    val major: TechnicalLagDto? = null
-)
 
 @Serializable
 data class TechnicalLagDto(

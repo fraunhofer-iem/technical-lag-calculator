@@ -9,11 +9,15 @@ import http.deps.model.VersionKeyX
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import org.junit.jupiter.api.Test
 import org.ossreviewtoolkit.model.DependencyGraph
 import org.ossreviewtoolkit.model.DependencyReference
 import org.ossreviewtoolkit.model.Identifier
 import org.ossreviewtoolkit.model.RootDependencyIndex
+import technicalLag.model.TechnicalLagDto
 import kotlin.test.assertEquals
 
 class DependencyGraphServiceTest {
@@ -157,5 +161,68 @@ class DependencyGraphServiceTest {
 
         println(transformedGraphs.first().graphs)
 
+    }
+
+    @Test
+    fun getTechnicalLagForGraph() = runTest {
+        val mockDepsClient = mockk<DepsClient>()
+        val usedVersionDate = LocalDateTime(2024, 1, 1, 0, 0).toInstant(TimeZone.of("UTC+3")).toEpochMilliseconds()
+        val patchVersionDate = LocalDateTime(2024, 1, 3, 0, 0).toInstant(TimeZone.of("UTC+3")).toEpochMilliseconds()
+        val minorVersionDate = LocalDateTime(2024, 1, 9, 0, 0).toInstant(TimeZone.of("UTC+3")).toEpochMilliseconds()
+        val majorVersionDate = LocalDateTime(2024, 1, 19, 0, 0).toInstant(TimeZone.of("UTC+3")).toEpochMilliseconds()
+
+
+
+        coEvery { mockDepsClient.getVersionsForPackage(any(), any(), any()) } returns listOf(
+        )
+        coEvery { mockDepsClient.getVersionsForPackage("npm", "org.apache.commons", "commons-lang3") } returns listOf(
+            ArtifactVersion.create(versionNumber = "3.11", releaseDate = usedVersionDate),
+            ArtifactVersion.create(versionNumber = "3.11.3", releaseDate = patchVersionDate),
+            ArtifactVersion.create(versionNumber = "3.12", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "3.12.3", releaseDate = minorVersionDate),
+            ArtifactVersion.create(versionNumber = "4.12.3", releaseDate = majorVersionDate),
+        )
+
+        coEvery { mockDepsClient.getDepsForPackage(any(), any(), any(), any()) } returns null
+
+        val dependencyGraphService = DependencyGraphService(depsClient = mockDepsClient)
+        val graph = setupTree()
+
+        val transformedGraphs = dependencyGraphService.transformDependencyGraph(
+            mapOf("npm" to graph)
+        )
+
+        val artifact =
+            transformedGraphs.first().artifacts.find { it.artifactId == "commons-lang3" && it.groupId == "org.apache.commons" }!!
+
+        val lagMajor =
+            artifact.getTechLagForVersion(rawVersion = "3.11", versionType = ArtifactVersion.VersionType.Major)
+        val expectedMajorLag = TechnicalLagDto(
+            libyear = 18,
+            distance = Triple(1, 1, 3),
+            version = "4.12.3",
+            numberOfMissedReleases = 4,
+        )
+        assertEquals(expectedMajorLag, lagMajor)
+
+        val lagMinor =
+            artifact.getTechLagForVersion(rawVersion = "3.11", versionType = ArtifactVersion.VersionType.Minor)
+        val expectedMinorLag = TechnicalLagDto(
+            libyear = 8,
+            distance = Triple(0, 1, 3),
+            version = "3.12.3",
+            numberOfMissedReleases = 3,
+        )
+        assertEquals(expectedMinorLag, lagMinor)
+
+        val lagPatch =
+            artifact.getTechLagForVersion(rawVersion = "3.11", versionType = ArtifactVersion.VersionType.Patch)
+        val expectedPatchLag = TechnicalLagDto(
+            libyear = 2,
+            distance = Triple(0, 0, 3),
+            version = "3.11.3",
+            numberOfMissedReleases = 1,
+        )
+        assertEquals(expectedPatchLag, lagPatch)
     }
 }

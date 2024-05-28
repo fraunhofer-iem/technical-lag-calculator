@@ -91,16 +91,18 @@ data class Artifact(
     private val versionToVersionTypeToTechLag: MutableMap<String, TechnicalLagDto> =
         mutableMapOf()
 
-    fun getTechLagForVersion(version: String, versionType: ArtifactVersion.VersionType): TechnicalLagDto? {
+    fun getTechLagForVersion(rawVersion: String, versionType: ArtifactVersion.VersionType): TechnicalLagDto? {
+        val version = ArtifactVersion.validateAndHarmonizeVersionString(rawVersion)
         val ident = "$version-$versionType"
-        if (versionToVersionTypeToTechLag.contains(ident)) {
-            return versionToVersionTypeToTechLag[ident]
+
+        return if (versionToVersionTypeToTechLag.contains(ident)) {
+            versionToVersionTypeToTechLag[ident]
         } else {
             val techLag = calculateTechnicalLag(version, versionType)
             if (techLag != null) {
                 versionToVersionTypeToTechLag[ident] = techLag
             }
-            return techLag
+            techLag
         }
     }
 
