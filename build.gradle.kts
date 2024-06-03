@@ -48,7 +48,7 @@ val logback = "1.5.6"
 val log4j = "2.23.1"
 
 dependencies {
-    implementation("com.google.guava:guava:33.2.0-jre")
+    implementation("com.google.guava:guava:33.2.1-jre")
     implementation("com.github.ajalt.clikt:clikt:4.4.0")
     implementation("org.apache.logging.log4j:log4j-api:$log4j")
     implementation("org.apache.logging.log4j:log4j-to-slf4j:$log4j")
