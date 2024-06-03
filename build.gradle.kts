@@ -40,7 +40,7 @@ kotlin {
 }
 
 
-val exposedVersion = "0.50.1"
+val exposedVersion = "0.51.0"
 val ortVersion = "22.5.0"
 val ktorVersion = "2.3.11"
 val kotlinCoroutines = "1.8.1"
