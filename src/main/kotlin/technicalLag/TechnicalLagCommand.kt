@@ -6,10 +6,14 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 import dependencies.ProjectPaths
+import dependencies.model.AnalyzerResultDto
+import dependencies.model.ArtifactVersion
+import dependencies.model.DependencyGraphs
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger
 import org.slf4j.MDC
+import java.io.File
 import kotlin.io.path.createDirectories
 
 
@@ -45,9 +49,29 @@ class TechnicalLag : CliktCommand() {
 
         outputPath.createDirectories()
 
-//        projectPaths.paths.map { File(it) }.forEach { resultFile ->
-//            val analyzerResult = Json.decodeFromString<AnalyzerResultDto>(resultFile.readText())
-//            analyzerResult.dependencyGraphDto.packageManagerToScopes.forEach { (pkg, scopedDeps) ->
+        projectPaths.paths.map { File(it) }.forEach { resultFile ->
+            val analyzerResult = Json.decodeFromString<AnalyzerResultDto>(resultFile.readText())
+            analyzerResult.dependencyGraphDtos.forEach { dependencyGraphsDto ->
+                val graphs = DependencyGraphs(dependencyGraphsDto)
+                graphs.graph.forEach { (scope, graph) ->
+                    println("Scope $scope")
+                    val linkedDeps = graph.linkedDirectDependencies
+                    linkedDeps.forEach { linkedDep ->
+                        println("Direct dependency $linkedDep")
+                        val artifact = graphs.artifacts[linkedDep.node.artifactIdx]
+                        println("Corresponding artifact $artifact")
+                        println("Technical lag:")
+
+                        println(
+                            artifact.getTechLagForVersion(
+                                rawVersion = linkedDep.node.usedVersion,
+                                versionType = ArtifactVersion.VersionType.Major
+                            )
+                        )
+                    }
+                }
+            }
+            //            analyzerResult.dependencyGraphDto.packageManagerToScopes.forEach { (pkg, scopedDeps) ->
 //                scopedDeps.scopesToRoot.forEach { (scope, dep) ->
 //                    if (scope != "devDependencies") {
 //                            recursivePrint(dep)
@@ -57,8 +81,8 @@ class TechnicalLag : CliktCommand() {
 //                    }
 //                }
 //            }
-//
-//        }
+
+        }
 
 
 //

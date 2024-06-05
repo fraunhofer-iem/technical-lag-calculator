@@ -198,7 +198,7 @@ class DependencyGraphServiceTest {
         val lagMajor =
             artifact.getTechLagForVersion(rawVersion = "3.11", versionType = ArtifactVersion.VersionType.Major)
         val expectedMajorLag = TechnicalLagDto(
-            libyear = 18,
+            libDays = 18,
             distance = Triple(1, 1, 3),
             version = "4.12.3",
             numberOfMissedReleases = 4,
@@ -208,7 +208,7 @@ class DependencyGraphServiceTest {
         val lagMinor =
             artifact.getTechLagForVersion(rawVersion = "3.11", versionType = ArtifactVersion.VersionType.Minor)
         val expectedMinorLag = TechnicalLagDto(
-            libyear = 8,
+            libDays = 8,
             distance = Triple(0, 1, 3),
             version = "3.12.3",
             numberOfMissedReleases = 3,
@@ -218,11 +218,31 @@ class DependencyGraphServiceTest {
         val lagPatch =
             artifact.getTechLagForVersion(rawVersion = "3.11", versionType = ArtifactVersion.VersionType.Patch)
         val expectedPatchLag = TechnicalLagDto(
-            libyear = 2,
+            libDays = 2,
             distance = Triple(0, 0, 3),
             version = "3.11.3",
             numberOfMissedReleases = 1,
         )
         assertEquals(expectedPatchLag, lagPatch)
+
+        val lagNewest =
+            artifact.getTechLagForVersion(rawVersion = "4.12.3", versionType = ArtifactVersion.VersionType.Major)
+        val noLagExpected = TechnicalLagDto(
+            libDays = 0,
+            distance = Triple(0, 0, 0),
+            version = "4.12.3",
+            numberOfMissedReleases = 0,
+        )
+        assertEquals(noLagExpected, lagNewest)
+
+        val lagNewestPatch =
+            artifact.getTechLagForVersion(rawVersion = "4.12.3", versionType = ArtifactVersion.VersionType.Patch)
+        val noLagExpectedPatch = TechnicalLagDto(
+            libDays = 0,
+            distance = Triple(0, 0, 0),
+            version = "4.12.3",
+            numberOfMissedReleases = 0,
+        )
+        assertEquals(lagNewestPatch, noLagExpectedPatch)
     }
 }

@@ -1,10 +1,11 @@
 package dependencies.model
 
 import kotlinx.serialization.Serializable
+import technicalLag.model.TechnicalLagDto
 
 @Serializable
 data class DependencyGraphsDto(
-    val artifacts: List<Artifact> = listOf(), // Stores all components and their related metadata
+    val artifacts: List<ArtifactDto> = listOf(), // Stores all components and their related metadata
     val graphs: List<ScopeToVersionToGraph>, // Maps the graphs' scope to multiple versions of the original dependency graph
     val graph: List<ScopeToGraph>, // Maps the graphs' scope to the dependency graph extracted from the project
     val ecosystem: String, // Used to identify the appropriate APIs to call for additional information
@@ -21,7 +22,15 @@ data class DependencyGraphsDto(
         groupId = groupId,
         artifactId = artifactId,
         version = version,
-        artifacts = dependencyGraphs.artifacts,
+        artifacts = dependencyGraphs.artifacts.map {
+            ArtifactDto(
+                artifactId = it.artifactId,
+                groupId = it.groupId,
+                versions = it.versions,
+                technicalLag = it.getTechLagMap()
+                    .map { UpdateVersionToTechLagDto(updateVersion = it.key, technicalLag = it.value) }
+            )
+        },
         ecosystem = dependencyGraphs.ecosystem,
         graph = dependencyGraphs.graph.map { (scope, graph) ->
             ScopeToGraph(
@@ -42,6 +51,20 @@ data class DependencyGraphsDto(
         }
     )
 }
+
+@Serializable
+data class ArtifactDto(
+    val artifactId: String,
+    val groupId: String,
+    val versions: List<ArtifactVersion> = listOf(),
+    val technicalLag: List<UpdateVersionToTechLagDto>
+)
+
+@Serializable
+data class UpdateVersionToTechLagDto(
+    val technicalLag: TechnicalLagDto,
+    val updateVersion: String
+)
 
 @Serializable
 data class ScopeToGraph(

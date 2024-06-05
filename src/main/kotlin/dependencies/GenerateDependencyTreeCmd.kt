@@ -46,6 +46,9 @@ class GenerateDependencyTree : CliktCommand() {
         val resultFiles = projectPaths.paths.map { File(it) }.mapNotNull { file ->
             try {
                 if (file.exists() && file.isDirectory) {
+                    // TODO: check if we correctly generate the tree if there is no version information for
+                    //  intermediate nodes, but for their children. This can happen if intermediate nodes are
+                    //  developed internally but use OSS dependencies.
                     val result = dependencyAnalyzer.getAnalyzerResult(file)
 
                     if (result != null) {

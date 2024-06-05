@@ -2,6 +2,7 @@ package dependencies.model
 
 import io.github.z4kn4fein.semver.toVersion
 import kotlinx.serialization.Serializable
+import technicalLag.model.TechnicalLagStatistics
 import technicalLag.model.TechnicalLagDto
 import util.TimeHelper
 
@@ -27,7 +28,13 @@ data class ArtifactNodeEdge(
 data class Dependency(
     val node: ArtifactNode,
     val children: List<Dependency>,
-)
+    private val versionTypeToStats: MutableMap<String, TechnicalLagStatistics> =
+        mutableMapOf()
+) {
+    fun addStatForVersionType(stats: TechnicalLagStatistics, versionType: ArtifactVersion.VersionType) {
+        versionTypeToStats[versionType.toString()] = stats
+    }
+}
 
 /**
  * A data class representing a dependency graph.
@@ -44,6 +51,7 @@ data class DependencyGraph(
     val linkedDirectDependencies by lazy {
         linkDependencies()
     }
+
 
     /**
      * Function to resolve the DependencyGraph's nodes and edges lists to create a linked data structure
@@ -62,15 +70,25 @@ data class DependencyGraph(
             nodeToChildMap[fromNode]?.add(nodes[edge.to])
         }
 
-        // Function to build the NodeWithChildren recursively
-        fun buildNodeWithChildren(node: ArtifactNode): Dependency {
-            val children = nodeToChildMap[node]?.map { buildNodeWithChildren(it) } ?: listOf()
+        // Function to build the NodeWithChildren recursively with cycle detection
+        fun buildNodeWithChildren(node: ArtifactNode, visited: MutableSet<ArtifactNode>): Dependency {
+            if (node in visited) {
+                // Handle the cycle case here
+                // For example, return a node with no children or throw an exception
+                return Dependency(node, listOf())  // Returning node with no children in case of a cycle
+            }
+
+            visited.add(node)
+
+            val children = nodeToChildMap[node]?.map { buildNodeWithChildren(it, visited) } ?: listOf()
+            visited.remove(node)
+
             return Dependency(node, children)
         }
 
         return directDependencyIndices.map { idx ->
             val rootNode = nodes[idx]
-            buildNodeWithChildren(rootNode)
+            buildNodeWithChildren(rootNode, mutableSetOf())
         }
     }
 }
@@ -81,16 +99,26 @@ data class DependencyGraph(
  * As the versions list can grow very large it's recommended to make sure to create only
  * one artifact for each package and reuse it properly.
  */
-@Serializable
 data class Artifact(
     val artifactId: String,
     val groupId: String,
-    val versions: List<ArtifactVersion> = listOf()
-) {
-
+    val versions: List<ArtifactVersion> = listOf(),
     private val versionToVersionTypeToTechLag: MutableMap<String, TechnicalLagDto> =
         mutableMapOf()
+) {
 
+    override fun toString(): String {
+        return "${groupId}:${artifactId} with ${versions.size} versions."
+    }
+
+    fun getTechLagMap(): Map<String, TechnicalLagDto> {
+        return versionToVersionTypeToTechLag
+    }
+
+    /**
+     * Returns the technical lag between the given rawVersion and the target version defined by
+     * versionType (major, minor, patch).
+     */
     fun getTechLagForVersion(rawVersion: String, versionType: ArtifactVersion.VersionType): TechnicalLagDto? {
         val version = ArtifactVersion.validateAndHarmonizeVersionString(rawVersion)
         val ident = "$version-$versionType"
@@ -136,7 +164,7 @@ data class Artifact(
 
 
                 TechnicalLagDto(
-                    libyear = -1 * differenceInDays,
+                    libDays = -1 * differenceInDays,
                     version = newestVersion.versionNumber,
                     distance = distance,
                     numberOfMissedReleases = missedReleases
@@ -146,7 +174,6 @@ data class Artifact(
             }
         }
     }
-
 }
 
 @Serializable
@@ -226,4 +253,27 @@ data class DependencyGraphs(
     val version: String = "",
     val artifactId: String = "",
     val groupId: String = ""
-)
+) {
+    constructor(dependencyGraphsDto: DependencyGraphsDto) : this(
+        artifacts = dependencyGraphsDto.artifacts.map {
+            Artifact(
+                versions = it.versions,
+                groupId = it.groupId,
+                artifactId = it.artifactId,
+                versionToVersionTypeToTechLag = it.technicalLag.associate { Pair(it.updateVersion, it.technicalLag) }
+                    .toMutableMap()
+            )
+        },
+        ecosystem = dependencyGraphsDto.ecosystem,
+        version = dependencyGraphsDto.version,
+        artifactId = dependencyGraphsDto.artifactId,
+        groupId = dependencyGraphsDto.groupId,
+        graph = dependencyGraphsDto.graph.associate { Pair(it.scope, it.graph) },
+        graphs = dependencyGraphsDto.graphs.associate {
+            Pair(
+                it.scope,
+                it.versionToGraph.associate { Pair(it.version, it.graph) }
+            )
+        }
+    )
+}
