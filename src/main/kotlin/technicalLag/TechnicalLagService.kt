@@ -3,7 +3,7 @@ package technicalLag
 import dependencies.model.Artifact
 import dependencies.model.ArtifactVersion
 import dependencies.model.Dependency
-import dependencies.model.DependencyGraph
+import dependencies.model.DependencyGraphs
 import technicalLag.model.Statistics
 import technicalLag.model.TechnicalLagDto
 import technicalLag.model.TechnicalLagStatistics
@@ -19,18 +19,31 @@ class TechnicalLagService {
     )
 
 
-    fun connectDependenciesToStats(graph: DependencyGraph, artifacts: List<Artifact>) {
+    fun connectDependenciesToStats(graphs: DependencyGraphs) {
 
-        graph.linkedDirectDependencies.forEach { dep ->
-            calculateAllStatistics(dep, artifacts)
+        graphs.graph.values.forEach { graph ->
+            graph.linkedDirectDependencies.forEach { dep ->
+                calculateAllStatistics(dep, graphs.artifacts)
+            }
         }
 
+        graphs.graphs.values.forEach {
+            it.values.forEach { graph ->
+                graph.linkedDirectDependencies.forEach { dep ->
+                    calculateAllStatistics(dep, graphs.artifacts)
+                }
+            }
+        }
     }
 
     private fun calculateAllStatistics(
         dependency: Dependency,
         artifacts: List<Artifact>,
-        aggregate: AggregateData = AggregateData()
+        aggregate: Map<ArtifactVersion.VersionType, AggregateData> = mapOf(
+            ArtifactVersion.VersionType.Major to AggregateData(),
+            ArtifactVersion.VersionType.Minor to AggregateData(),
+            ArtifactVersion.VersionType.Patch to AggregateData()
+        )
     ) {
 
         dependency.children.forEach { child ->
@@ -38,25 +51,29 @@ class TechnicalLagService {
         }
 
         val artifact = artifacts[dependency.node.artifactIdx]
-        val technicalLag = artifact.getTechLagForVersion(dependency.node.usedVersion, ArtifactVersion.VersionType.Major)
+        listOf(
+            ArtifactVersion.VersionType.Major,
+            ArtifactVersion.VersionType.Minor,
+            ArtifactVersion.VersionType.Patch).forEach { versionType ->
+            val technicalLag = artifact.getTechLagForVersion(dependency.node.usedVersion, versionType)
 
-        if (technicalLag != null) {
-            aggregate.transitiveLibDays.add(technicalLag.libDays)
-            aggregate.numberMissedReleases.add(technicalLag.numberOfMissedReleases)
-            aggregate.releaseDistances.add(
-                Triple(
-                    technicalLag.distance.first.toDouble(),
-                    technicalLag.distance.second.toDouble(),
-                    technicalLag.distance.third.toDouble()
+            if (technicalLag != null) {
+                aggregate[versionType]!!.transitiveLibDays.add(technicalLag.libDays)
+                aggregate[versionType]!!.numberMissedReleases.add(technicalLag.numberOfMissedReleases)
+                aggregate[versionType]!!.releaseDistances.add(
+                    Triple(
+                        technicalLag.distance.first.toDouble(),
+                        technicalLag.distance.second.toDouble(),
+                        technicalLag.distance.third.toDouble()
+                    )
                 )
+            }
+
+            dependency.addStatForVersionType(
+                stats = aggregateDataToStats(technicalLag, aggregate[versionType]!!),
+                versionType = versionType
             )
         }
-
-        dependency.addStatForVersionType(
-            stats = aggregateDataToStats(technicalLag, aggregate),
-            versionType = ArtifactVersion.VersionType.Major
-        )
-
     }
 
     private fun aggregateDataToStats(

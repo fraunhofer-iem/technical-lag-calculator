@@ -20,32 +20,36 @@ import org.ossreviewtoolkit.model.RootDependencyIndex
 import technicalLag.model.TechnicalLagDto
 import kotlin.test.assertEquals
 
+
 class DependencyGraphServiceTest {
 
+    companion object {
+        fun setupTree(): DependencyGraph {
+            val ids = listOf(
+                Identifier(
+                    "npm",
+                    "org.apache.commons",
+                    "commons-lang3",
+                    "2.11"
+                ), // TODO: this is an important test case. this must not become an artifact, but must be part of the tree
+                Identifier("npm", "org.apache.commons", "commons-lang3", "3.11"),
+                Identifier("npm", "org.apache.commons", "commons-collections4", "4.4.3"),
+                Identifier("npm", "org.apache.commons", "commons-configuration", "2.4"),
+                Identifier(type = "npm", namespace = "org.junit", name = "junit", version = "5")
+            )
 
-    private fun setupTree(): DependencyGraph {
-        val ids = listOf(
-            Identifier(
-                "npm",
-                "org.apache.commons",
-                "commons-lang3",
-                "2.11"
-            ), // TODO: this is an important test case. this must not become an artifact, but must be part of the tree
-            Identifier("npm", "org.apache.commons", "commons-lang3", "3.11"),
-            Identifier("npm", "org.apache.commons", "commons-collections4", "4.4.3"),
-            Identifier("npm", "org.apache.commons", "commons-configuration", "2.4"),
-            Identifier(type = "npm", namespace = "org.junit", name = "junit", version = "5")
-        )
+            val refLang = DependencyReference(0)
+            val refCollections = DependencyReference(1)
+            val refCollectionsLast = DependencyReference(4)
+            val refConfig =
+                DependencyReference(2, dependencies = sortedSetOf(refLang, refCollections, refCollectionsLast))
+            val refCsv = DependencyReference(3, dependencies = sortedSetOf(refConfig))
+            val fragments = sortedSetOf(DependencyGraph.DEPENDENCY_REFERENCE_COMPARATOR, refCsv)
+            val scopeMap = mapOf("scope" to listOf(RootDependencyIndex(3), RootDependencyIndex(1)))
 
-        val refLang = DependencyReference(0)
-        val refCollections = DependencyReference(1)
-        val refCollectionsLast = DependencyReference(4)
-        val refConfig = DependencyReference(2, dependencies = sortedSetOf(refLang, refCollections, refCollectionsLast))
-        val refCsv = DependencyReference(3, dependencies = sortedSetOf(refConfig))
-        val fragments = sortedSetOf(DependencyGraph.DEPENDENCY_REFERENCE_COMPARATOR, refCsv)
-        val scopeMap = mapOf("scope" to listOf(RootDependencyIndex(3), RootDependencyIndex(1)))
+            return DependencyGraph(ids, fragments, scopeMap)
+        }
 
-        return DependencyGraph(ids, fragments, scopeMap)
     }
 
 

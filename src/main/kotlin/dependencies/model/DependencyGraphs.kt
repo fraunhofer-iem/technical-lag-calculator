@@ -2,8 +2,8 @@ package dependencies.model
 
 import io.github.z4kn4fein.semver.toVersion
 import kotlinx.serialization.Serializable
-import technicalLag.model.TechnicalLagStatistics
 import technicalLag.model.TechnicalLagDto
+import technicalLag.model.TechnicalLagStatistics
 import util.TimeHelper
 
 @Serializable
@@ -33,6 +33,10 @@ data class Dependency(
 ) {
     fun addStatForVersionType(stats: TechnicalLagStatistics, versionType: ArtifactVersion.VersionType) {
         versionTypeToStats[versionType.toString()] = stats
+    }
+
+    fun getStatForVersionType(versionType: ArtifactVersion.VersionType): TechnicalLagStatistics? {
+        return versionTypeToStats[versionType.toString()]
     }
 }
 
