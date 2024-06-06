@@ -28,15 +28,15 @@ data class ArtifactNodeEdge(
 data class Dependency(
     val node: ArtifactNode,
     val children: List<Dependency>,
-    private val versionTypeToStats: MutableMap<String, TechnicalLagStatistics> =
+    private val versionTypeToStats: MutableMap<ArtifactVersion.VersionType, TechnicalLagStatistics> =
         mutableMapOf()
 ) {
     fun addStatForVersionType(stats: TechnicalLagStatistics, versionType: ArtifactVersion.VersionType) {
-        versionTypeToStats[versionType.toString()] = stats
+        versionTypeToStats[versionType] = stats
     }
 
     fun getStatForVersionType(versionType: ArtifactVersion.VersionType): TechnicalLagStatistics? {
-        return versionTypeToStats[versionType.toString()]
+        return versionTypeToStats[versionType]
     }
 }
 

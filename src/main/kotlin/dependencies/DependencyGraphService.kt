@@ -227,11 +227,8 @@ class DependencyGraphService(
 
                 val versionTypesToGraph: MutableMap<ArtifactVersion.VersionType, DepsTreeResponseDto> =
                     mutableMapOf()
-                listOf(
-                    ArtifactVersion.VersionType.Major,
-                    ArtifactVersion.VersionType.Minor,
-                    ArtifactVersion.VersionType.Patch
-                ).forEach { versionTypes ->
+
+                ArtifactVersion.VersionType.entries.forEach { versionTypes ->
 
                     ArtifactVersion.findHighestApplicableVersion(
                         version = currentVersion,

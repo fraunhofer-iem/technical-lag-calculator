@@ -13,24 +13,44 @@ import kotlin.math.sqrt
 class TechnicalLagService {
 
     private data class AggregateData(
-        val transitiveLibDays: MutableList<Long> = mutableListOf(),
-        val numberMissedReleases: MutableList<Int> = mutableListOf(),
-        val releaseDistances: MutableList<Triple<Double, Double, Double>> = mutableListOf()
-    )
+        val size: Int,
+        val transitiveLibDays: MutableList<Long>,
+        val numberMissedReleases: MutableList<Int>,
+        val releaseDistances: MutableList<Triple<Double, Double, Double>>,
+    ) {
+        constructor(size: Int) : this(
+            size,
+            ArrayList<Long>(size),
+            ArrayList<Int>(size),
+            ArrayList<Triple<Double, Double, Double>>(size)
+        )
+    }
 
 
     fun connectDependenciesToStats(graphs: DependencyGraphs) {
 
         graphs.graph.values.forEach { graph ->
             graph.linkedDirectDependencies.forEach { dep ->
-                calculateAllStatistics(dep, graphs.artifacts)
+                val size = graph.nodes.count()
+                val aggregate = mapOf(
+                    ArtifactVersion.VersionType.Major to AggregateData(size = size),
+                    ArtifactVersion.VersionType.Minor to AggregateData(size = size),
+                    ArtifactVersion.VersionType.Patch to AggregateData(size = size)
+                )
+                calculateAllStatistics(dep, graphs.artifacts, aggregate)
             }
         }
 
         graphs.graphs.values.forEach {
             it.values.forEach { graph ->
                 graph.linkedDirectDependencies.forEach { dep ->
-                    calculateAllStatistics(dep, graphs.artifacts)
+                    val size = graph.nodes.count()
+                    val aggregate = mapOf(
+                        ArtifactVersion.VersionType.Major to AggregateData(size = size),
+                        ArtifactVersion.VersionType.Minor to AggregateData(size = size),
+                        ArtifactVersion.VersionType.Patch to AggregateData(size = size)
+                    )
+                    calculateAllStatistics(dep, graphs.artifacts, aggregate)
                 }
             }
         }
@@ -39,11 +59,7 @@ class TechnicalLagService {
     private fun calculateAllStatistics(
         dependency: Dependency,
         artifacts: List<Artifact>,
-        aggregate: Map<ArtifactVersion.VersionType, AggregateData> = mapOf(
-            ArtifactVersion.VersionType.Major to AggregateData(),
-            ArtifactVersion.VersionType.Minor to AggregateData(),
-            ArtifactVersion.VersionType.Patch to AggregateData()
-        )
+        aggregate: Map<ArtifactVersion.VersionType, AggregateData>
     ) {
 
         dependency.children.forEach { child ->
@@ -51,11 +67,14 @@ class TechnicalLagService {
         }
 
         val artifact = artifacts[dependency.node.artifactIdx]
-        listOf(
-            ArtifactVersion.VersionType.Major,
-            ArtifactVersion.VersionType.Minor,
-            ArtifactVersion.VersionType.Patch).forEach { versionType ->
+
+        ArtifactVersion.VersionType.entries.forEach { versionType ->
             val technicalLag = artifact.getTechLagForVersion(dependency.node.usedVersion, versionType)
+
+            dependency.addStatForVersionType(
+                stats = aggregateDataToStats(technicalLag, aggregate[versionType]!!),
+                versionType = versionType
+            )
 
             if (technicalLag != null) {
                 aggregate[versionType]!!.transitiveLibDays.add(technicalLag.libDays)
@@ -68,11 +87,6 @@ class TechnicalLagService {
                     )
                 )
             }
-
-            dependency.addStatForVersionType(
-                stats = aggregateDataToStats(technicalLag, aggregate[versionType]!!),
-                versionType = versionType
-            )
         }
     }
 
