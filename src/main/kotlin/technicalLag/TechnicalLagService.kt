@@ -90,10 +90,13 @@ class TechnicalLagService {
         ArtifactVersion.VersionType.entries.forEach { versionType ->
             val technicalLag = artifact.getTechLagForVersion(artifactDependency.node.usedVersion, versionType)
 
-            artifactDependency.addStatForVersionType(
-                stats = aggregateDataToStats(technicalLag, aggregate[versionType]!!),
-                versionType = versionType
-            )
+            // Leaf nodes have no stats, because stats communicate information about transitive dependencies
+            if (artifactDependency.children.isNotEmpty()) {
+                artifactDependency.addStatForVersionType(
+                    stats = aggregateDataToStats(technicalLag, aggregate[versionType]!!),
+                    versionType = versionType
+                )
+            }
 
             if (technicalLag != null) {
                 aggregate[versionType]!!.transitiveLibDays.add(technicalLag.libDays)

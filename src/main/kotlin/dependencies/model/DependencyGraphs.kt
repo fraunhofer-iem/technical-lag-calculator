@@ -1,5 +1,6 @@
 package dependencies.model
 
+import dependencies.model.Node.Companion.numberOfStats
 import io.github.z4kn4fein.semver.toVersion
 import kotlinx.serialization.Serializable
 import technicalLag.model.TechnicalLagDto
@@ -44,6 +45,18 @@ abstract class Node(
         return counter
     }
 
+    companion object {
+        fun numberOfStats(child: Node): Int {
+            var counter = child.versionTypeToStats.entries.count()
+
+            if (child.children.isEmpty()) {
+                counter += ArtifactVersion.VersionType.entries.count() // TODO: we have stats for leaf nodes that shouldn't be the case
+            }
+            child.children.forEach { counter += numberOfStats(it) }
+            return counter
+        }
+    }
+
     val numberChildren by lazy {
         countChildren(this)
     }
@@ -58,6 +71,12 @@ class ArtifactDependency(
     children: List<ArtifactDependency>
 ) : Node(children)
 
+@Serializable
+data class GraphMetadata(
+    val numberOfNodes: Int,
+    val numberOfEdges: Int,
+    val percentageOfNodesWithStats: Double,
+)
 
 /**
  * A data class representing a dependency graph.
@@ -74,6 +93,20 @@ data class DependencyGraph(
 
     val rootDependency by lazy {
         linkDependencies()
+    }
+
+    val metadata by lazy {
+        calculateMetadata()
+    }
+
+    private fun calculateMetadata(): GraphMetadata {
+        val numberOfStats = numberOfStats(rootDependency)
+        val expectedNumberOfStats = (rootDependency.numberChildren + 1) * ArtifactVersion.VersionType.entries.count()
+        return GraphMetadata(
+            numberOfNodes = nodes.count(),
+            numberOfEdges = edges.count(),
+            percentageOfNodesWithStats = (numberOfStats.toDouble() / expectedNumberOfStats.toDouble()) * 100,
+        )
     }
 
 

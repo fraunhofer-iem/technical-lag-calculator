@@ -22,12 +22,27 @@ data class Statistics(
     val average: Double,
     val variance: Double,
     val stdDev: Double
-)
+) {
+    override fun toString(): String {
+        return "(avg: $average, std dev: $stdDev)"
+    }
+}
 
 data class TechnicalLagStatistics(
     val technicalLag: TechnicalLagDto? = null,
 //    val score: Double,
     val libDays: Statistics?,
     val missedReleases: Statistics?,
-    val distance: Triple<Statistics, Statistics, Statistics>,
-)
+    val distance: Triple<Statistics, Statistics, Statistics>?,
+) {
+    override fun toString(): String {
+        val properties = listOfNotNull(
+            technicalLag?.let { "technicalLag=$it" },
+            libDays?.let { "libDays=$it" },
+            missedReleases?.let { "missedReleases=$it" },
+            distance?.let { "distance=$it" }
+        ).joinToString(", ")
+
+        return "TechnicalLagStatistics($properties)"
+    }
+}

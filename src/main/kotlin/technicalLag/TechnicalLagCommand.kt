@@ -44,7 +44,7 @@ class TechnicalLag : CliktCommand() {
 
         // Setup logging and corresponding output paths
         val defaultLogPath = MDC.get("outputFile") ?: ""
-
+        val technicalLagService = TechnicalLagService()
         logger.info { "Running libyears for projects in $projectPaths and output path $outputPath" }
 
         outputPath.createDirectories()
@@ -53,23 +53,32 @@ class TechnicalLag : CliktCommand() {
             val analyzerResult = Json.decodeFromString<AnalyzerResultDto>(resultFile.readText())
             analyzerResult.dependencyGraphDtos.forEach { dependencyGraphsDto ->
                 val graphs = DependencyGraphs(dependencyGraphsDto)
+                technicalLagService.connectDependenciesToStats(graphs)
+
                 graphs.graph.forEach { (scope, graph) ->
                     println("Scope $scope")
+                    println(graph.metadata)
                     val root = graph.rootDependency
-                    root.children.forEach { child ->
-                        println("Direct dependency $graph.rootDependency")
-                        val artifact = graphs.artifacts[child.node.artifactIdx]
-                        println("Corresponding artifact $artifact")
-                        println("Technical lag:")
-
-                        println(
-                            artifact.getTechLagForVersion(
-                                rawVersion = child.node.usedVersion,
-                                versionType = ArtifactVersion.VersionType.Major
-                            )
-                        )
-
+                    ArtifactVersion.VersionType.entries.forEach { versionType ->
+                        println("Stats for version type $versionType")
+                        println(root.getStatForVersionType(versionType))
                     }
+
+
+//                    root.children.forEach { child ->
+//                        println("Direct dependency $graph.rootDependency")
+//                        val artifact = graphs.artifacts[child.node.artifactIdx]
+//                        println("Corresponding artifact $artifact")
+//                        println("Technical lag:")
+//
+//                        println(
+//                            artifact.getTechLagForVersion(
+//                                rawVersion = child.node.usedVersion,
+//                                versionType = ArtifactVersion.VersionType.Major
+//                            )
+//                        )
+//
+//                    }
                 }
             }
         }
