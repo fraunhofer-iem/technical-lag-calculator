@@ -170,8 +170,8 @@ class TechnicalLagServiceTest {
             graphs
         )
 
-        val deps = graphs.graph.values.first().linkedDirectDependencies
-        deps.forEach {
+        val root = graphs.graph.values.first().rootDependency
+        root.children.forEach {
             val majorStats = it.getStatForVersionType(ArtifactVersion.VersionType.Major)
             assertEquals(18.0, majorStats?.libDays?.average ?: -1)
             assertEquals(0.0, majorStats?.libDays?.stdDev ?: -1)
@@ -258,8 +258,8 @@ class TechnicalLagServiceTest {
             graphs
         )
 
-        val deps = graphs.graph.values.first().linkedDirectDependencies
-        val firstDirectDep = deps.first()
+        val root = graphs.graph.values.first().rootDependency
+        val firstDirectDep = root.children.first()
         // first contains data for nodes 0, 1, 2, 2
         val firstDepMajorStats = firstDirectDep.getStatForVersionType(ArtifactVersion.VersionType.Major)
         //  49, 78, 78 - avg. 55.75
@@ -278,7 +278,7 @@ class TechnicalLagServiceTest {
         assertEquals(4.0, firstDepMajorStats?.missedReleases?.average ?: -1)
         assertEquals(0.0, firstDepMajorStats?.missedReleases?.stdDev ?: -1)
 
-        val secondDirectDep = deps[1]
+        val secondDirectDep = root.children[1]
 
         val secondDepMajorStats = secondDirectDep.getStatForVersionType(ArtifactVersion.VersionType.Major)
 

@@ -25,11 +25,9 @@ data class ArtifactNodeEdge(
     val to: Int,
 )
 
-data class Dependency(
-    val node: ArtifactNode,
-    val children: List<Dependency>,
-    private val versionTypeToStats: MutableMap<ArtifactVersion.VersionType, TechnicalLagStatistics> =
-        mutableMapOf()
+abstract class Node(
+    val children: List<ArtifactDependency>,
+    private val versionTypeToStats: MutableMap<ArtifactVersion.VersionType, TechnicalLagStatistics> = mutableMapOf()
 ) {
     fun addStatForVersionType(stats: TechnicalLagStatistics, versionType: ArtifactVersion.VersionType) {
         versionTypeToStats[versionType] = stats
@@ -38,7 +36,28 @@ data class Dependency(
     fun getStatForVersionType(versionType: ArtifactVersion.VersionType): TechnicalLagStatistics? {
         return versionTypeToStats[versionType]
     }
+
+    private fun countChildren(child: Node): Int {
+        var counter = child.children.count()
+
+        child.children.forEach { counter += countChildren(it) }
+        return counter
+    }
+
+    val numberChildren by lazy {
+        countChildren(this)
+    }
 }
+
+class Root(
+    children: List<ArtifactDependency>
+) : Node(children)
+
+class ArtifactDependency(
+    val node: ArtifactNode,
+    children: List<ArtifactDependency>
+) : Node(children)
+
 
 /**
  * A data class representing a dependency graph.
@@ -52,7 +71,8 @@ data class DependencyGraph(
     val edges: List<ArtifactNodeEdge> = listOf(),
     val directDependencyIndices: List<Int> = listOf(), // Idx of the nodes' which are direct dependencies of this graph
 ) {
-    val linkedDirectDependencies by lazy {
+
+    val rootDependency by lazy {
         linkDependencies()
     }
 
@@ -61,7 +81,7 @@ data class DependencyGraph(
      * Function to resolve the DependencyGraph's nodes and edges lists to create a linked data structure
      * used for easier access and traversal of the stored data.
      */
-    private fun linkDependencies(): List<Dependency> {
+    private fun linkDependencies(): Root {
         val nodeToChildMap: MutableMap<ArtifactNode, MutableList<ArtifactNode>> = mutableMapOf()
 
         edges.forEach { edge ->
@@ -75,11 +95,11 @@ data class DependencyGraph(
         }
 
         // Function to build the NodeWithChildren recursively with cycle detection
-        fun buildNodeWithChildren(node: ArtifactNode, visited: MutableSet<ArtifactNode>): Dependency {
+        fun buildNodeWithChildren(node: ArtifactNode, visited: MutableSet<ArtifactNode>): ArtifactDependency {
             if (node in visited) {
                 // Handle the cycle case here
                 // For example, return a node with no children or throw an exception
-                return Dependency(node, listOf())  // Returning node with no children in case of a cycle
+                return ArtifactDependency(node, listOf())  // Returning node with no children in case of a cycle
             }
 
             visited.add(node)
@@ -87,13 +107,15 @@ data class DependencyGraph(
             val children = nodeToChildMap[node]?.map { buildNodeWithChildren(it, visited) } ?: listOf()
             visited.remove(node)
 
-            return Dependency(node, children)
+            return ArtifactDependency(node, children)
         }
 
-        return directDependencyIndices.map { idx ->
-            val rootNode = nodes[idx]
-            buildNodeWithChildren(rootNode, mutableSetOf())
-        }
+        return Root(
+            children = directDependencyIndices.map { idx ->
+                val rootNode = nodes[idx]
+                buildNodeWithChildren(rootNode, mutableSetOf())
+            }
+        )
     }
 }
 
@@ -204,8 +226,6 @@ data class ArtifactVersion private constructor(
             return version.toVersion(strict = false).toString()
         }
 
-        // TODO: needs testing
-        // We want this to return the version itself if it is the highest applicable version
         fun findHighestApplicableVersion(
             version: String,
             versions: List<ArtifactVersion>,

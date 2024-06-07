@@ -55,23 +55,25 @@ class TechnicalLag : CliktCommand() {
                 val graphs = DependencyGraphs(dependencyGraphsDto)
                 graphs.graph.forEach { (scope, graph) ->
                     println("Scope $scope")
-                    val linkedDeps = graph.linkedDirectDependencies
-                    linkedDeps.forEach { linkedDep ->
-                        println("Direct dependency $linkedDep")
-                        val artifact = graphs.artifacts[linkedDep.node.artifactIdx]
+                    val root = graph.rootDependency
+                    root.children.forEach { child ->
+                        println("Direct dependency $graph.rootDependency")
+                        val artifact = graphs.artifacts[child.node.artifactIdx]
                         println("Corresponding artifact $artifact")
                         println("Technical lag:")
 
                         println(
                             artifact.getTechLagForVersion(
-                                rawVersion = linkedDep.node.usedVersion,
+                                rawVersion = child.node.usedVersion,
                                 versionType = ArtifactVersion.VersionType.Major
                             )
                         )
+
                     }
                 }
             }
-            //            analyzerResult.dependencyGraphDto.packageManagerToScopes.forEach { (pkg, scopedDeps) ->
+        }
+        //            analyzerResult.dependencyGraphDto.packageManagerToScopes.forEach { (pkg, scopedDeps) ->
 //                scopedDeps.scopesToRoot.forEach { (scope, dep) ->
 //                    if (scope != "devDependencies") {
 //                            recursivePrint(dep)
@@ -82,7 +84,7 @@ class TechnicalLag : CliktCommand() {
 //                }
 //            }
 
-        }
+    }
 
 
 //
@@ -134,7 +136,7 @@ class TechnicalLag : CliktCommand() {
 //            MDC.put("outputFile", outputPathWrapper.toAbsolutePath().pathString)
 //
 //        }
-    }
+
 }
 //
 //fun getConfigFromPath(path: Path): GitConfig {

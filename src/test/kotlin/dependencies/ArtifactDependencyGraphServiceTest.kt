@@ -21,7 +21,7 @@ import technicalLag.model.TechnicalLagDto
 import kotlin.test.assertEquals
 
 
-class DependencyGraphServiceTest {
+class ArtifactDependencyGraphServiceTest {
 
     companion object {
         fun setupTree(): DependencyGraph {
@@ -91,10 +91,10 @@ class DependencyGraphServiceTest {
         val rootArtifact = transformedGraphs.first().artifacts[rootNode.artifactIdx]
         assertEquals("commons-configuration", rootArtifact.artifactId)
 
-        val directDeps = transformedGraph.linkedDirectDependencies
-        assertEquals(2, directDeps.count())
-        assertEquals(1, directDeps.first().children.count())
-        assertEquals(3, directDeps.first().children.first().children.count())
+        val directDeps = transformedGraph.rootDependency
+        assertEquals(2, directDeps.children.count())
+        assertEquals(1, directDeps.children.first().children.count())
+        assertEquals(3, directDeps.children.first().children.first().children.count())
     }
 
     @Test
