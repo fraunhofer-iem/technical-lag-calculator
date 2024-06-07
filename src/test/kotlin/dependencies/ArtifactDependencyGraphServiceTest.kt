@@ -1,6 +1,7 @@
 package dependencies
 
 import dependencies.model.ArtifactVersion
+import dependencies.model.VersionType
 import http.deps.DepsClient
 import http.deps.model.DepsTreeResponseDto
 import http.deps.model.Edge
@@ -200,7 +201,7 @@ class ArtifactDependencyGraphServiceTest {
             transformedGraphs.first().artifacts.find { it.artifactId == "commons-lang3" && it.groupId == "org.apache.commons" }!!
 
         val lagMajor =
-            artifact.getTechLagForVersion(rawVersion = "3.11", versionType = ArtifactVersion.VersionType.Major)
+            artifact.getTechLagForVersion(rawVersion = "3.11", versionType = VersionType.Major)
         val expectedMajorLag = TechnicalLagDto(
             libDays = 18,
             distance = Triple(1, 1, 3),
@@ -210,7 +211,7 @@ class ArtifactDependencyGraphServiceTest {
         assertEquals(expectedMajorLag, lagMajor)
 
         val lagMinor =
-            artifact.getTechLagForVersion(rawVersion = "3.11", versionType = ArtifactVersion.VersionType.Minor)
+            artifact.getTechLagForVersion(rawVersion = "3.11", versionType = VersionType.Minor)
         val expectedMinorLag = TechnicalLagDto(
             libDays = 8,
             distance = Triple(0, 1, 3),
@@ -220,7 +221,7 @@ class ArtifactDependencyGraphServiceTest {
         assertEquals(expectedMinorLag, lagMinor)
 
         val lagPatch =
-            artifact.getTechLagForVersion(rawVersion = "3.11", versionType = ArtifactVersion.VersionType.Patch)
+            artifact.getTechLagForVersion(rawVersion = "3.11", versionType = VersionType.Patch)
         val expectedPatchLag = TechnicalLagDto(
             libDays = 2,
             distance = Triple(0, 0, 3),
@@ -230,7 +231,7 @@ class ArtifactDependencyGraphServiceTest {
         assertEquals(expectedPatchLag, lagPatch)
 
         val lagNewest =
-            artifact.getTechLagForVersion(rawVersion = "4.12.3", versionType = ArtifactVersion.VersionType.Major)
+            artifact.getTechLagForVersion(rawVersion = "4.12.3", versionType = VersionType.Major)
         val noLagExpected = TechnicalLagDto(
             libDays = 0,
             distance = Triple(0, 0, 0),
@@ -240,7 +241,7 @@ class ArtifactDependencyGraphServiceTest {
         assertEquals(noLagExpected, lagNewest)
 
         val lagNewestPatch =
-            artifact.getTechLagForVersion(rawVersion = "4.12.3", versionType = ArtifactVersion.VersionType.Patch)
+            artifact.getTechLagForVersion(rawVersion = "4.12.3", versionType = VersionType.Patch)
         val noLagExpectedPatch = TechnicalLagDto(
             libDays = 0,
             distance = Triple(0, 0, 0),

@@ -28,13 +28,13 @@ data class ArtifactNodeEdge(
 
 abstract class Node(
     val children: List<ArtifactDependency>,
-    private val versionTypeToStats: MutableMap<ArtifactVersion.VersionType, TechnicalLagStatistics> = mutableMapOf()
+    private val versionTypeToStats: MutableMap<VersionType, TechnicalLagStatistics> = mutableMapOf()
 ) {
-    fun addStatForVersionType(stats: TechnicalLagStatistics, versionType: ArtifactVersion.VersionType) {
+    fun addStatForVersionType(stats: TechnicalLagStatistics, versionType: VersionType) {
         versionTypeToStats[versionType] = stats
     }
 
-    fun getStatForVersionType(versionType: ArtifactVersion.VersionType): TechnicalLagStatistics? {
+    fun getStatForVersionType(versionType: VersionType): TechnicalLagStatistics? {
         return versionTypeToStats[versionType]
     }
 
@@ -50,7 +50,7 @@ abstract class Node(
             var counter = child.versionTypeToStats.entries.count()
 
             if (child.children.isEmpty()) {
-                counter += ArtifactVersion.VersionType.entries.count() // TODO: we have stats for leaf nodes that shouldn't be the case
+                counter += VersionType.entries.count() // TODO: we have stats for leaf nodes that shouldn't be the case
             }
             child.children.forEach { counter += numberOfStats(it) }
             return counter
@@ -101,7 +101,7 @@ data class DependencyGraph(
 
     private fun calculateMetadata(): GraphMetadata {
         val numberOfStats = numberOfStats(rootDependency)
-        val expectedNumberOfStats = (rootDependency.numberChildren + 1) * ArtifactVersion.VersionType.entries.count()
+        val expectedNumberOfStats = (rootDependency.numberChildren + 1) * VersionType.entries.count()
         return GraphMetadata(
             numberOfNodes = nodes.count(),
             numberOfEdges = edges.count(),
@@ -178,7 +178,7 @@ data class Artifact(
      * Returns the technical lag between the given rawVersion and the target version defined by
      * versionType (major, minor, patch).
      */
-    fun getTechLagForVersion(rawVersion: String, versionType: ArtifactVersion.VersionType): TechnicalLagDto? {
+    fun getTechLagForVersion(rawVersion: String, versionType: VersionType): TechnicalLagDto? {
         val version = ArtifactVersion.validateAndHarmonizeVersionString(rawVersion)
         val ident = "$version-$versionType"
 
@@ -193,7 +193,7 @@ data class Artifact(
         }
     }
 
-    private fun calculateTechnicalLag(version: String, versionType: ArtifactVersion.VersionType): TechnicalLagDto? {
+    private fun calculateTechnicalLag(version: String, versionType: VersionType): TechnicalLagDto? {
 
         return if (versions.isEmpty()) {
             null
@@ -235,6 +235,10 @@ data class Artifact(
     }
 }
 
+enum class VersionType {
+    Minor, Major, Patch
+}
+
 @Serializable
 data class ArtifactVersion private constructor(
     val versionNumber: String,
@@ -242,15 +246,13 @@ data class ArtifactVersion private constructor(
     val isDefault: Boolean = false
 ) {
 
-    enum class VersionType {
-        Minor, Major, Patch
-    }
-
     companion object {
         fun create(versionNumber: String, releaseDate: Long, isDefault: Boolean = false): ArtifactVersion {
             return ArtifactVersion(
                 releaseDate = releaseDate,
                 isDefault = isDefault,
+                // this step harmonizes possibly weired version formats like 2.4 or 5
+                // those are parsed to 2.4.0 and 5.0.0
                 versionNumber = validateAndHarmonizeVersionString(versionNumber)
             )
         }

@@ -172,7 +172,7 @@ class TechnicalLagServiceTest {
 
         val root = graphs.graph.values.first().rootDependency
         root.children.forEach {
-            val majorStats = it.getStatForVersionType(ArtifactVersion.VersionType.Major)
+            val majorStats = it.getStatForVersionType(VersionType.Major)
             assertEquals(18.0, majorStats?.libDays?.average ?: -1)
             assertEquals(0.0, majorStats?.libDays?.stdDev ?: -1)
             assertEquals(3.0, majorStats?.missedReleases?.average ?: -1)
@@ -197,7 +197,7 @@ class TechnicalLagServiceTest {
                 majorStats?.distance ?: -1
             )
 
-            val minorStats = it.getStatForVersionType(ArtifactVersion.VersionType.Minor)
+            val minorStats = it.getStatForVersionType(VersionType.Minor)
             assertEquals(8.0, minorStats?.libDays?.average ?: -1)
             assertEquals(0.0, minorStats?.libDays?.stdDev ?: -1)
             assertEquals(2.0, minorStats?.missedReleases?.average ?: -1)
@@ -222,7 +222,7 @@ class TechnicalLagServiceTest {
                 minorStats?.distance ?: -1
             )
 
-            val patchStats = it.getStatForVersionType(ArtifactVersion.VersionType.Patch)
+            val patchStats = it.getStatForVersionType(VersionType.Patch)
             assertEquals(2.0, patchStats?.libDays?.average ?: -1)
             assertEquals(0.0, patchStats?.libDays?.stdDev ?: -1)
             assertEquals(1.0, patchStats?.missedReleases?.average ?: -1)
@@ -261,7 +261,7 @@ class TechnicalLagServiceTest {
         val root = graphs.graph.values.first().rootDependency
         val firstDirectDep = root.children.first()
         // first contains data for nodes 0, 1, 2, 2
-        val firstDepMajorStats = firstDirectDep.getStatForVersionType(ArtifactVersion.VersionType.Major)
+        val firstDepMajorStats = firstDirectDep.getStatForVersionType(VersionType.Major)
         //  49, 78, 78 - avg. 55.75
         // sqrt(((49-55.75)^2 + (78-55.75)^2 + (78-55.75)^2) / 4)
         println(firstDepMajorStats)
@@ -280,7 +280,7 @@ class TechnicalLagServiceTest {
 
         val secondDirectDep = root.children[1]
 
-        val secondDepMajorStats = secondDirectDep.getStatForVersionType(ArtifactVersion.VersionType.Major)
+        val secondDepMajorStats = secondDirectDep.getStatForVersionType(VersionType.Major)
 
         println(secondDepMajorStats)
         val secondAvg = (18.0) / 2.0

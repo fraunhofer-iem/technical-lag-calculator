@@ -16,10 +16,6 @@ object TimeHelper {
         return dateTime.toInstant().toEpochMilli()
     }
 
-    fun msToDateString(ms: Long): String {
-        return Date(ms).toInstant().toString()
-    }
-
     fun getDifferenceInDays(currentVersion: Long, newestVersion: Long): Long {
 
         val currentVersionTime = Date(currentVersion).toInstant()

@@ -7,8 +7,8 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 import dependencies.ProjectPaths
 import dependencies.model.AnalyzerResultDto
-import dependencies.model.ArtifactVersion
 import dependencies.model.DependencyGraphs
+import dependencies.model.VersionType
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger
@@ -59,39 +59,14 @@ class TechnicalLag : CliktCommand() {
                     println("Scope $scope")
                     println(graph.metadata)
                     val root = graph.rootDependency
-                    ArtifactVersion.VersionType.entries.forEach { versionType ->
+                    VersionType.entries.forEach { versionType ->
                         println("Stats for version type $versionType")
                         println(root.getStatForVersionType(versionType))
                     }
 
-
-//                    root.children.forEach { child ->
-//                        println("Direct dependency $graph.rootDependency")
-//                        val artifact = graphs.artifacts[child.node.artifactIdx]
-//                        println("Corresponding artifact $artifact")
-//                        println("Technical lag:")
-//
-//                        println(
-//                            artifact.getTechLagForVersion(
-//                                rawVersion = child.node.usedVersion,
-//                                versionType = ArtifactVersion.VersionType.Major
-//                            )
-//                        )
-//
-//                    }
                 }
             }
         }
-        //            analyzerResult.dependencyGraphDto.packageManagerToScopes.forEach { (pkg, scopedDeps) ->
-//                scopedDeps.scopesToRoot.forEach { (scope, dep) ->
-//                    if (scope != "devDependencies") {
-//                            recursivePrint(dep)
-//                            StoreResultHelper.storeStatsInFile(outputPath.toFile(), scope,
-//                                ArtifactWithStatsDto(dep)
-//                                )
-//                    }
-//                }
-//            }
 
     }
 

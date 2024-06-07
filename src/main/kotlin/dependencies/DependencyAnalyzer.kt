@@ -29,7 +29,12 @@ private data class RawAnalyzerResult(
     val dependencyGraphs: Map<String, DependencyGraph>
 )
 
-
+/**
+ * This class wraps the execution of the ORT, which retrieves the initial dependency tree from the given project,
+ * and then transforms the dependency tree into the internal DependencyGraphs data structure.
+ * During the transformation multiple API calls to deps.dev are issued through the DependencyGraphService to retrieve the necessary version information
+ * for each node, as well as information about the graph's update possibilities.
+ */
 class DependencyAnalyzer(
     private val dependencyGraphService: DependencyGraphService = DependencyGraphService(),
     private val config: DependencyAnalyzerConfig = createDefaultConfig(),
@@ -46,10 +51,8 @@ class DependencyAnalyzer(
                 rawAnalyzerResult.dependencyGraphs,
             )
 
-            val transformedGraphsWithUpdates = transformedGraphs.map { dependencyGraphService.simulateUpdates(it) }
-
             val result = AnalyzerResultDto(
-                dependencyGraphDtos = transformedGraphsWithUpdates.map {
+                dependencyGraphDtos = transformedGraphs.map {
                     DependencyGraphsDto(
                         dependencyGraphs = it,
                         version = mainProject.version,

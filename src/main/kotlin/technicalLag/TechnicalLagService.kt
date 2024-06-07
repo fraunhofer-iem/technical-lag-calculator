@@ -23,6 +23,35 @@ class TechnicalLagService {
         )
     }
 
+    private data class AggregateVersionTypeCollection(val size: Int) {
+
+        private val aggregates: Map<VersionType, AggregateData> = initAggregates()
+
+        private fun initAggregates(): Map<VersionType, AggregateData> {
+            // this guarantees that the map contains an entry for each VersionType
+            return VersionType.entries.associateWith { AggregateData(size = size) }
+        }
+
+        fun getAggregate(version: VersionType): AggregateData {
+            return aggregates[version]!!
+        }
+
+        fun add(aggregateCollection: AggregateVersionTypeCollection) {
+            VersionType.entries.forEach { versionType ->
+
+                getAggregate(versionType).releaseDistances.addAll(
+                    aggregateCollection.getAggregate(versionType).releaseDistances
+                )
+                getAggregate(versionType).transitiveLibDays.addAll(
+                    aggregateCollection.getAggregate(versionType).transitiveLibDays
+                )
+                getAggregate(versionType).numberMissedReleases.addAll(
+                    aggregateCollection.getAggregate(versionType).numberMissedReleases
+                )
+            }
+        }
+    }
+
 
     fun connectDependenciesToStats(graphs: DependencyGraphs) {
 
@@ -44,30 +73,19 @@ class TechnicalLagService {
         artifacts: List<Artifact>,
     ) {
 
-        val aggregate = mapOf(
-            ArtifactVersion.VersionType.Major to AggregateData(size = root.numberChildren),
-            ArtifactVersion.VersionType.Minor to AggregateData(size = root.numberChildren),
-            ArtifactVersion.VersionType.Patch to AggregateData(size = root.numberChildren)
-        )
+        val aggregateVersionTypeCollection = AggregateVersionTypeCollection(size = root.numberChildren)
+
 
         root.children.forEach { child ->
-            val childAggregate = mapOf(
-                ArtifactVersion.VersionType.Major to AggregateData(size = child.numberChildren),
-                ArtifactVersion.VersionType.Minor to AggregateData(size = child.numberChildren),
-                ArtifactVersion.VersionType.Patch to AggregateData(size = child.numberChildren)
-            )
+            val childAggregate = AggregateVersionTypeCollection(size = child.numberChildren)
+
             calculateChildStats(child, artifacts, childAggregate)
-            ArtifactVersion.VersionType.entries.forEach { versionType ->
-                aggregate[versionType]!!.size + childAggregate[versionType]!!.size
-                aggregate[versionType]!!.releaseDistances.addAll(childAggregate[versionType]!!.releaseDistances)
-                aggregate[versionType]!!.transitiveLibDays.addAll(childAggregate[versionType]!!.transitiveLibDays)
-                aggregate[versionType]!!.numberMissedReleases.addAll(childAggregate[versionType]!!.numberMissedReleases)
-            }
+            aggregateVersionTypeCollection.add(childAggregate)
         }
 
-        ArtifactVersion.VersionType.entries.forEach { versionType ->
+        VersionType.entries.forEach { versionType ->
             root.addStatForVersionType(
-                stats = aggregateDataToStats(aggregateData = aggregate[versionType]!!),
+                stats = aggregateDataToStats(aggregateData = aggregateVersionTypeCollection.getAggregate(versionType)),
                 versionType = versionType
             )
         }
@@ -78,30 +96,33 @@ class TechnicalLagService {
     private fun calculateChildStats(
         artifactDependency: ArtifactDependency,
         artifacts: List<Artifact>,
-        aggregate: Map<ArtifactVersion.VersionType, AggregateData>
+        aggregateVersionTypeCollection: AggregateVersionTypeCollection
     ) {
 
         artifactDependency.children.forEach { child ->
-            calculateChildStats(child, artifacts, aggregate)
+            calculateChildStats(child, artifacts, aggregateVersionTypeCollection)
         }
 
         val artifact = artifacts[artifactDependency.node.artifactIdx]
 
-        ArtifactVersion.VersionType.entries.forEach { versionType ->
+        VersionType.entries.forEach { versionType ->
             val technicalLag = artifact.getTechLagForVersion(artifactDependency.node.usedVersion, versionType)
 
             // Leaf nodes have no stats, because stats communicate information about transitive dependencies
             if (artifactDependency.children.isNotEmpty()) {
                 artifactDependency.addStatForVersionType(
-                    stats = aggregateDataToStats(technicalLag, aggregate[versionType]!!),
+                    stats = aggregateDataToStats(
+                        technicalLag,
+                        aggregateVersionTypeCollection.getAggregate(versionType)
+                    ),
                     versionType = versionType
                 )
             }
 
             if (technicalLag != null) {
-                aggregate[versionType]!!.transitiveLibDays.add(technicalLag.libDays)
-                aggregate[versionType]!!.numberMissedReleases.add(technicalLag.numberOfMissedReleases)
-                aggregate[versionType]!!.releaseDistances.add(
+                aggregateVersionTypeCollection.getAggregate(versionType).transitiveLibDays.add(technicalLag.libDays)
+                aggregateVersionTypeCollection.getAggregate(versionType).numberMissedReleases.add(technicalLag.numberOfMissedReleases)
+                aggregateVersionTypeCollection.getAggregate(versionType).releaseDistances.add(
                     Triple(
                         technicalLag.distance.first.toDouble(),
                         technicalLag.distance.second.toDouble(),
@@ -150,7 +171,10 @@ class TechnicalLagService {
         }
     }
 
-    private fun releaseDistanceToStatistics(distances: List<Triple<Double, Double, Double>>): Triple<Statistics, Statistics, Statistics> {
+    private fun releaseDistanceToStatistics(distances: List<Triple<Double, Double, Double>>): Triple<Statistics, Statistics, Statistics>? {
+        if (distances.isEmpty()) {
+            return null
+        }
         val avg = calculateAvgReleaseDistance(distances)
         val variance = calculateVarianceForReleaseDistance(distances, avg)
         val stdDev = Triple(sqrt(variance.first), sqrt(variance.second), sqrt(variance.third))
@@ -202,5 +226,4 @@ class TechnicalLagService {
             Triple(0.0, 0.0, 0.0)
         }
     }
-
 }

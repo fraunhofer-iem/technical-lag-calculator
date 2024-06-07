@@ -38,9 +38,8 @@ class GenerateDependencyTree : CliktCommand() {
 
         val projectPaths = Json.decodeFromString<ProjectPaths>(projectListPath.toFile().readText())
         logger.info { "Running ORT on projects $projectPaths" }
+
         val dependencyAnalyzer = DependencyAnalyzer()
-
-
         outputPath.createDirectories()
 
         val resultFiles = projectPaths.paths.map { File(it) }.mapNotNull { file ->
@@ -67,11 +66,7 @@ class GenerateDependencyTree : CliktCommand() {
             }
         }.map { it.path }
 
-
         dependencyAnalyzer.close()
-
         StoreResultHelper.storeResultFilePathsInFile(outputPath.toFile(), ProjectPaths(resultFiles))
-
     }
-
 }
