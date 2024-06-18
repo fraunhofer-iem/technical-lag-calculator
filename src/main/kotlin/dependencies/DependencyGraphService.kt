@@ -2,14 +2,11 @@ package dependencies
 
 import dependencies.model.*
 import http.deps.DepsClient
-import http.deps.model.DepsTreeResponseDto
 import kotlinx.coroutines.*
-import org.apache.logging.log4j.kotlin.logger
 import org.ossreviewtoolkit.model.DependencyGraph
 import org.ossreviewtoolkit.model.Identifier
 import org.ossreviewtoolkit.model.PackageReference
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class DependencyGraphService(
     private val depsClient: DepsClient = DepsClient(),
     // It is important to limit the parallelization of the IO scope, which is used to make server

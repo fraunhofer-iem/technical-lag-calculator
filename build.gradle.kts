@@ -40,15 +40,15 @@ kotlin {
 }
 
 
-val exposedVersion = "0.50.1"
-val ortVersion = "22.5.0"
+val exposedVersion = "0.51.1"
+val ortVersion = "23.0.0"
 val ktorVersion = "2.3.11"
-val kotlinCoroutines = "1.8.1"
+val kotlinCoroutines = "1.9.0-RC"
 val logback = "1.5.6"
 val log4j = "2.23.1"
 
 dependencies {
-    implementation("com.google.guava:guava:33.2.0-jre")
+    implementation("com.google.guava:guava:33.2.1-jre")
     implementation("com.github.ajalt.clikt:clikt:4.4.0")
     implementation("org.apache.logging.log4j:log4j-api:$log4j")
     implementation("org.apache.logging.log4j:log4j-to-slf4j:$log4j")
@@ -72,7 +72,7 @@ dependencies {
     implementation("org.ossreviewtoolkit.plugins.packagecurationproviders:clearly-defined-package-curation-provider:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.packagemanagers:python-package-manager:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.versioncontrolsystems:git-version-control-system:$ortVersion")
-    implementation("org.eclipse.jgit:org.eclipse.jgit:6.9.0.202403050737-r")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:6.10.0.202406032230-r")
     implementation("org.jetbrains.kotlinx:kandy-lets-plot:0.6.0")
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-crypt:$exposedVersion")
@@ -82,7 +82,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-json:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-money:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-spring-boot-starter:$exposedVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutines")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:$kotlinCoroutines")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutines")
@@ -92,7 +92,7 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     implementation("io.ktor:ktor-client-apache:$ktorVersion")
     runtimeOnly("org.postgresql:postgresql:42.7.3")
-    runtimeOnly("org.xerial:sqlite-jdbc:3.45.3.0")
+    runtimeOnly("org.xerial:sqlite-jdbc:3.46.0.0")
     runtimeOnly("org.ossreviewtoolkit.plugins.packagecurationproviders:file-package-curation-provider:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.utils:common-utils:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.utils:ort-utils:$ortVersion")
