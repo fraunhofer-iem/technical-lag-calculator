@@ -213,8 +213,11 @@ class Artifact(
 
                 // TODO: missed releases was negative. that should be helpful to debug the findHighestApplicableVersion function
                 // TODO: check for -1 return
+                val filteredVersions =
+                    sortedVersions.filter { it.semver.isStable || currentVersion.semver.isPreRelease == it.semver.isPreRelease }
+
                 val missedReleases =
-                    sortedVersions.indexOfFirst { it.versionNumber == newestVersion.versionNumber } - sortedVersions.indexOfFirst { it.versionNumber == currentVersion.versionNumber }
+                    filteredVersions.indexOfFirst { it.versionNumber == newestVersion.versionNumber } - filteredVersions.indexOfFirst { it.versionNumber == currentVersion.versionNumber }
 
                 // TODO: there are negative values here at some point, need to check
                 // The calculation is incorrect if we limit the compared versions
@@ -258,7 +261,7 @@ class Artifact(
         for (i in (olderIdx + 1)..newerIdx) {
             val current = sortedVersions[i].semver
 
-            if (current.isStable == newSemVer.isStable && current.isPreRelease == newSemVer.isPreRelease) {
+            if (current.isStable || current.isPreRelease == oldSemVer.isPreRelease) {
                 when {
                     current.major > maxMajor -> {
                         maxMajor = current.major
@@ -338,26 +341,23 @@ class ArtifactVersion private constructor(
 
             // TODO: for prereleases / unstable releases the maxWith / maxBy operator return unwanted results
             // beta releases like 2.0.0-next.0 is not newer than 2.0.0-next.5
-            when (updateType) {
+            val highestVersion = when (updateType) {
                 VersionType.Minor -> {
                     filteredVersions.filter { it.major == current.major }
-                        .maxWithOrNull(compareBy { it })
+                        .max()
                 }
 
                 VersionType.Major -> {
-                    filteredVersions
-                        .maxWithOrNull(compareBy { it })
+                    filteredVersions.max()
                 }
 
                 VersionType.Patch -> {
                     filteredVersions.filter { it.major == current.major && it.minor == current.minor }
-                        .maxByOrNull { it }
+                        .max()
                 }
-            }?.let { highestVersion ->
-                return versions.find { it.versionNumber == highestVersion.toString() }
             }
 
-            return null
+            return versions.find { it.versionNumber == highestVersion.toString() }
         }
     }
 }
