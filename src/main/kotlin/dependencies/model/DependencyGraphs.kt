@@ -152,22 +152,25 @@ data class DependencyGraph(
     }
 }
 
+//TODO: create data class for artifact. implement comparator in version
 /**
  * A data class representing a package used in a dependency.
  * An artifact can be referenced from multiple dependency graphs' nodes.
  * As the versions list can grow very large it's recommended to make sure to create only
  * one artifact for each package and reuse it properly.
  */
-data class Artifact(
+class Artifact(
     val artifactId: String,
     val groupId: String,
-    val versions: List<ArtifactVersion> = listOf(),
+    versions: List<ArtifactVersion> = listOf(),
+    val sortedVersions: List<ArtifactVersion> = versions.sorted(),
     private val versionToVersionTypeToTechLag: MutableMap<String, TechnicalLagDto> =
         mutableMapOf()
 ) {
 
+
     override fun toString(): String {
-        return "${groupId}:${artifactId} with ${versions.size} versions."
+        return "${groupId}:${artifactId} with ${sortedVersions.size} versions."
     }
 
     fun getTechLagMap(): Map<String, TechnicalLagDto> {
@@ -195,12 +198,12 @@ data class Artifact(
 
     private fun calculateTechnicalLag(version: String, versionType: VersionType): TechnicalLagDto? {
 
-        return if (versions.isEmpty()) {
+        return if (sortedVersions.isEmpty()) {
             null
         } else {
             val newestVersion =
-                ArtifactVersion.findHighestApplicableVersion(version, versions, versionType)
-            val currentVersion = versions.find { it.versionNumber == version }
+                ArtifactVersion.findHighestApplicableVersion(version, sortedVersions, versionType)
+            val currentVersion = sortedVersions.find { it.versionNumber == version }
             if (newestVersion != null && currentVersion != null) {
 
                 val differenceInDays = TimeHelper.getDifferenceInDays(
@@ -208,24 +211,21 @@ data class Artifact(
                     newestVersion = newestVersion.releaseDate
                 )
 
+                // TODO: missed releases was negative. that should be helpful to debug the findHighestApplicableVersion function
+                // TODO: check for -1 return
                 val missedReleases =
-                    versions.indexOfFirst { it.versionNumber == newestVersion.versionNumber } - versions.indexOfFirst { it.versionNumber == currentVersion.versionNumber }
+                    sortedVersions.indexOfFirst { it.versionNumber == newestVersion.versionNumber } - sortedVersions.indexOfFirst { it.versionNumber == currentVersion.versionNumber }
 
-                val current = currentVersion.versionNumber.toVersion(strict = false)
-                val newest = newestVersion.versionNumber.toVersion(strict = false)
-
-                val distance: Triple<Int, Int, Int> =
-                    Triple(
-                        newest.major - current.major,
-                        newest.minor - current.minor,
-                        newest.patch - current.patch
-                    )
-
+                // TODO: there are negative values here at some point, need to check
+                // The calculation is incorrect if we limit the compared versions
+                // if we check for newest minor release we can e.g. have this
+                // 0.1.6 as current, newest minor 0.2.2., and right now we calculate the distance as
+                // (0, 1, -4). it should be (0.1.2)
 
                 TechnicalLagDto(
                     libDays = -1 * differenceInDays,
                     version = newestVersion.versionNumber,
-                    distance = distance,
+                    distance = calculateReleaseDistance(newestVersion, currentVersion),
                     numberOfMissedReleases = missedReleases
                 )
             } else {
@@ -233,18 +233,73 @@ data class Artifact(
             }
         }
     }
+
+    private fun calculateReleaseDistance(
+        newer: ArtifactVersion,
+        older: ArtifactVersion
+    ): Triple<Int, Int, Int> {
+        val oldSemVer = older.semver
+        val newSemVer = newer.semver
+
+        if (oldSemVer == newSemVer) {
+            return Triple(0, 0, 0)
+        }
+
+        val newerIdx = sortedVersions.indexOf(newer)
+        val olderIdx = sortedVersions.indexOf(older)
+
+        var majorCounter = 0
+        var minorCounter = 0
+        var patchCounter = 0
+
+        var maxMajor = oldSemVer.major
+        var maxMinor = if (maxMajor == newSemVer.major) oldSemVer.minor else -1
+
+        for (i in (olderIdx + 1)..newerIdx) {
+            val current = sortedVersions[i].semver
+
+            if (current.isStable == newSemVer.isStable && current.isPreRelease == newSemVer.isPreRelease) {
+                when {
+                    current.major > maxMajor -> {
+                        maxMajor = current.major
+                        majorCounter += 1
+                        maxMinor = current.minor
+                    }
+
+                    current.major == newSemVer.major -> {
+                        when {
+                            current.minor > maxMinor -> {
+                                maxMinor = current.minor
+                                minorCounter += 1
+                            }
+
+                            current.minor == newSemVer.minor -> patchCounter += 1
+                        }
+                    }
+                }
+            }
+        }
+
+        return Triple(majorCounter, minorCounter, patchCounter)
+    }
 }
 
 enum class VersionType {
     Minor, Major, Patch
 }
 
-@Serializable
-data class ArtifactVersion private constructor(
+class ArtifactVersion private constructor(
     val versionNumber: String,
     val releaseDate: Long,
     val isDefault: Boolean = false
-) {
+) : Comparable<ArtifactVersion> {
+
+    val semver by lazy {
+        versionNumber.toVersion(strict = false)
+    }
+
+    override fun compareTo(other: ArtifactVersion): Int = semver.compareTo(other.semver)
+
 
     companion object {
         fun create(versionNumber: String, releaseDate: Long, isDefault: Boolean = false): ArtifactVersion {
@@ -261,13 +316,14 @@ data class ArtifactVersion private constructor(
             return version.toVersion(strict = false).toString()
         }
 
+        // TODO: incorrect finding for beta release 2.0.0-next.0 is not newer than 2.0.0-next.5
         fun findHighestApplicableVersion(
             version: String,
             versions: List<ArtifactVersion>,
             updateType: VersionType
         ): ArtifactVersion? {
 
-            val semvers = versions.map { it.versionNumber.toVersion(strict = false) }
+            val semvers = versions.map { it.semver }
             val current = version.toVersion(strict = false)
 
             val filteredVersions = if (current.isStable) {
@@ -280,20 +336,22 @@ data class ArtifactVersion private constructor(
                 }
             }
 
+            // TODO: for prereleases / unstable releases the maxWith / maxBy operator return unwanted results
+            // beta releases like 2.0.0-next.0 is not newer than 2.0.0-next.5
             when (updateType) {
                 VersionType.Minor -> {
                     filteredVersions.filter { it.major == current.major }
-                        .maxWithOrNull(compareBy({ it.minor }, { it.patch }))
+                        .maxWithOrNull(compareBy { it })
                 }
 
                 VersionType.Major -> {
                     filteredVersions
-                        .maxWithOrNull(compareBy({ it.major }, { it.minor }, { it.patch }))
+                        .maxWithOrNull(compareBy { it })
                 }
 
                 VersionType.Patch -> {
                     filteredVersions.filter { it.major == current.major && it.minor == current.minor }
-                        .maxByOrNull { it.patch }
+                        .maxByOrNull { it }
                 }
             }?.let { highestVersion ->
                 return versions.find { it.versionNumber == highestVersion.toString() }
@@ -316,10 +374,21 @@ data class DependencyGraphs(
     constructor(dependencyGraphsDto: DependencyGraphsDto) : this(
         artifacts = dependencyGraphsDto.artifacts.map {
             Artifact(
-                versions = it.versions,
+                versions = it.versions.map {
+                    ArtifactVersion.create(
+                        versionNumber = it.versionNumber,
+                        releaseDate = it.releaseDate,
+                        isDefault = it.isDefault
+                    )
+                },
                 groupId = it.groupId,
                 artifactId = it.artifactId,
-                versionToVersionTypeToTechLag = it.technicalLag.associate { Pair(it.updateVersion, it.technicalLag) }
+                versionToVersionTypeToTechLag = it.technicalLag.associate {
+                    Pair(
+                        it.updateVersion,
+                        it.technicalLag
+                    )
+                }
                     .toMutableMap()
             )
         },

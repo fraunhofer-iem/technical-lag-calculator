@@ -171,6 +171,7 @@ class TechnicalLagService {
         }
     }
 
+    //TODO: I've seen negative values for the release distances we need to check that
     private fun releaseDistanceToStatistics(distances: List<Triple<Double, Double, Double>>): Triple<Statistics, Statistics, Statistics>? {
         if (distances.isEmpty()) {
             return null

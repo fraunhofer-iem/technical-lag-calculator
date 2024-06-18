@@ -78,7 +78,7 @@ class ArtifactDependencyGraphServiceTest {
 
         // checks whether we correctly parse artifacts and versions
         assertEquals(4, transformedGraphs.first().artifacts.count())
-        assertEquals(6, transformedGraphs.first().artifacts.first().versions.count())
+        assertEquals(6, transformedGraphs.first().artifacts.first().sortedVersions.count())
 
 
         val transformedGraph = transformedGraphs.first().graph.values.first()
@@ -204,7 +204,7 @@ class ArtifactDependencyGraphServiceTest {
             artifact.getTechLagForVersion(rawVersion = "3.11", versionType = VersionType.Major)
         val expectedMajorLag = TechnicalLagDto(
             libDays = 18,
-            distance = Triple(1, 1, 3),
+            distance = Triple(1, 0, 0),
             version = "4.12.3",
             numberOfMissedReleases = 4,
         )
@@ -214,7 +214,7 @@ class ArtifactDependencyGraphServiceTest {
             artifact.getTechLagForVersion(rawVersion = "3.11", versionType = VersionType.Minor)
         val expectedMinorLag = TechnicalLagDto(
             libDays = 8,
-            distance = Triple(0, 1, 3),
+            distance = Triple(0, 1, 1),
             version = "3.12.3",
             numberOfMissedReleases = 3,
         )
@@ -224,7 +224,7 @@ class ArtifactDependencyGraphServiceTest {
             artifact.getTechLagForVersion(rawVersion = "3.11", versionType = VersionType.Patch)
         val expectedPatchLag = TechnicalLagDto(
             libDays = 2,
-            distance = Triple(0, 0, 3),
+            distance = Triple(0, 0, 1),
             version = "3.11.3",
             numberOfMissedReleases = 1,
         )

@@ -239,7 +239,7 @@ class TechnicalLagServiceTest {
                         variance = 0.0,
                     ),
                     Statistics(
-                        average = 2.0,
+                        average = 1.0,
                         stdDev = 0.0,
                         variance = 0.0,
                     )

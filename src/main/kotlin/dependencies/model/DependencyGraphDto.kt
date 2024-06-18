@@ -26,7 +26,7 @@ data class DependencyGraphsDto(
             ArtifactDto(
                 artifactId = it.artifactId,
                 groupId = it.groupId,
-                versions = it.versions,
+                versions = it.sortedVersions.map { ArtifactVersionDto(it) },
                 technicalLag = it.getTechLagMap()
                     .map { UpdateVersionToTechLagDto(updateVersion = it.key, technicalLag = it.value) }
             )
@@ -52,11 +52,17 @@ data class DependencyGraphsDto(
     )
 }
 
+
+@Serializable
+data class ArtifactVersionDto(val versionNumber: String, val releaseDate: Long, val isDefault: Boolean) {
+    constructor(value: ArtifactVersion) : this(value.semver.toString(), value.releaseDate, value.isDefault)
+}
+
 @Serializable
 data class ArtifactDto(
     val artifactId: String,
     val groupId: String,
-    val versions: List<ArtifactVersion> = listOf(),
+    val versions: List<ArtifactVersionDto> = listOf(),
     val technicalLag: List<UpdateVersionToTechLagDto>
 )
 
