@@ -1,6 +1,6 @@
 package http.deps
 
-import dependencies.model.ArtifactVersion
+import dependencies.graph.ArtifactVersion
 import http.deps.model.DepsResponseDto
 import http.deps.model.DepsTreeResponseDto
 import http.deps.model.Version

@@ -1,6 +1,6 @@
 package dependencies
 
-import dependencies.model.*
+import dependencies.graph.*
 import http.deps.DepsClient
 import kotlinx.coroutines.*
 import org.ossreviewtoolkit.model.DependencyGraph
@@ -59,7 +59,7 @@ class DependencyGraphService(
                     )
                 }
 
-                scope.name to DependencyGraph(
+                scope.name to dependencies.graph.DependencyGraph(
                     nodes = nodes.toList(),
                     edges = edges.toList(),
                     directDependencyIndices = directDependencyIndices

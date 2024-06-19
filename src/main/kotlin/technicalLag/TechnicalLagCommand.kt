@@ -7,8 +7,8 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 import dependencies.ProjectPaths
 import dependencies.model.AnalyzerResultDto
-import dependencies.model.DependencyGraphs
-import dependencies.model.VersionType
+import dependencies.graph.DependencyGraphs
+import dependencies.graph.VersionType
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger

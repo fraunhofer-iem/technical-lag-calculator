@@ -1,6 +1,6 @@
 package technicalLag
 
-import dependencies.model.*
+import dependencies.graph.*
 import technicalLag.model.Statistics
 import technicalLag.model.TechnicalLagDto
 import technicalLag.model.TechnicalLagStatistics
@@ -94,7 +94,7 @@ class TechnicalLagService {
 
 
     private fun calculateChildStats(
-        artifactDependency: ArtifactDependency,
+        artifactDependency: LinkedArtifactDependencies,
         artifacts: List<Artifact>,
         aggregateVersionTypeCollection: AggregateVersionTypeCollection
     ) {

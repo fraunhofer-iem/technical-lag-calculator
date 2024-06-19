@@ -1,5 +1,8 @@
 package dependencies.model
 
+import dependencies.graph.ArtifactVersion
+import dependencies.graph.DependencyGraph
+import dependencies.graph.DependencyGraphs
 import kotlinx.serialization.Serializable
 import technicalLag.model.TechnicalLagDto
 

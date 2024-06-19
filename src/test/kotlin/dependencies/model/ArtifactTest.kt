@@ -1,5 +1,8 @@
 package dependencies.model
 
+import dependencies.graph.Artifact
+import dependencies.graph.ArtifactVersion
+import dependencies.graph.VersionType
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant

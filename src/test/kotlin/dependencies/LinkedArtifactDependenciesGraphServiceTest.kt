@@ -1,7 +1,7 @@
 package dependencies
 
-import dependencies.model.ArtifactVersion
-import dependencies.model.VersionType
+import dependencies.graph.ArtifactVersion
+import dependencies.graph.VersionType
 import http.deps.DepsClient
 import http.deps.model.DepsTreeResponseDto
 import http.deps.model.Edge
@@ -22,7 +22,7 @@ import technicalLag.model.TechnicalLagDto
 import kotlin.test.assertEquals
 
 
-class ArtifactDependencyGraphServiceTest {
+class LinkedArtifactDependenciesGraphServiceTest {
 
     companion object {
         fun setupTree(): DependencyGraph {
