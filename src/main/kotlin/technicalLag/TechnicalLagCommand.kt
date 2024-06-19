@@ -44,7 +44,7 @@ class TechnicalLag : CliktCommand() {
 
         // Setup logging and corresponding output paths
         val defaultLogPath = MDC.get("outputFile") ?: ""
-        val technicalLagService = TechnicalLagService()
+        val technicalLagStatisticsService = TechnicalLagStatisticsService()
         logger.info { "Running libyears for projects in $projectPaths and output path $outputPath" }
 
         outputPath.createDirectories()
@@ -53,7 +53,7 @@ class TechnicalLag : CliktCommand() {
             val analyzerResult = Json.decodeFromString<AnalyzerResultDto>(resultFile.readText())
             analyzerResult.dependencyGraphDtos.forEach { dependencyGraphsDto ->
                 val graphs = DependencyGraphs(dependencyGraphsDto)
-                technicalLagService.connectDependenciesToStats(graphs)
+                technicalLagStatisticsService.connectDependenciesToStats(graphs)
 
                 graphs.graph.forEach { (scope, graph) ->
                     println("Scope $scope")

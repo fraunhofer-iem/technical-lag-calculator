@@ -1,7 +1,6 @@
 package technicalLag
 
 import dependencies.graph.*
-import dependencies.model.*
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
@@ -11,7 +10,7 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.test.assertEquals
 
-class TechnicalLagServiceTest {
+class TechnicalLagStatisticsServiceTest {
 
     private fun setupIdenticalArtifacts(): List<Artifact> {
         val usedVersionDate = LocalDateTime(2024, 1, 1, 0, 0).toInstant(TimeZone.of("UTC+0")).toEpochMilliseconds()
@@ -150,7 +149,7 @@ class TechnicalLagServiceTest {
     @Test
     fun calculateTechLagStatsEmptyGraph() {
 
-        val service = TechnicalLagService()
+        val service = TechnicalLagStatisticsService()
 
         service.connectDependenciesToStats(
             graphs = DependencyGraphs(
@@ -165,7 +164,7 @@ class TechnicalLagServiceTest {
     @Test
     fun calculateTechLagStatsIdenticalData() {
 
-        val service = TechnicalLagService()
+        val service = TechnicalLagStatisticsService()
         val graphs = getIdenticalVersionsGraph()
         service.connectDependenciesToStats(
             graphs
@@ -253,7 +252,7 @@ class TechnicalLagServiceTest {
     @Test
     fun calculateTechLagStats() {
 
-        val service = TechnicalLagService()
+        val service = TechnicalLagStatisticsService()
         val graphs = getGraphs()
         service.connectDependenciesToStats(
             graphs

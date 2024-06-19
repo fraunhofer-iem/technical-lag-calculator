@@ -4,15 +4,15 @@ import technicalLag.model.TechnicalLagDto
 import util.TimeHelper
 
 /**
- * A data class representing a package used in a dependency.
+ * A class representing a package used in a dependency.
  * An artifact can be referenced from multiple dependency graphs' nodes.
  * As the versions list can grow very large it's recommended to make sure to create only
  * one artifact for each package and reuse it properly.
  */
 class Artifact(
+    versions: List<ArtifactVersion> = listOf(),
     val artifactId: String,
     val groupId: String,
-    versions: List<ArtifactVersion> = listOf(),
     val sortedVersions: List<ArtifactVersion> = versions.sorted(),
     private val versionToVersionTypeToTechLag: MutableMap<String, TechnicalLagDto> =
         mutableMapOf()

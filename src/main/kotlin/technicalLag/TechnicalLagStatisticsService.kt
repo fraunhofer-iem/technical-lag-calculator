@@ -7,7 +7,7 @@ import technicalLag.model.TechnicalLagStatistics
 import kotlin.math.pow
 import kotlin.math.sqrt
 
-class TechnicalLagService {
+class TechnicalLagStatisticsService {
 
     private data class AggregateData(
         val size: Int,
@@ -23,7 +23,7 @@ class TechnicalLagService {
         )
     }
 
-    private data class AggregateVersionTypeCollection(val size: Int) {
+    private class AggregateVersionTypeCollection(val size: Int) {
 
         private val aggregates: Map<VersionType, AggregateData> = initAggregates()
 
