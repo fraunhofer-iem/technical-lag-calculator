@@ -1,6 +1,7 @@
 package dependencies
 
 import dependencies.graph.ArtifactVersion
+import dependencies.graph.ReleaseFrequency
 import dependencies.graph.VersionType
 import http.deps.DepsClient
 import http.deps.model.DepsTreeResponseDto
@@ -173,20 +174,29 @@ class LinkedArtifactDependenciesGraphServiceTest {
         val mockDepsClient = mockk<DepsClient>()
         val usedVersionDate = LocalDateTime(2024, 1, 1, 0, 0).toInstant(TimeZone.of("UTC+3")).toEpochMilliseconds()
         val patchVersionDate = LocalDateTime(2024, 1, 3, 0, 0).toInstant(TimeZone.of("UTC+3")).toEpochMilliseconds()
+        val intermediateVersion = LocalDateTime(2024, 1, 4, 0, 0).toInstant(TimeZone.of("UTC+3")).toEpochMilliseconds()
         val minorVersionDate = LocalDateTime(2024, 1, 9, 0, 0).toInstant(TimeZone.of("UTC+3")).toEpochMilliseconds()
         val majorVersionDate = LocalDateTime(2024, 1, 19, 0, 0).toInstant(TimeZone.of("UTC+3")).toEpochMilliseconds()
 
-
-
-        coEvery { mockDepsClient.getVersionsForPackage(any(), any(), any()) } returns listOf(
-        )
-        coEvery { mockDepsClient.getVersionsForPackage("npm", "org.apache.commons", "commons-lang3") } returns listOf(
+        val versions = listOf(
             ArtifactVersion.create(versionNumber = "3.11", releaseDate = usedVersionDate),
             ArtifactVersion.create(versionNumber = "3.11.3", releaseDate = patchVersionDate),
-            ArtifactVersion.create(versionNumber = "3.12", releaseDate = 0L),
+            ArtifactVersion.create(versionNumber = "3.12", releaseDate = intermediateVersion),
             ArtifactVersion.create(versionNumber = "3.12.3", releaseDate = minorVersionDate),
             ArtifactVersion.create(versionNumber = "4.12.3", releaseDate = majorVersionDate),
         )
+
+        val releasesPerMonth = versions.count().toDouble() / ((2 + 1 + 5 + 10).toDouble() / 30.0)
+        val releasesPerWeek = versions.count().toDouble() / ((2 + 1 + 5 + 10).toDouble() / 7.0)
+        val releasesPerDay = versions.count().toDouble() / (2 + 1 + 5 + 10).toDouble()
+        val expectedReleaseFrequency = ReleaseFrequency(
+            releasesPerMonth = releasesPerMonth,
+            releasesPerWeek = releasesPerWeek,
+            releasesPerDay = releasesPerDay
+        )
+        coEvery { mockDepsClient.getVersionsForPackage(any(), any(), any()) } returns listOf(
+        )
+        coEvery { mockDepsClient.getVersionsForPackage("npm", "org.apache.commons", "commons-lang3") } returns versions
 
         coEvery { mockDepsClient.getDepsForPackage(any(), any(), any(), any()) } returns null
 
@@ -207,6 +217,7 @@ class LinkedArtifactDependenciesGraphServiceTest {
             distance = Triple(1, 0, 0),
             version = "4.12.3",
             numberOfMissedReleases = 4,
+            releaseFrequency = expectedReleaseFrequency
         )
         assertEquals(expectedMajorLag, lagMajor)
 
@@ -217,6 +228,7 @@ class LinkedArtifactDependenciesGraphServiceTest {
             distance = Triple(0, 1, 1),
             version = "3.12.3",
             numberOfMissedReleases = 3,
+            releaseFrequency = expectedReleaseFrequency
         )
         assertEquals(expectedMinorLag, lagMinor)
 
@@ -227,6 +239,7 @@ class LinkedArtifactDependenciesGraphServiceTest {
             distance = Triple(0, 0, 1),
             version = "3.11.3",
             numberOfMissedReleases = 1,
+            releaseFrequency = expectedReleaseFrequency
         )
         assertEquals(expectedPatchLag, lagPatch)
 
@@ -237,6 +250,7 @@ class LinkedArtifactDependenciesGraphServiceTest {
             distance = Triple(0, 0, 0),
             version = "4.12.3",
             numberOfMissedReleases = 0,
+            releaseFrequency = expectedReleaseFrequency
         )
         assertEquals(noLagExpected, lagNewest)
 
@@ -247,6 +261,7 @@ class LinkedArtifactDependenciesGraphServiceTest {
             distance = Triple(0, 0, 0),
             version = "4.12.3",
             numberOfMissedReleases = 0,
+            releaseFrequency = expectedReleaseFrequency
         )
         assertEquals(lagNewestPatch, noLagExpectedPatch)
     }

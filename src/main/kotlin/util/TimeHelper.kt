@@ -17,15 +17,26 @@ object TimeHelper {
     }
 
     fun getDifferenceInDays(currentVersion: Long, newestVersion: Long): Long {
+        return getTimeDiff(currentVersion, newestVersion)
+    }
 
+    fun getDifferenceInWeeks(currentVersion: Long, newestVersion: Long): Double {
+        return getTimeDiff(currentVersion, newestVersion) / 7.0
+    }
+
+    fun getDifferenceInMonths(currentVersion: Long, newestVersion: Long): Double {
+        return getTimeDiff(currentVersion, newestVersion) / 30.0
+    }
+
+    private fun getTimeDiff(currentVersion: Long, newestVersion: Long): Long {
         val currentVersionTime = Date(currentVersion).toInstant()
         val newestVersionTime = Date(newestVersion).toInstant()
 
 
         logger.debug { "Library Difference $currentVersionTime $newestVersionTime" }
-
-        val differenceInDays = ChronoUnit.DAYS.between(newestVersionTime, currentVersionTime)
+        val differenceInDays = ChronoUnit.DAYS.between(currentVersionTime, newestVersionTime)
         logger.debug { "Differences in days: $differenceInDays" }
+
         return differenceInDays
     }
 

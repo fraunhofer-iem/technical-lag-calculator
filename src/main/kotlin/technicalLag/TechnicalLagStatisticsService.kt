@@ -14,12 +14,14 @@ class TechnicalLagStatisticsService {
         val transitiveLibDays: MutableList<Long>,
         val numberMissedReleases: MutableList<Int>,
         val releaseDistances: MutableList<Triple<Double, Double, Double>>,
+        val releaseFrequencies: MutableList<Double>,
     ) {
         constructor(size: Int) : this(
             size,
             ArrayList<Long>(size),
             ArrayList<Int>(size),
-            ArrayList<Triple<Double, Double, Double>>(size)
+            ArrayList<Triple<Double, Double, Double>>(size),
+            ArrayList<Double>(size)
         )
     }
 
@@ -48,10 +50,12 @@ class TechnicalLagStatisticsService {
                 getAggregate(versionType).numberMissedReleases.addAll(
                     aggregateCollection.getAggregate(versionType).numberMissedReleases
                 )
+                getAggregate(versionType).releaseFrequencies.addAll(
+                    aggregateCollection.getAggregate(versionType).releaseFrequencies
+                )
             }
         }
     }
-
 
     fun connectDependenciesToStats(graphs: DependencyGraphs) {
 
@@ -129,6 +133,9 @@ class TechnicalLagStatisticsService {
                         technicalLag.distance.third.toDouble()
                     )
                 )
+                aggregateVersionTypeCollection.getAggregate(versionType).releaseFrequencies.add(
+                    technicalLag.releaseFrequency.releasesPerMonth // TODO: extend this to the other measurements
+                )
             }
 
         }
@@ -139,19 +146,21 @@ class TechnicalLagStatisticsService {
         aggregateData: AggregateData
     ): TechnicalLagStatistics {
 
-        val libDaysStats = dataToStatistics(aggregateData.transitiveLibDays)
-        val missedReleasesStats = dataToStatistics(aggregateData.numberMissedReleases.map { it.toLong() })
-        val releaseDistancesStats = releaseDistanceToStatistics(aggregateData.releaseDistances)
+        val libDaysStats = dataToStatistics(aggregateData.transitiveLibDays.map { it.toDouble() })
+        val missedReleasesStats = dataToStatistics(aggregateData.numberMissedReleases.map { it.toDouble() })
+        val releaseDistancesStats = aggregatedTripleToStatistics(aggregateData.releaseDistances)
+        val releaseFrequencyStats = dataToStatistics(aggregateData.releaseFrequencies)
 
         return TechnicalLagStatistics(
             technicalLag = technicalLag,
             missedReleases = missedReleasesStats,
             libDays = libDaysStats,
-            distance = releaseDistancesStats
+            distance = releaseDistancesStats,
+            releaseFrequency = releaseFrequencyStats
         )
     }
 
-    private fun dataToStatistics(data: List<Long>): Statistics? {
+    private fun dataToStatistics(data: List<Double>): Statistics? {
         return if (data.isNotEmpty()) {
             val avgTransitiveLibyears = data.average()
 
@@ -172,7 +181,7 @@ class TechnicalLagStatisticsService {
     }
 
     //TODO: I've seen negative values for the release distances we need to check that
-    private fun releaseDistanceToStatistics(distances: List<Triple<Double, Double, Double>>): Triple<Statistics, Statistics, Statistics>? {
+    private fun aggregatedTripleToStatistics(distances: List<Triple<Double, Double, Double>>): Triple<Statistics, Statistics, Statistics>? {
         if (distances.isEmpty()) {
             return null
         }

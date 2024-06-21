@@ -1,7 +1,18 @@
 package dependencies.graph
 
+import kotlinx.serialization.Serializable
 import technicalLag.model.TechnicalLagDto
-import util.TimeHelper
+import util.TimeHelper.getDifferenceInDays
+import util.TimeHelper.getDifferenceInMonths
+import util.TimeHelper.getDifferenceInWeeks
+
+@Serializable
+data class ReleaseFrequency(
+//    val avgReleaseTime: Triple<Double, Double, Double>,
+    val releasesPerDay: Double,
+    val releasesPerWeek: Double,
+    val releasesPerMonth: Double
+)
 
 /**
  * A class representing a package used in a dependency.
@@ -45,6 +56,91 @@ class Artifact(
         }
     }
 
+    val releaseFrequency by lazy { calculateReleaseFrequency(sortedVersions) }
+
+
+    private fun calculateReleaseFrequency(versions: List<ArtifactVersion>): ReleaseFrequency {
+
+        val versionByDate = versions.filter { !it.semver.isPreRelease }.sortedBy { it.releaseDate }
+
+        return if (versionByDate.isNotEmpty()) {
+            val firstVersion = versionByDate.first()
+            val latestVersion = versionByDate.last()
+
+            val diffInDays = getDifferenceInDays(firstVersion.releaseDate, latestVersion.releaseDate)
+            val diffInWeeks = getDifferenceInWeeks(firstVersion.releaseDate, latestVersion.releaseDate)
+            val diffInMonths = getDifferenceInMonths(firstVersion.releaseDate, latestVersion.releaseDate)
+
+            val frequencyDay = if (diffInDays == 0L) 0.0 else versionByDate.count().toDouble() / diffInDays.toDouble()
+            println("Frequency $frequencyDay releases/day")
+            val frequencyWeek =
+                if (diffInWeeks == 0.0) 0.0 else versionByDate.count().toDouble() / diffInWeeks
+            println("Frequency $frequencyWeek releases/week")
+            val frequencyMonth =
+                if (diffInMonths == 0.0) 0.0 else versionByDate.count().toDouble() / diffInMonths
+            println("Frequency $frequencyMonth releases/month")
+
+            ReleaseFrequency(frequencyDay, frequencyWeek, frequencyMonth)
+        } else {
+            ReleaseFrequency(0.0, 0.0, 0.0)
+        }
+
+//        if (versions.isEmpty()) {
+//            return ReleaseFrequency(avgReleaseTime = Triple(0.0, 0.0, 0.0))
+//        }
+
+//        var counterMajorReleases = 0
+//        var timeMajorAggregate = 0L
+//        val majorReleaseDistanceDays: MutableList<Long> = mutableListOf()
+//        val minorReleaseDistanceDays: MutableList<Long> = mutableListOf()
+//        val patchReleaseDistanceDays: MutableList<Long> = mutableListOf()
+//
+//        var counterMinorReleases = 0
+//        var timeMinorAggregate = 0L
+//
+//        var counterPatchReleases = 0
+//        var timePatchAggregate = 0L
+//
+//        var lastVersion = versions[0]
+//
+//        versions.forEach { version ->
+//            when {
+//                lastVersion.semver.major == version.semver.major && lastVersion.semver.minor == version.semver.minor -> {
+//                    // this is a patch update
+//                    patchReleaseDistanceDays.add(getDifferenceInDays(lastVersion.releaseDate, version.releaseDate))
+//                    counterPatchReleases += 1
+//                    timePatchAggregate += getDifferenceInDays(lastVersion.releaseDate, version.releaseDate)
+//                }
+//
+//                lastVersion.semver.major == version.semver.major && version.semver.minor > lastVersion.semver.minor -> {
+//                    // this is a minor update
+//                    minorReleaseDistanceDays.add(getDifferenceInDays(lastVersion.releaseDate, version.releaseDate))
+//                    counterMinorReleases += 1
+//                    timeMinorAggregate += getDifferenceInDays(lastVersion.releaseDate, version.releaseDate)
+//                }
+//
+//                version.semver.major > lastVersion.semver.major -> {
+//                    // this is a major update
+//                    majorReleaseDistanceDays.add(getDifferenceInDays(lastVersion.releaseDate, version.releaseDate))
+//                    counterMajorReleases += 1
+//                    timeMajorAggregate += getDifferenceInDays(lastVersion.releaseDate, version.releaseDate)
+//                }
+//            }
+//
+//            lastVersion = version
+//        }
+//
+//        return ReleaseFrequency(
+//            avgReleaseTime = Triple(
+//                if (majorReleaseDistanceDays.isEmpty()) 0.0 else majorReleaseDistanceDays.average(),
+//                if (minorReleaseDistanceDays.isEmpty()) 0.0 else minorReleaseDistanceDays.average(),
+//                if (patchReleaseDistanceDays.isEmpty()) 0.0 else patchReleaseDistanceDays.average()
+//            )
+//        )
+
+    }
+
+
     private fun calculateTechnicalLag(version: String, versionType: VersionType): TechnicalLagDto? {
 
         return if (sortedVersions.isEmpty()) {
@@ -55,7 +151,7 @@ class Artifact(
             val currentVersion = sortedVersions.find { it.versionNumber == version }
             if (newestVersion != null && currentVersion != null) {
 
-                val differenceInDays = TimeHelper.getDifferenceInDays(
+                val differenceInDays = getDifferenceInDays(
                     currentVersion = currentVersion.releaseDate,
                     newestVersion = newestVersion.releaseDate
                 )
@@ -67,10 +163,11 @@ class Artifact(
                     filteredVersions.indexOfFirst { it.versionNumber == newestVersion.versionNumber } - filteredVersions.indexOfFirst { it.versionNumber == currentVersion.versionNumber }
 
                 TechnicalLagDto(
-                    libDays = -1 * differenceInDays,
+                    libDays = differenceInDays,
                     version = newestVersion.versionNumber,
                     distance = calculateReleaseDistance(newestVersion, currentVersion),
-                    numberOfMissedReleases = missedReleases
+                    numberOfMissedReleases = missedReleases,
+                    releaseFrequency = releaseFrequency
                 )
             } else {
                 null

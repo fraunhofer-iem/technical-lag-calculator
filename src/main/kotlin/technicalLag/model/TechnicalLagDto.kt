@@ -1,5 +1,6 @@
 package technicalLag.model
 
+import dependencies.graph.ReleaseFrequency
 import kotlinx.serialization.Serializable
 
 
@@ -8,13 +9,15 @@ data class TechnicalLagDto(
     val libDays: Long,
     val distance: Triple<Int, Int, Int>,
     val version: String,
+    val releaseFrequency: ReleaseFrequency,
     val numberOfMissedReleases: Int
 ) {
     override fun toString(): String {
         return "Technical Lag: libDays: $libDays, " +
                 "target version: $version," +
                 " # missed releases: $numberOfMissedReleases, " +
-                "Version distance ${distance.first}.${distance.second}.${distance.third}"
+                "Version distance ${distance.first}.${distance.second}.${distance.third} " +
+                "Release frequency: $releaseFrequency"
     }
 }
 
@@ -34,13 +37,15 @@ data class TechnicalLagStatistics(
     val libDays: Statistics?,
     val missedReleases: Statistics?,
     val distance: Triple<Statistics, Statistics, Statistics>?,
+    val releaseFrequency: Statistics?,
 ) {
     override fun toString(): String {
         val properties = listOfNotNull(
             technicalLag?.let { "technicalLag=$it" },
             libDays?.let { "libDays=$it" },
             missedReleases?.let { "missedReleases=$it" },
-            distance?.let { "distance=$it" }
+            distance?.let { "distance=$it" },
+            releaseFrequency?.let { "release frequency=$it" }
         ).joinToString(", ")
 
         return "TechnicalLagStatistics($properties)"
