@@ -1,14 +1,14 @@
 package dependencies.model
 
-import dependencies.graph.Artifact
-import dependencies.graph.ArtifactVersion
-import dependencies.graph.ReleaseFrequency
-import dependencies.graph.VersionType
+import shared.project.artifact.Artifact
+import shared.project.artifact.ArtifactVersion
+import shared.project.artifact.VersionType
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import org.junit.jupiter.api.Test
-import technicalLag.model.TechnicalLagDto
+import commands.calculateTechnicalLag.model.ReleaseFrequencyDto
+import commands.calculateTechnicalLag.model.TechnicalLagDto
 import kotlin.test.assertEquals
 
 class ArtifactTest {
@@ -60,7 +60,7 @@ class ArtifactTest {
         val releasesPerWeek = versions.count { !it.semver.isPreRelease }.toDouble() / ((3 + 5 + 10).toDouble() / 7.0)
         val releasesPerDay = versions.count { !it.semver.isPreRelease }.toDouble() / (3 + 5 + 10).toDouble()
 
-        val expectedReleaseFrequency = ReleaseFrequency(
+        val expectedReleaseFrequency = ReleaseFrequencyDto(
             releasesPerMonth = releasesPerMonth,
             releasesPerWeek = releasesPerWeek,
             releasesPerDay = releasesPerDay

@@ -1,6 +1,6 @@
 package artifact
 
-import http.deps.DepsClient
+import network.dependencies.DepsClient
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
 import io.ktor.client.plugins.contentnegotiation.*

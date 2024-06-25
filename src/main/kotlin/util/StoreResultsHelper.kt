@@ -1,7 +1,7 @@
 package util
 
-import dependencies.ProjectPaths
-import dependencies.model.AnalyzerResultDto
+import commands.createDependencyGraph.ProjectPaths
+import shared.analyzerResultDtos.AnalyzerResultDto
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
