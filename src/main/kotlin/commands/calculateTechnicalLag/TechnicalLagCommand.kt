@@ -5,6 +5,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
+import commands.calculateTechnicalLag.model.TechnicalLagStatistics
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger
@@ -15,6 +16,7 @@ import shared.project.ProjectPaths
 import shared.project.artifact.VersionType
 import util.StoreResultHelper
 import java.io.File
+import kotlin.enums.EnumEntries
 import kotlin.io.path.createDirectories
 
 
@@ -38,6 +40,22 @@ class TechnicalLag : CliktCommand() {
         .path(mustExist = false, mustBeReadable = false, canBeFile = false)
         .required()
 
+    private class CompleteEnumMap<T : Enum<T>, E>(
+        enumEntries: EnumEntries<T>,
+        createEmptyElement: () -> MutableCollection<E>
+    ) {
+        private val map: Map<T, MutableCollection<E>> = enumEntries.associateWith { createEmptyElement() }
+
+
+        fun getEntry(key: T): Collection<E> {
+            return map[key]!!
+        }
+
+        fun add(key: T, value: E) {
+            map[key]!!.add(value)
+        }
+
+    }
 
     override fun run(): Unit = runBlocking {
         outputPath.createDirectories()
@@ -48,6 +66,10 @@ class TechnicalLag : CliktCommand() {
 
         outputPath.createDirectories()
 
+        val stats: MutableMap<String, CompleteEnumMap<VersionType, TechnicalLagStatistics>> =
+            mutableMapOf()
+
+
         projectPaths.paths.map { File(it) }.forEach { resultFile ->
             val analyzerResult = Json.decodeFromString<AnalyzerResultDto>(resultFile.readText())
 
@@ -56,12 +78,21 @@ class TechnicalLag : CliktCommand() {
                 technicalLagStatisticsService.connectDependenciesToStats(project)
 
                 project.graph.forEach { (scope, graph) ->
+                    if (!stats.contains(scope)) stats[scope] =
+                        CompleteEnumMap(VersionType.entries) { mutableListOf<TechnicalLagStatistics>() }
+
                     println("Scope $scope")
                     println(graph.metadata)
                     val root = graph.rootDependency
+
+                    val statsMap = stats[scope]!!
                     VersionType.entries.forEach { versionType ->
-                        println("Stats for version type $versionType")
-                        println(root.getStatForVersionType(versionType))
+                        root.getStatForVersionType(versionType)?.let { rootStat ->
+                            println("Stats for version type $versionType")
+                            println(rootStat)
+                            // TODO: we should probably separate by scope
+                            statsMap.add(versionType, rootStat)
+                        }
                     }
 
                 }
@@ -85,6 +116,7 @@ class TechnicalLag : CliktCommand() {
             StoreResultHelper.storeAnalyzerResultInFile(outputPath.toFile(), result)
         }
 
+        println(stats)
     }
 
 

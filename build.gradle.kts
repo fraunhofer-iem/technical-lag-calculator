@@ -40,8 +40,8 @@ kotlin {
 }
 
 
-val exposedVersion = "0.51.1"
-val ortVersion = "24.0.0"
+val exposedVersion = "0.52.0"
+val ortVersion = "25.0.0"
 val ktorVersion = "2.3.12"
 val kotlinCoroutines = "1.9.0-RC"
 val logback = "1.5.6"
@@ -82,7 +82,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-json:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-money:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-spring-boot-starter:$exposedVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutines")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:$kotlinCoroutines")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutines")

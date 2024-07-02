@@ -8,6 +8,7 @@ import shared.project.artifact.Artifact
 import shared.project.artifact.LinkedDependencyNode
 import shared.project.artifact.LinkedNode
 import shared.project.artifact.VersionType
+import kotlin.enums.EnumEntries
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -26,6 +27,7 @@ private data class AggregateData(
         ArrayList<Double>(size)
     )
 }
+
 
 private class AggregateVersionTypeCollection(val size: Int) {
 

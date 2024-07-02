@@ -34,8 +34,6 @@ data class ProjectDto(
                 artifactId = it.artifactId,
                 groupId = it.groupId,
                 versions = it.sortedVersions.map { ArtifactVersionDto(it) },
-//                technicalLag = it.getTechLagMap()
-//                    .map { UpdateVersionToTechLagDto(updateVersion = it.key, technicalLag = it.value) }
             )
         },
         ecosystem = project.ecosystem,
@@ -120,7 +118,6 @@ data class ArtifactDto(
     val artifactId: String,
     val groupId: String,
     val versions: List<ArtifactVersionDto> = listOf(),
-//    val technicalLag: List<UpdateVersionToTechLagDto>
 )
 
 @Serializable
