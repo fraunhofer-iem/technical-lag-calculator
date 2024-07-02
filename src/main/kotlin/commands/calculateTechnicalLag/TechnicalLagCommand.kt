@@ -5,14 +5,15 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
-import commands.createDependencyGraph.ProjectPaths
-import shared.analyzerResultDtos.AnalyzerResultDto
-import shared.project.Project
-import shared.project.artifact.VersionType
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger
-import org.slf4j.MDC
+import shared.analyzerResultDtos.AnalyzerResultDto
+import shared.analyzerResultDtos.ProjectDto
+import shared.project.Project
+import shared.project.ProjectPaths
+import shared.project.artifact.VersionType
+import util.StoreResultHelper
 import java.io.File
 import kotlin.io.path.createDirectories
 
@@ -42,8 +43,6 @@ class TechnicalLag : CliktCommand() {
         outputPath.createDirectories()
         val projectPaths = Json.decodeFromString<ProjectPaths>(inputPath.toFile().readText())
 
-        // Setup logging and corresponding output paths
-        val defaultLogPath = MDC.get("outputFile") ?: ""
         val technicalLagStatisticsService = TechnicalLagStatisticsService()
         logger.info { "Running libyears for projects in $projectPaths and output path $outputPath" }
 
@@ -51,11 +50,12 @@ class TechnicalLag : CliktCommand() {
 
         projectPaths.paths.map { File(it) }.forEach { resultFile ->
             val analyzerResult = Json.decodeFromString<AnalyzerResultDto>(resultFile.readText())
-            analyzerResult.projectDtos.forEach { dependencyGraphsDto ->
-                val graphs = Project(dependencyGraphsDto)
-                technicalLagStatisticsService.connectDependenciesToStats(graphs)
 
-                graphs.graph.forEach { (scope, graph) ->
+            val projectsWithStats = analyzerResult.projectDtos.map { dependencyGraphsDto ->
+                val project = Project(dependencyGraphsDto)
+                technicalLagStatisticsService.connectDependenciesToStats(project)
+
+                project.graph.forEach { (scope, graph) ->
                     println("Scope $scope")
                     println(graph.metadata)
                     val root = graph.rootDependency
@@ -65,7 +65,24 @@ class TechnicalLag : CliktCommand() {
                     }
 
                 }
+                project
             }
+
+            val result = AnalyzerResultDto(
+                projectDtos = projectsWithStats.map {
+                    ProjectDto(
+                        project = it,
+                        version = it.version,
+                        artifactId = it.artifactId,
+                        groupId = it.groupId
+                    )
+                },
+                repositoryInfo = analyzerResult.repositoryInfo,
+                environmentInfo = analyzerResult.environmentInfo,
+            )
+
+
+            StoreResultHelper.storeAnalyzerResultInFile(outputPath.toFile(), result)
         }
 
     }

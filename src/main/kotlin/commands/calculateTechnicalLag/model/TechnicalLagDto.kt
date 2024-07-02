@@ -20,6 +20,7 @@ data class TechnicalLagDto(
     }
 }
 
+@Serializable
 data class Statistics(
     val average: Double,
     val variance: Double,
@@ -30,6 +31,7 @@ data class Statistics(
     }
 }
 
+@Serializable
 data class TechnicalLagStatistics(
     val technicalLag: TechnicalLagDto? = null,
 //    val score: Double,

@@ -1,70 +1,71 @@
 package commands.calculateTechnicalLag
 
-import shared.project.*
-import shared.project.artifact.Artifact
-import shared.project.artifact.LinkedDependencyNode
-import shared.project.artifact.LinkedDependencyRoot
-import shared.project.artifact.VersionType
 import commands.calculateTechnicalLag.model.Statistics
 import commands.calculateTechnicalLag.model.TechnicalLagDto
 import commands.calculateTechnicalLag.model.TechnicalLagStatistics
+import shared.project.Project
+import shared.project.artifact.Artifact
+import shared.project.artifact.LinkedDependencyNode
+import shared.project.artifact.LinkedNode
+import shared.project.artifact.VersionType
 import kotlin.math.pow
 import kotlin.math.sqrt
 
-class TechnicalLagStatisticsService {
+private data class AggregateData(
+    val size: Int,
+    val transitiveLibDays: MutableList<Long>,
+    val numberMissedReleases: MutableList<Int>,
+    val releaseDistances: MutableList<Triple<Double, Double, Double>>,
+    val releaseFrequencies: MutableList<Double>,
+) {
+    constructor(size: Int) : this(
+        size,
+        ArrayList<Long>(size),
+        ArrayList<Int>(size),
+        ArrayList<Triple<Double, Double, Double>>(size),
+        ArrayList<Double>(size)
+    )
+}
 
-    private data class AggregateData(
-        val size: Int,
-        val transitiveLibDays: MutableList<Long>,
-        val numberMissedReleases: MutableList<Int>,
-        val releaseDistances: MutableList<Triple<Double, Double, Double>>,
-        val releaseFrequencies: MutableList<Double>,
-    ) {
-        constructor(size: Int) : this(
-            size,
-            ArrayList<Long>(size),
-            ArrayList<Int>(size),
-            ArrayList<Triple<Double, Double, Double>>(size),
-            ArrayList<Double>(size)
-        )
+private class AggregateVersionTypeCollection(val size: Int) {
+
+    private val aggregates: Map<VersionType, AggregateData> = initAggregates()
+
+    private fun initAggregates(): Map<VersionType, AggregateData> {
+        // this guarantees that the map contains an entry for each VersionType
+        return VersionType.entries.associateWith { AggregateData(size = size) }
     }
 
-    private class AggregateVersionTypeCollection(val size: Int) {
+    fun getAggregate(version: VersionType): AggregateData {
+        return aggregates[version]!!
+    }
 
-        private val aggregates: Map<VersionType, AggregateData> = initAggregates()
+    fun add(aggregateCollection: AggregateVersionTypeCollection) {
+        VersionType.entries.forEach { versionType ->
 
-        private fun initAggregates(): Map<VersionType, AggregateData> {
-            // this guarantees that the map contains an entry for each VersionType
-            return VersionType.entries.associateWith { AggregateData(size = size) }
-        }
-
-        fun getAggregate(version: VersionType): AggregateData {
-            return aggregates[version]!!
-        }
-
-        fun add(aggregateCollection: AggregateVersionTypeCollection) {
-            VersionType.entries.forEach { versionType ->
-
-                getAggregate(versionType).releaseDistances.addAll(
-                    aggregateCollection.getAggregate(versionType).releaseDistances
-                )
-                getAggregate(versionType).transitiveLibDays.addAll(
-                    aggregateCollection.getAggregate(versionType).transitiveLibDays
-                )
-                getAggregate(versionType).numberMissedReleases.addAll(
-                    aggregateCollection.getAggregate(versionType).numberMissedReleases
-                )
-                getAggregate(versionType).releaseFrequencies.addAll(
-                    aggregateCollection.getAggregate(versionType).releaseFrequencies
-                )
-            }
+            getAggregate(versionType).releaseDistances.addAll(
+                aggregateCollection.getAggregate(versionType).releaseDistances
+            )
+            getAggregate(versionType).transitiveLibDays.addAll(
+                aggregateCollection.getAggregate(versionType).transitiveLibDays
+            )
+            getAggregate(versionType).numberMissedReleases.addAll(
+                aggregateCollection.getAggregate(versionType).numberMissedReleases
+            )
+            getAggregate(versionType).releaseFrequencies.addAll(
+                aggregateCollection.getAggregate(versionType).releaseFrequencies
+            )
         }
     }
+}
+
+internal class TechnicalLagStatisticsService {
 
     fun connectDependenciesToStats(graphs: Project) {
 
         graphs.graph.values.forEach { graph ->
             calculateAllStatistics(graph.rootDependency, graphs.artifacts)
+
         }
 
 
@@ -73,11 +74,10 @@ class TechnicalLagStatisticsService {
                 calculateAllStatistics(graph.rootDependency, graphs.artifacts)
             }
         }
-
     }
 
     private fun calculateAllStatistics(
-        root: LinkedDependencyRoot,
+        root: LinkedNode,
         artifacts: List<Artifact>,
     ) {
 
@@ -184,7 +184,6 @@ class TechnicalLagStatisticsService {
         }
     }
 
-    //TODO: I've seen negative values for the release distances we need to check that
     private fun aggregatedTripleToStatistics(distances: List<Triple<Double, Double, Double>>): Triple<Statistics, Statistics, Statistics>? {
         if (distances.isEmpty()) {
             return null

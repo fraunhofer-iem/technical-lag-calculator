@@ -28,24 +28,17 @@ data class Project(
                 },
                 groupId = it.groupId,
                 artifactId = it.artifactId,
-                versionToVersionTypeToTechLag = it.technicalLag.associate {
-                    Pair(
-                        it.updateVersion,
-                        it.technicalLag
-                    )
-                }
-                    .toMutableMap()
             )
         },
         ecosystem = projectDto.ecosystem,
         version = projectDto.version,
         artifactId = projectDto.artifactId,
         groupId = projectDto.groupId,
-        graph = projectDto.graph.associate { Pair(it.scope, it.graph) },
+        graph = projectDto.graph.associate { Pair(it.scope, DependencyGraph(it.graph)) },
         graphs = projectDto.graphs.associate {
             Pair(
                 it.scope,
-                it.versionToGraph.associate { Pair(it.version, it.graph) }
+                it.versionToGraph.associate { Pair(it.version, DependencyGraph(it.graph)) }
             )
         }
     )

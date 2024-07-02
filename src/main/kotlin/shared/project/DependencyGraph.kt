@@ -1,10 +1,38 @@
 package shared.project
 
+import commands.calculateTechnicalLag.model.TechnicalLagStatistics
 import kotlinx.serialization.Serializable
+import shared.analyzerResultDtos.DependencyGraphDto
 import shared.project.artifact.ArtifactVersion
 import shared.project.artifact.LinkedDependencyNode
 import shared.project.artifact.LinkedDependencyRoot
 import shared.project.artifact.VersionType
+
+interface IStatisticsContainer {
+
+    fun addStatForVersionType(stats: TechnicalLagStatistics, versionType: VersionType)
+    fun getStatForVersionType(versionType: VersionType): TechnicalLagStatistics?
+}
+
+abstract class StatisticsContainer {
+    private val versionTypeToStats: MutableMap<VersionType, TechnicalLagStatistics> = mutableMapOf()
+
+    fun getAllStats(): Map<VersionType, TechnicalLagStatistics> {
+        return versionTypeToStats
+    }
+
+    fun addStatForVersionType(stats: TechnicalLagStatistics, versionType: VersionType) {
+        versionTypeToStats[versionType] = stats
+    }
+
+    fun getStatForVersionType(versionType: VersionType): TechnicalLagStatistics? {
+        return versionTypeToStats[versionType]
+    }
+
+    fun count(): Int {
+        return versionTypeToStats.entries.count()
+    }
+}
 
 @Serializable
 data class GraphMetadata(
@@ -13,17 +41,18 @@ data class GraphMetadata(
     val percentageOfNodesWithStats: Double,
 )
 
-@Serializable
 class DependencyNode private constructor(
     val artifactIdx: Int, // Index of the artifact in the DependencyGraphs' artifacts list
-    val usedVersion: String
-) {
+    val usedVersion: String,
+) : StatisticsContainer() {
+
     companion object {
         fun create(artifactIdx: Int, version: String): DependencyNode {
             return DependencyNode(artifactIdx, ArtifactVersion.validateAndHarmonizeVersionString(version))
         }
     }
 }
+
 
 @Serializable
 data class DependencyEdge(
@@ -39,12 +68,12 @@ data class DependencyEdge(
  * The artifactIdx in each node references the global artifacts list
  * stored in DependencyGraphs.
  */
-@Serializable
-data class DependencyGraph(
+class DependencyGraph(
     val nodes: List<DependencyNode> = listOf(),
     val edges: List<DependencyEdge> = listOf(),
     val directDependencyIndices: List<Int> = listOf(), // Idx of the nodes' which are direct dependencies of this graph
-) {
+) : StatisticsContainer() {
+
 
     val rootDependency by lazy {
         linkDependencies()
@@ -102,7 +131,29 @@ data class DependencyGraph(
             children = directDependencyIndices.map { idx ->
                 val rootNode = nodes[idx]
                 buildNodeWithChildren(rootNode, mutableSetOf())
-            }
+            },
+            graph = this
         )
+    }
+
+    constructor(dependencyGraphDto: DependencyGraphDto) : this(
+        edges = dependencyGraphDto.edges,
+        directDependencyIndices = dependencyGraphDto.directDependencyIndices,
+        nodes = dependencyGraphDto.nodes.map {
+            val node = DependencyNode.create(
+                artifactIdx = it.artifactIdx,
+                version = it.usedVersion
+            )
+
+            it.stats.forEach { statistics ->
+                node.addStatForVersionType(statistics.stats, statistics.versionType)
+            }
+
+            node
+        }
+    ) {
+        dependencyGraphDto.stats.forEach { stats ->
+            this.addStatForVersionType(stats.stats, stats.versionType)
+        }
     }
 }

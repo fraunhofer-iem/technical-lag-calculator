@@ -1,11 +1,11 @@
 package util
 
-import commands.createDependencyGraph.ProjectPaths
-import shared.analyzerResultDtos.AnalyzerResultDto
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import shared.analyzerResultDtos.AnalyzerResultDto
+import shared.project.ProjectPaths
 import java.io.File
 import java.util.*
 

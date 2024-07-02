@@ -25,10 +25,6 @@ class Artifact(
         return "${groupId}:${artifactId} with ${sortedVersions.size} versions."
     }
 
-    fun getTechLagMap(): Map<String, TechnicalLagDto> {
-        return versionToVersionTypeToTechLag
-    }
-
     /**
      * Returns the technical lag between the given rawVersion and the target version defined by
      * versionType (major, minor, patch).
@@ -64,13 +60,13 @@ class Artifact(
             val diffInMonths = getDifferenceInMonths(firstVersion.releaseDate, latestVersion.releaseDate)
 
             val frequencyDay = if (diffInDays == 0L) 0.0 else versionByDate.count().toDouble() / diffInDays.toDouble()
-            println("Frequency $frequencyDay releases/day")
+
             val frequencyWeek =
                 if (diffInWeeks == 0.0) 0.0 else versionByDate.count().toDouble() / diffInWeeks
-            println("Frequency $frequencyWeek releases/week")
+
             val frequencyMonth =
                 if (diffInMonths == 0.0) 0.0 else versionByDate.count().toDouble() / diffInMonths
-            println("Frequency $frequencyMonth releases/month")
+
 
             ReleaseFrequencyDto(frequencyDay, frequencyWeek, frequencyMonth)
         } else {

@@ -34,7 +34,7 @@ class LinkedDependencyNodeGraphServiceTest {
                     "org.apache.commons",
                     "commons-lang3",
                     "2.11"
-                ), // TODO: this is an important test case. this must not become an artifact, but must be part of the tree
+                ), // this is an important test case. this must not become an artifact, but must be part of the tree
                 Identifier("npm", "org.apache.commons", "commons-lang3", "3.11"),
                 Identifier("npm", "org.apache.commons", "commons-collections4", "4.4.3"),
                 Identifier("npm", "org.apache.commons", "commons-configuration", "2.4"),

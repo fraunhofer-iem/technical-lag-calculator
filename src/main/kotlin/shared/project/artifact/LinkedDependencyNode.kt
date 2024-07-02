@@ -1,28 +1,31 @@
 package shared.project.artifact
 
-import shared.project.DependencyNode
 import commands.calculateTechnicalLag.model.TechnicalLagStatistics
-
+import shared.project.DependencyNode
+import shared.project.IStatisticsContainer
+import shared.project.StatisticsContainer
 
 class LinkedDependencyRoot(
-    children: List<LinkedDependencyNode>
-) : LinkedNode(children)
+    children: List<LinkedDependencyNode>,
+    graph: StatisticsContainer
+) : LinkedNode(children, graph)
 
 class LinkedDependencyNode(
     val node: DependencyNode,
     children: List<LinkedDependencyNode>
-) : LinkedNode(children)
+) : LinkedNode(children, node)
 
 abstract class LinkedNode(
     val children: List<LinkedDependencyNode>,
-    private val versionTypeToStats: MutableMap<VersionType, TechnicalLagStatistics> = mutableMapOf()
-) {
-    fun addStatForVersionType(stats: TechnicalLagStatistics, versionType: VersionType) {
-        versionTypeToStats[versionType] = stats
+    private val statContainer: StatisticsContainer
+) : IStatisticsContainer {
+
+    override fun addStatForVersionType(stats: TechnicalLagStatistics, versionType: VersionType) {
+        statContainer.addStatForVersionType(stats, versionType)
     }
 
-    fun getStatForVersionType(versionType: VersionType): TechnicalLagStatistics? {
-        return versionTypeToStats[versionType]
+    override fun getStatForVersionType(versionType: VersionType): TechnicalLagStatistics? {
+        return statContainer.getStatForVersionType(versionType)
     }
 
     private fun countChildren(child: LinkedNode): Int {
@@ -33,7 +36,7 @@ abstract class LinkedNode(
     }
 
     fun numberOfStats(): Int {
-        var counter = versionTypeToStats.entries.count()
+        var counter = statContainer.count()
 
         if (children.isEmpty()) {
             counter += VersionType.entries.count()
