@@ -1,5 +1,8 @@
 {
-  "urls": [
-    "https://github.com/isaacs/node-glob"
+  "paths": [
+    "/Users/struewer/git/opencode/dashboard",
+    "/Users/struewer/git/Libyear-ORT-Frontend",
+    "/Users/struewer/git/dodo/kpi-hierarchy-visualization",
+    "/Users/struewer/git/FoPro/FoProVisu"
   ]
 }

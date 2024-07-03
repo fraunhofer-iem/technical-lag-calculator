@@ -12,7 +12,7 @@ version = "1.0-SNAPSHOT"
 repositories {
     google()
     mavenCentral()
-
+    maven("https://packages.jetbrains.team/maven/p/kds/kotlin-ds-maven")
     exclusiveContent {
         forRepository {
             maven("https://androidx.dev/storage/compose-compiler/repository")
@@ -74,6 +74,8 @@ dependencies {
     implementation("org.ossreviewtoolkit.plugins.versioncontrolsystems:git-version-control-system:$ortVersion")
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.10.0.202406032230-r")
     implementation("org.jetbrains.kotlinx:kandy-lets-plot:0.6.0")
+    implementation("org.jetbrains.kotlinx:kandy-echarts:0.6.0")
+    implementation("org.jetbrains.kotlinx:kotlin-statistics-jvm:0.2.1")
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-crypt:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")

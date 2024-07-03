@@ -6,6 +6,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 import commands.calculateTechnicalLag.model.TechnicalLagStatistics
+import commands.calculateTechnicalLag.visualization.Visualizer
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger
@@ -16,6 +17,7 @@ import shared.project.ProjectPaths
 import shared.project.artifact.VersionType
 import util.StoreResultHelper
 import java.io.File
+import java.util.*
 import kotlin.enums.EnumEntries
 import kotlin.io.path.createDirectories
 
@@ -116,6 +118,12 @@ class TechnicalLag : CliktCommand() {
             StoreResultHelper.storeAnalyzerResultInFile(outputPath.toFile(), result)
         }
 
+        val data =
+            stats.map { it.key to it.value.getEntry(VersionType.Major).mapNotNull { it.libDays?.average } }.toMap()
+        Visualizer.createAndStoreBoxplot(
+            data,
+            outputPath.toAbsolutePath().resolve("${Date().time}-stats.png").toString()
+        )
         println(stats)
     }
 

@@ -73,7 +73,7 @@ class CreateDependencyGraph : CliktCommand() {
                 StoreResultHelper.storeAnalyzerResultInFile(outputPath.toFile(), result)
 
 
-            } catch (error: Error) {
+            } catch (error: Exception) {
                 logger.error("Dependency Analyzer failed with error $error")
                 null
             }
