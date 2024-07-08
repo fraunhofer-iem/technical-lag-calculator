@@ -15,10 +15,10 @@ import shared.analyzerResultDtos.ProjectDto
 import shared.project.Project
 import shared.project.ProjectPaths
 import shared.project.artifact.VersionType
+import util.CompleteEnumMap
 import util.StoreResultHelper
 import java.io.File
 import java.util.*
-import kotlin.enums.EnumEntries
 import kotlin.io.path.createDirectories
 
 
@@ -42,23 +42,6 @@ class TechnicalLag : CliktCommand() {
         .path(mustExist = false, mustBeReadable = false, canBeFile = false)
         .required()
 
-    private class CompleteEnumMap<T : Enum<T>, E>(
-        enumEntries: EnumEntries<T>,
-        createEmptyElement: () -> MutableCollection<E>
-    ) {
-        private val map: Map<T, MutableCollection<E>> = enumEntries.associateWith { createEmptyElement() }
-
-
-        fun getEntry(key: T): Collection<E> {
-            return map[key]!!
-        }
-
-        fun add(key: T, value: E) {
-            map[key]!!.add(value)
-        }
-
-    }
-
     override fun run(): Unit = runBlocking {
         outputPath.createDirectories()
         val projectPaths = Json.decodeFromString<ProjectPaths>(inputPath.toFile().readText())
@@ -80,22 +63,37 @@ class TechnicalLag : CliktCommand() {
                 technicalLagStatisticsService.connectDependenciesToStats(project)
 
                 project.graph.forEach { (scope, graph) ->
-                    if (!stats.contains(scope)) stats[scope] =
-                        CompleteEnumMap(VersionType.entries) { mutableListOf<TechnicalLagStatistics>() }
+
+                    val directStatsKey = "$scope-direct"
+                    val transitiveStatsKey = "$scope-transitive"
+
+                    if (!stats.contains(scope)) {
+                        stats[scope] =
+                            CompleteEnumMap(VersionType.entries) { mutableListOf() }
+                        stats[directStatsKey] =
+                            CompleteEnumMap(VersionType.entries) { mutableListOf() }
+                        stats[transitiveStatsKey] =
+                            CompleteEnumMap(VersionType.entries) { mutableListOf() }
+                    }
 
                     println("Scope $scope")
                     println(graph.metadata)
-                    val root = graph.rootDependency
 
                     val statsMap = stats[scope]!!
-                    VersionType.entries.forEach { versionType ->
-                        root.getStatForVersionType(versionType)?.let { rootStat ->
-                            println("Stats for version type $versionType")
-                            println(rootStat)
-                            // TODO: we should probably separate by scope
-                            statsMap.add(versionType, rootStat)
-                        }
-                    }
+                    val directStats = stats[directStatsKey]!!
+                    val transitiveStats = stats[transitiveStatsKey]!!
+                    statsMap.addAll(graph.getAllStats())
+                    directStats.addAll(graph.getDirectDependencyStats())
+                    transitiveStats.addAll(graph.getAllStats())
+//                    VersionType.entries.forEach { versionType ->
+//                        root.statContainer.getStatForVersionType(versionType)?.let { rootStat ->
+//                            println("Stats for version type $versionType")
+//                            println(rootStat)
+//                            // TODO: we should probably separate by scope
+//                            statsMap.add(versionType, rootStat)
+//                        }
+//
+//                    }
 
                 }
                 project
@@ -113,7 +111,7 @@ class TechnicalLag : CliktCommand() {
                 repositoryInfo = analyzerResult.repositoryInfo,
                 environmentInfo = analyzerResult.environmentInfo,
             )
-            
+            // TODO: store direct and transitive stats for the graph. need to extend the serialization and DTO
             StoreResultHelper.storeAnalyzerResultInFile(outputPath.toFile(), result)
         }
 
@@ -123,6 +121,8 @@ class TechnicalLag : CliktCommand() {
             data,
             outputPath.toAbsolutePath().resolve("${Date().time}-stats.png").toString()
         )
+
+
         println(stats)
     }
 

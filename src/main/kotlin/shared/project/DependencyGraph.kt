@@ -12,24 +12,26 @@ interface IStatisticsContainer {
 
     fun addStatForVersionType(stats: TechnicalLagStatistics, versionType: VersionType)
     fun getStatForVersionType(versionType: VersionType): TechnicalLagStatistics?
+    fun getAllStats(): Map<VersionType, TechnicalLagStatistics>
+    fun count(): Int
 }
 
-abstract class StatisticsContainer {
+open class StatisticsContainer : IStatisticsContainer {
     private val versionTypeToStats: MutableMap<VersionType, TechnicalLagStatistics> = mutableMapOf()
 
-    fun getAllStats(): Map<VersionType, TechnicalLagStatistics> {
+    override fun getAllStats(): Map<VersionType, TechnicalLagStatistics> {
         return versionTypeToStats
     }
 
-    fun addStatForVersionType(stats: TechnicalLagStatistics, versionType: VersionType) {
+    override fun addStatForVersionType(stats: TechnicalLagStatistics, versionType: VersionType) {
         versionTypeToStats[versionType] = stats
     }
 
-    fun getStatForVersionType(versionType: VersionType): TechnicalLagStatistics? {
+    override fun getStatForVersionType(versionType: VersionType): TechnicalLagStatistics? {
         return versionTypeToStats[versionType]
     }
 
-    fun count(): Int {
+    override fun count(): Int {
         return versionTypeToStats.entries.count()
     }
 }
@@ -50,6 +52,10 @@ class DependencyNode private constructor(
         fun create(artifactIdx: Int, version: String): DependencyNode {
             return DependencyNode(artifactIdx, ArtifactVersion.validateAndHarmonizeVersionString(version))
         }
+    }
+
+    fun copy(): DependencyNode {
+        return DependencyNode(artifactIdx, usedVersion)
     }
 }
 
@@ -74,7 +80,6 @@ class DependencyGraph(
     val directDependencyIndices: List<Int> = listOf(), // Idx of the nodes' which are direct dependencies of this graph
 ) : StatisticsContainer() {
 
-
     val rootDependency by lazy {
         linkDependencies()
     }
@@ -82,6 +87,26 @@ class DependencyGraph(
     val metadata by lazy {
         calculateMetadata()
     }
+
+    private val directDependencyStats: MutableMap<VersionType, TechnicalLagStatistics> = mutableMapOf()
+    private val transitiveDependencyStats: MutableMap<VersionType, TechnicalLagStatistics> = mutableMapOf()
+
+    fun getDirectDependencyStats(): Map<VersionType, TechnicalLagStatistics> {
+        return directDependencyStats
+    }
+
+    fun getTransitiveDependencyStats(): Map<VersionType, TechnicalLagStatistics> {
+        return transitiveDependencyStats
+    }
+
+    fun addAllDirectDependencyStats(statContainer: IStatisticsContainer) {
+        directDependencyStats.putAll(statContainer.getAllStats())
+    }
+
+    fun addAllTransitiveDependencyStats(statContainer: IStatisticsContainer) {
+        transitiveDependencyStats.putAll(statContainer.getAllStats())
+    }
+
 
     private fun calculateMetadata(): GraphMetadata {
         val numberOfStats = rootDependency.numberOfStats()

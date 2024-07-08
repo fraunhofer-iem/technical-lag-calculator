@@ -3,6 +3,7 @@ package commands.calculateTechnicalLag
 import commands.calculateTechnicalLag.model.Statistics
 import commands.calculateTechnicalLag.model.TechnicalLagDto
 import commands.calculateTechnicalLag.model.TechnicalLagStatistics
+import shared.project.IStatisticsContainer
 import shared.project.Project
 import shared.project.artifact.Artifact
 import shared.project.artifact.LinkedDependencyNode
@@ -66,15 +67,56 @@ internal class TechnicalLagStatisticsService {
 
         graphs.graph.values.forEach { graph ->
             calculateAllStatistics(graph.rootDependency, graphs.artifacts)
+            val directStats = calculateDirectStatistics(graph.rootDependency, graphs.artifacts)
+            graph.addAllDirectDependencyStats(directStats)
 
+            val transitiveStats = calculateTransitiveStatistics(graph.rootDependency, graphs.artifacts)
+            graph.addAllTransitiveDependencyStats(transitiveStats)
+            println("$directStats")
+            println("$transitiveStats")
         }
 
 
         graphs.graphs.values.forEach {
             it.values.forEach { graph ->
                 calculateAllStatistics(graph.rootDependency, graphs.artifacts)
+                val directStats = calculateDirectStatistics(graph.rootDependency, graphs.artifacts)
+                graph.addAllDirectDependencyStats(directStats)
+
+                val transitiveStats = calculateTransitiveStatistics(graph.rootDependency, graphs.artifacts)
+                graph.addAllTransitiveDependencyStats(transitiveStats)
             }
         }
+    }
+
+    private fun calculateDirectStatistics(root: LinkedNode, artifacts: List<Artifact>): IStatisticsContainer {
+        // copy root node (we can only attach one set of stats to each node)
+        // remove all grandchildren
+        // aggregate the data as we do for a normal tree with "calculateAllStatistics"
+        val directRoot = root.copy()
+        directRoot.children.forEach { child ->
+            child.clearChildren()
+        }
+        calculateAllStatistics(directRoot, artifacts)
+
+        return directRoot.statContainer
+    }
+
+    private fun calculateTransitiveStatistics(root: LinkedNode, artifacts: List<Artifact>): IStatisticsContainer {
+        // copy root node (we can only attach one set of stats to each node)
+        val rootCopy = root.copy()
+        // get all grandchildren
+        val grandchildren = mutableListOf<LinkedDependencyNode>()
+        rootCopy.children.forEach { child ->
+            grandchildren.addAll(child.children)
+        }
+        // remove all children
+        rootCopy.clearChildren()
+        // link root to grandchildren
+        rootCopy.addChildren(grandchildren)
+        calculateAllStatistics(rootCopy, artifacts)
+
+        return rootCopy.statContainer
     }
 
     private fun calculateAllStatistics(
@@ -93,7 +135,7 @@ internal class TechnicalLagStatisticsService {
         }
 
         VersionType.entries.forEach { versionType ->
-            root.addStatForVersionType(
+            root.statContainer.addStatForVersionType(
                 stats = aggregateDataToStats(aggregateData = aggregateVersionTypeCollection.getAggregate(versionType)),
                 versionType = versionType
             )
@@ -119,7 +161,7 @@ internal class TechnicalLagStatisticsService {
 
             // Leaf nodes have no stats, because stats communicate information about transitive dependencies
             if (artifactDependency.children.isNotEmpty()) {
-                artifactDependency.addStatForVersionType(
+                artifactDependency.statContainer.addStatForVersionType(
                     stats = aggregateDataToStats(
                         technicalLag,
                         aggregateVersionTypeCollection.getAggregate(versionType)
