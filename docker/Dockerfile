@@ -5,9 +5,9 @@ FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /app
 
 # Copy only necessary files for dependency resolution and build
-COPY gradle gradle
-COPY build.gradle.kts settings.gradle.kts gradle.properties gradlew ./
-COPY src src
+COPY ../gradle gradle
+COPY ../build.gradle.kts settings.gradle.kts gradle.properties gradlew ./
+COPY ../src src
 
 # Build the application
 RUN ./gradlew installDist
@@ -35,6 +35,8 @@ RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg -
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 RUN curl -fsSL https://get.pnpm.io/install.sh | /bin/bash -
+
+RUN curl https://sh.rustup.rs -sSf | /bin/bash
 
 RUN git config --global --add safe.directory '*'
 

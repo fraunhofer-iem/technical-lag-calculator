@@ -8,7 +8,6 @@ import shared.project.artifact.Artifact
 import shared.project.artifact.LinkedDependencyNode
 import shared.project.artifact.LinkedNode
 import shared.project.artifact.VersionType
-import kotlin.enums.EnumEntries
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -132,6 +131,7 @@ internal class TechnicalLagStatisticsService {
             if (technicalLag != null) {
                 aggregateVersionTypeCollection.getAggregate(versionType).transitiveLibDays.add(technicalLag.libDays)
                 aggregateVersionTypeCollection.getAggregate(versionType).numberMissedReleases.add(technicalLag.numberOfMissedReleases)
+                // TODO: the release distance for minor releases is always 0,0,X it should be 0,Y,X
                 aggregateVersionTypeCollection.getAggregate(versionType).releaseDistances.add(
                     Triple(
                         technicalLag.distance.first.toDouble(),

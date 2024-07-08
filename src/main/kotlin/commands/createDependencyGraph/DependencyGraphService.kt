@@ -63,7 +63,7 @@ internal class DependencyGraphService(
                         seen = seen
                     )
                 }
-
+                // TODO: scope names are not unique !
                 scope.name to shared.project.DependencyGraph(
                     nodes = nodes.toList(),
                     edges = edges.toList(),

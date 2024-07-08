@@ -113,8 +113,7 @@ class TechnicalLag : CliktCommand() {
                 repositoryInfo = analyzerResult.repositoryInfo,
                 environmentInfo = analyzerResult.environmentInfo,
             )
-
-
+            
             StoreResultHelper.storeAnalyzerResultInFile(outputPath.toFile(), result)
         }
 

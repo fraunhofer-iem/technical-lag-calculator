@@ -1,9 +1,5 @@
 package network.dependencies
 
-import shared.project.artifact.ArtifactVersion
-import network.dependencies.model.DepsResponseDto
-import network.dependencies.model.DepsTreeResponseDto
-import network.dependencies.model.Version
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.apache.*
@@ -17,7 +13,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import network.dependencies.model.DepsResponseDto
+import network.dependencies.model.DepsTreeResponseDto
+import network.dependencies.model.Version
 import org.apache.logging.log4j.kotlin.logger
+import shared.project.artifact.ArtifactVersion
 import util.TimeHelper.dateToMs
 import java.net.URLEncoder
 
@@ -82,7 +82,7 @@ class DepsClient(
                 versionResponseToDto(version)
             } ?: emptyList()
         } else {
-            logger.error { "Currently unsupported package manager" }
+            logger.error { "Currently unsupported package manager: $ecosystem" }
             emptyList()
         }
     }
@@ -113,7 +113,7 @@ class DepsClient(
 
 
         } else {
-            logger.error { "Currently unsupported package manager" }
+            logger.error { "Currently unsupported package manager $ecosystem" }
             null
         }
     }
@@ -140,10 +140,14 @@ class DepsClient(
         NPM("/")
     }
 
+
     private suspend fun getVersionsRequestUrl(ecosystem: String, name: String, namespace: String): String? {
-        getNameForEcosystem(name, namespace, ecosystem)?.let { urlNamespace ->
-            return "https://api.deps.dev/v3/systems/$ecosystem/packages/$urlNamespace"
-        }
+        val verifiedNamespace = getUrlNamespaceForEcosystem(name, namespace, ecosystem)
+        val verifiedEcosystem = getEcosystemForUrl(ecosystem)
+
+        if (verifiedNamespace != null && verifiedEcosystem != null)
+            return "https://api.deps.dev/v3/systems/$verifiedEcosystem/packages/$verifiedNamespace"
+
         return null
     }
 
@@ -154,14 +158,26 @@ class DepsClient(
         namespace: String,
         version: String
     ): String? {
-        getNameForEcosystem(name, namespace, ecosystem)?.let { urlNamespace ->
-            return "https://api.deps.dev/v3/systems/$ecosystem/packages/$urlNamespace/versions/$version:dependencies"
-        }
+        val verifiedNamespace = getUrlNamespaceForEcosystem(name, namespace, ecosystem)
+        val verifiedEcosystem = getEcosystemForUrl(ecosystem)
+
+        if (verifiedNamespace != null && verifiedEcosystem != null)
+            return "https://api.deps.dev/v3/systems/$verifiedEcosystem/packages/$verifiedNamespace/versions/$version:dependencies"
+
 
         return null
     }
 
-    private suspend fun getNameForEcosystem(name: String, namespace: String, ecosystem: String): String? {
+    private fun getEcosystemForUrl(ecosystem: String): String? {
+        return when (ecosystem.lowercase()) {
+            "npm", "yarn" -> "npm"
+            "maven", "gradle" -> "maven"
+            "cargo" -> "cargo"
+            else -> null
+        }
+    }
+
+    private suspend fun getUrlNamespaceForEcosystem(name: String, namespace: String, ecosystem: String): String? {
         return when (ecosystem.lowercase()) {
             "maven", "gradle" -> {
                 concatNamespaceAndName(
@@ -171,13 +187,15 @@ class DepsClient(
                 )
             }
 
-            "npm" -> {
+            "npm", "yarn" -> {
                 concatNamespaceAndName(
                     name = name,
                     namespace = namespace,
                     UrlConcatenationSymbol.NPM.concatSymbol
                 )
             }
+
+            "cargo" -> name //TODO: check for correctness
 
             else -> null
         }

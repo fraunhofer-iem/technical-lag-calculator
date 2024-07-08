@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="GenerateMultipleDependencyTrees" type="JetRunConfigurationType">
+    <option name="MAIN_CLASS_NAME" value="MainKt" />
+    <module name="libyear-ort.main" />
+    <option name="PROGRAM_PARAMETERS" value="create-dependency-graph --project-list-path $PROJECT_DIR$/config/gitUrls.json --output-path /tmp/depGraphs" />
+    <shortenClasspath name="MANIFEST" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

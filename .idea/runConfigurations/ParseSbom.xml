@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ParseSbom" type="JetRunConfigurationType">
+    <option name="MAIN_CLASS_NAME" value="MainKt" />
+    <module name="libyear-ort.main" />
+    <option name="PROGRAM_PARAMETERS" value="parse-sbom --input-path $PROJECT_DIR$/config/vscode_sbom.json --output-path /tmp/depGraphs/stats" />
+    <shortenClasspath name="MANIFEST" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

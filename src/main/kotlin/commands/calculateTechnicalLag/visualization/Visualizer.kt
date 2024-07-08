@@ -27,7 +27,7 @@ object Visualizer {
 
         val dataFrame = data.toDataFrame().gather(*data.keys.toTypedArray()).into("scope", "libyears")
 
-
+        // TODO: print number of projects in the plot
         dataFrame.plot {
             boxplot("scope", "libyears") {
                 boxes {
