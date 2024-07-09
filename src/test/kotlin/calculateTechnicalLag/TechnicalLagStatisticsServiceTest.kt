@@ -1,15 +1,18 @@
 package calculateTechnicalLag
 
 import commands.calculateTechnicalLag.TechnicalLagStatisticsService
+import commands.calculateTechnicalLag.model.Statistics
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import org.junit.jupiter.api.Test
-import shared.project.*
+import shared.project.DependencyEdge
+import shared.project.DependencyGraph
+import shared.project.DependencyNode
+import shared.project.Project
 import shared.project.artifact.Artifact
 import shared.project.artifact.ArtifactVersion
 import shared.project.artifact.VersionType
-import commands.calculateTechnicalLag.model.Statistics
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.test.assertEquals
@@ -131,7 +134,7 @@ class TechnicalLagStatisticsServiceTest {
                     DependencyNode.create(3, "1.0.1"), // libdays major - 17
                     DependencyNode.create(4, "1.0.0"), // libdays major - 18
                     DependencyNode.create(5, "2.0.0"), // libdays major - 0
-                ),
+                ), // 78 + 49 + 18 + 0
                 edges = listOf(
                     DependencyEdge(0, 2),
                     DependencyEdge(0, 1),
@@ -166,6 +169,34 @@ class TechnicalLagStatisticsServiceTest {
     }
 
     @Test
+    fun calculateStatsDirectDepsOnly() {
+
+        val service = TechnicalLagStatisticsService()
+        val graphs = getGraphs()
+        service.connectDependenciesToStats(
+            graphs
+        )
+        val graph = graphs.graph.values.first()
+        val directDepsStats = graph.getDirectDependencyStats()
+        // 18 + 17 = 17.5
+        assertEquals(17.5, directDepsStats[VersionType.Major]?.libDays?.average)
+    }
+
+    @Test
+    fun calculateStatsTransitiveDepsOnly() {
+
+        val service = TechnicalLagStatisticsService()
+        val graphs = getGraphs()
+        service.connectDependenciesToStats(
+            graphs
+        )
+        val graph = graphs.graph.values.first()
+        val directDepsStats = graph.getTransitiveDependencyStats()
+        // 78 + 49 + 18 + 0 + 78
+        assertEquals(44.6, directDepsStats[VersionType.Major]?.libDays?.average)
+    }
+
+    @Test
     fun calculateTechLagStatsIdenticalData() {
 
         val service = TechnicalLagStatisticsService()
@@ -176,7 +207,7 @@ class TechnicalLagStatisticsServiceTest {
 
         val root = graphs.graph.values.first().rootDependency
         root.children.forEach {
-            val majorStats = it.getStatForVersionType(VersionType.Major)
+            val majorStats = it.statContainer.getStatForVersionType(VersionType.Major)
             assertEquals(18.0, majorStats?.libDays?.average ?: -1)
             assertEquals(0.0, majorStats?.libDays?.stdDev ?: -1)
             assertEquals(3.0, majorStats?.missedReleases?.average ?: -1)
@@ -201,7 +232,7 @@ class TechnicalLagStatisticsServiceTest {
                 majorStats?.distance ?: -1
             )
 
-            val minorStats = it.getStatForVersionType(VersionType.Minor)
+            val minorStats = it.statContainer.getStatForVersionType(VersionType.Minor)
             assertEquals(8.0, minorStats?.libDays?.average ?: -1)
             assertEquals(0.0, minorStats?.libDays?.stdDev ?: -1)
             assertEquals(2.0, minorStats?.missedReleases?.average ?: -1)
@@ -226,7 +257,7 @@ class TechnicalLagStatisticsServiceTest {
                 minorStats?.distance ?: -1
             )
 
-            val patchStats = it.getStatForVersionType(VersionType.Patch)
+            val patchStats = it.statContainer.getStatForVersionType(VersionType.Patch)
             assertEquals(2.0, patchStats?.libDays?.average ?: -1)
             assertEquals(0.0, patchStats?.libDays?.stdDev ?: -1)
             assertEquals(1.0, patchStats?.missedReleases?.average ?: -1)
@@ -265,7 +296,7 @@ class TechnicalLagStatisticsServiceTest {
         val root = graphs.graph.values.first().rootDependency
         val firstDirectDep = root.children.first()
         // first contains data for nodes 0, 1, 2, 2
-        val firstDepMajorStats = firstDirectDep.getStatForVersionType(VersionType.Major)
+        val firstDepMajorStats = firstDirectDep.statContainer.getStatForVersionType(VersionType.Major)
         //  49, 78, 78 - avg. 55.75
         // sqrt(((49-55.75)^2 + (78-55.75)^2 + (78-55.75)^2) / 4)
         println(firstDepMajorStats)
@@ -284,7 +315,7 @@ class TechnicalLagStatisticsServiceTest {
 
         val secondDirectDep = root.children[1]
 
-        val secondDepMajorStats = secondDirectDep.getStatForVersionType(VersionType.Major)
+        val secondDepMajorStats = secondDirectDep.statContainer.getStatForVersionType(VersionType.Major)
 
         println(secondDepMajorStats)
         val secondAvg = (18.0) / 2.0

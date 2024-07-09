@@ -3,12 +3,10 @@ package commands.calculateTechnicalLag
 import commands.calculateTechnicalLag.model.Statistics
 import commands.calculateTechnicalLag.model.TechnicalLagDto
 import commands.calculateTechnicalLag.model.TechnicalLagStatistics
+import shared.project.DependencyGraph
 import shared.project.IStatisticsContainer
 import shared.project.Project
-import shared.project.artifact.Artifact
-import shared.project.artifact.LinkedDependencyNode
-import shared.project.artifact.LinkedNode
-import shared.project.artifact.VersionType
+import shared.project.artifact.*
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -66,27 +64,31 @@ internal class TechnicalLagStatisticsService {
     fun connectDependenciesToStats(graphs: Project) {
 
         graphs.graph.values.forEach { graph ->
-            calculateAllStatistics(graph.rootDependency, graphs.artifacts)
-            val directStats = calculateDirectStatistics(graph.rootDependency, graphs.artifacts)
-            graph.addAllDirectDependencyStats(directStats)
-
-            val transitiveStats = calculateTransitiveStatistics(graph.rootDependency, graphs.artifacts)
-            graph.addAllTransitiveDependencyStats(transitiveStats)
-            println("$directStats")
-            println("$transitiveStats")
+            processGraph(graph, graphs.artifacts)
         }
 
+        // create an artificial root and connect all root nodes of each graph, thereby combining all scopes
+        // this is used to replicate the libyear paper calculation
+        val root = LinkedDependencyRoot(
+            graph = graphs,
+            children = graphs.graph.values.flatMap { it.rootDependency.children }
+        )
+        calculateAllStatistics(root, artifacts = graphs.artifacts)
 
         graphs.graphs.values.forEach {
             it.values.forEach { graph ->
-                calculateAllStatistics(graph.rootDependency, graphs.artifacts)
-                val directStats = calculateDirectStatistics(graph.rootDependency, graphs.artifacts)
-                graph.addAllDirectDependencyStats(directStats)
-
-                val transitiveStats = calculateTransitiveStatistics(graph.rootDependency, graphs.artifacts)
-                graph.addAllTransitiveDependencyStats(transitiveStats)
+                processGraph(graph, graphs.artifacts)
             }
         }
+    }
+
+    private fun processGraph(graph: DependencyGraph, artifacts: List<Artifact>) {
+        calculateAllStatistics(graph.rootDependency, artifacts)
+        val directStats = calculateDirectStatistics(graph.rootDependency, artifacts)
+        graph.addAllDirectDependencyStats(directStats)
+
+        val transitiveStats = calculateTransitiveStatistics(graph.rootDependency, artifacts)
+        graph.addAllTransitiveDependencyStats(transitiveStats)
     }
 
     private fun calculateDirectStatistics(root: LinkedNode, artifacts: List<Artifact>): IStatisticsContainer {

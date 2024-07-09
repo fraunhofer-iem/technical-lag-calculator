@@ -7,7 +7,7 @@ import shared.project.artifact.ArtifactVersion
 typealias ScopesToGraphs = Map<String, DependencyGraph>
 typealias GraphUpdates = Map<String, ScopesToGraphs>
 
-data class Project(
+class Project(
     val artifacts: List<Artifact> = listOf(), // Stores all components and their related metadata
     val graphs: GraphUpdates = mapOf(), // Maps the graphs' scope to multiple versions of the original dependency graph
     val graph: ScopesToGraphs = mapOf(), // Maps the graphs' scope to the dependency graph extracted from the project
@@ -15,7 +15,7 @@ data class Project(
     val version: String = "",
     val artifactId: String = "",
     val groupId: String = ""
-) {
+): StatisticsContainer() {
     constructor(projectDto: ProjectDto) : this(
         artifacts = projectDto.artifacts.map {
             Artifact(
