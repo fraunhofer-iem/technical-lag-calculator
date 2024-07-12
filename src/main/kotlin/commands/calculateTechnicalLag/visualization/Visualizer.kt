@@ -1,7 +1,5 @@
 package commands.calculateTechnicalLag.visualization
 
-import org.jetbrains.kotlinx.dataframe.api.gather
-import org.jetbrains.kotlinx.dataframe.api.into
 import org.jetbrains.kotlinx.dataframe.api.toDataFrame
 import org.jetbrains.kotlinx.kandy.dsl.plot
 import org.jetbrains.kotlinx.kandy.letsplot.export.save
@@ -10,6 +8,8 @@ import org.jetbrains.kotlinx.kandy.letsplot.layers.bars
 import org.jetbrains.kotlinx.kandy.letsplot.layers.line
 import org.jetbrains.kotlinx.kandy.util.color.Color
 import org.jetbrains.kotlinx.statistics.kandy.layers.boxplot
+import java.nio.file.Path
+import java.util.*
 
 object Visualizer {
 
@@ -23,15 +23,26 @@ object Visualizer {
         }.save(outputFilePath)
     }
 
-    fun createAndStoreBoxplot(data: Map<String, List<Number>>, outputFilePath: String) {
+    data class ScopeLibday(val scope: String, val libday: Long)
+    data class TechnicalLagVisualization(
+        val scope: String,
+        val libday: Long,
+        val repository: String,
+        val packageIdent: String,
+        val version: String
+    )
 
-        val dataFrame = data.toDataFrame().gather(*data.keys.toTypedArray()).into("scope", "libyears")
+    fun createAndStoreBoxplot(data: Map<String, List<Long>>, outputPath: Path) {
 
-        // TODO: print number of projects in the plot
-        dataFrame.plot {
-            boxplot("scope", "libyears") {
+        val df = data.flatMap { (key, value) ->
+            value.map { ScopeLibday(key, it) }
+        }.toDataFrame()
+
+        val outputFilePath = outputPath.toAbsolutePath().resolve("${Date().time}-boxpot-test.png").toString()
+        df.plot {
+            boxplot("scope", "libday") {
                 boxes {
-                    borderLine.color = Color.BLUE
+                    borderLine.color = Color.RED
                 }
             }
         }.save(outputFilePath)

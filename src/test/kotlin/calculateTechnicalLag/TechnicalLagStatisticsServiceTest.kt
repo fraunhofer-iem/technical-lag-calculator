@@ -16,6 +16,7 @@ import shared.project.artifact.VersionType
 import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 class TechnicalLagStatisticsServiceTest {
 
@@ -194,6 +195,10 @@ class TechnicalLagStatisticsServiceTest {
         val directDepsStats = graph.getTransitiveDependencyStats()
         // 78 + 49 + 18 + 0 + 78
         assertEquals(44.6, directDepsStats[VersionType.Major]?.libDays?.average)
+        assertNotEquals(
+            directDepsStats[VersionType.Major]?.libDays?.average,
+            graph.rootDependency.statContainer.getStatForVersionType(VersionType.Major)?.libDays?.average
+        )
     }
 
     @Test

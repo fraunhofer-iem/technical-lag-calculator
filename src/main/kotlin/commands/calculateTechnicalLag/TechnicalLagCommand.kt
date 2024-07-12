@@ -18,7 +18,6 @@ import shared.project.artifact.VersionType
 import util.CompleteEnumMap
 import util.StoreResultHelper
 import java.io.File
-import java.util.*
 import kotlin.io.path.createDirectories
 
 
@@ -53,8 +52,9 @@ class TechnicalLag : CliktCommand() {
 
         val stats: MutableMap<String, CompleteEnumMap<VersionType, TechnicalLagStatistics>> =
             mutableMapOf()
-
-
+        val rawStats: MutableMap<String, MutableList<Long>> =
+            mutableMapOf()
+        rawStats["all"] = mutableListOf()
         projectPaths.paths.map { File(it) }.forEach { resultFile ->
             val analyzerResult = Json.decodeFromString<AnalyzerResultDto>(resultFile.readText())
 
@@ -62,8 +62,40 @@ class TechnicalLag : CliktCommand() {
                 val project = Project(dependencyGraphsDto)
                 technicalLagStatisticsService.connectDependenciesToStats(project)
 
-                project.graph.forEach { (scope, graph) ->
+                val all = technicalLagStatisticsService.getAllLibdays(project)
+                val direct = technicalLagStatisticsService.getAllDirectLibdays(project)
+                val trans = technicalLagStatisticsService.getAllTransitiveLibdays(project)
 
+
+                all.entries.forEach { (scope, libdays) ->
+                    if (!rawStats.contains(scope)) {
+                        rawStats[scope] = mutableListOf()
+                    }
+                    rawStats[scope]?.addAll(libdays)
+                }
+
+
+                direct.entries.forEach { (scope, libdays) ->
+                    val key = "$scope-direct"
+                    if (!rawStats.contains(key)) {
+                        rawStats[key] = mutableListOf()
+                    }
+                    rawStats[key]?.addAll(libdays)
+                }
+
+                trans.entries.forEach { (scope, libdays) ->
+                    val key = "$scope-transitive"
+                    if (!rawStats.contains(key)) {
+                        rawStats[key] = mutableListOf()
+                    }
+                    rawStats[key]?.addAll(libdays)
+                }
+
+                rawStats["all"]!!.addAll(
+                    project.graph.values.flatMap { graph -> graph.nodes.mapNotNull { it.getAllStats()[VersionType.Major]?.technicalLag?.libDays } }
+                        .toMutableList())
+
+                project.graph.forEach { (scope, graph) ->
                     val directStatsKey = "$scope-direct"
                     val transitiveStatsKey = "$scope-transitive"
 
@@ -82,19 +114,10 @@ class TechnicalLag : CliktCommand() {
                     val statsMap = stats[scope]!!
                     val directStats = stats[directStatsKey]!!
                     val transitiveStats = stats[transitiveStatsKey]!!
+
                     statsMap.addAll(graph.getAllStats())
                     directStats.addAll(graph.getDirectDependencyStats())
-                    transitiveStats.addAll(graph.getAllStats())
-//                    VersionType.entries.forEach { versionType ->
-//                        root.statContainer.getStatForVersionType(versionType)?.let { rootStat ->
-//                            println("Stats for version type $versionType")
-//                            println(rootStat)
-//                            // TODO: we should probably separate by scope
-//                            statsMap.add(versionType, rootStat)
-//                        }
-//
-//                    }
-
+                    transitiveStats.addAll(graph.getTransitiveDependencyStats())
                 }
                 project
             }
@@ -115,11 +138,9 @@ class TechnicalLag : CliktCommand() {
             StoreResultHelper.storeAnalyzerResultInFile(outputPath.toFile(), result)
         }
 
-        val data =
-            stats.map { it.key to it.value.getEntry(VersionType.Major).mapNotNull { it.libDays?.average } }.toMap()
         Visualizer.createAndStoreBoxplot(
-            data,
-            outputPath.toAbsolutePath().resolve("${Date().time}-stats.png").toString()
+            rawStats,
+            outputPath
         )
 
 

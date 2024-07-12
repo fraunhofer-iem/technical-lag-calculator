@@ -6,7 +6,10 @@ import commands.calculateTechnicalLag.model.TechnicalLagStatistics
 import shared.project.DependencyGraph
 import shared.project.IStatisticsContainer
 import shared.project.Project
-import shared.project.artifact.*
+import shared.project.artifact.Artifact
+import shared.project.artifact.LinkedDependencyNode
+import shared.project.artifact.LinkedNode
+import shared.project.artifact.VersionType
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -67,20 +70,39 @@ internal class TechnicalLagStatisticsService {
             processGraph(graph, graphs.artifacts)
         }
 
-        // create an artificial root and connect all root nodes of each graph, thereby combining all scopes
-        // this is used to replicate the libyear paper calculation
-        val root = LinkedDependencyRoot(
-            graph = graphs,
-            children = graphs.graph.values.flatMap { it.rootDependency.children }
-        )
-        calculateAllStatistics(root, artifacts = graphs.artifacts)
-
         graphs.graphs.values.forEach {
             it.values.forEach { graph ->
                 processGraph(graph, graphs.artifacts)
             }
         }
     }
+
+    fun getAllLibdays(project: Project): Map<String, List<Long>> {
+        return project.graph.entries.associate { (scope, graph) ->
+            scope to graph.nodes.mapNotNull { node ->
+                node.getAllStats()[VersionType.Major]?.technicalLag?.libDays
+            }
+        }
+    }
+
+    fun getAllDirectLibdays(project: Project): Map<String, List<Long>> {
+        return project.graph.entries.associate { (scope, graph) ->
+            val directLibdays =
+                graph.rootDependency.children.mapNotNull { child -> child.node.getAllStats()[VersionType.Major]?.technicalLag?.libDays }
+            scope to directLibdays
+        }
+    }
+
+    fun getAllTransitiveLibdays(project: Project): Map<String, List<Long>> {
+        return project.graph.entries.associate { (scope, graph) ->
+            val transitiveLibdays =
+                graph.rootDependency.children.flatMap { child ->
+                    child.children.mapNotNull { grandChild -> grandChild.node.getAllStats()[VersionType.Major]?.technicalLag?.libDays }
+                }
+            scope to transitiveLibdays
+        }
+    }
+
 
     private fun processGraph(graph: DependencyGraph, artifacts: List<Artifact>) {
         calculateAllStatistics(graph.rootDependency, artifacts)
@@ -106,28 +128,26 @@ internal class TechnicalLagStatisticsService {
 
     private fun calculateTransitiveStatistics(root: LinkedNode, artifacts: List<Artifact>): IStatisticsContainer {
         // copy root node (we can only attach one set of stats to each node)
-        val rootCopy = root.copy()
+        val transitiveRoot = root.copy()
         // get all grandchildren
         val grandchildren = mutableListOf<LinkedDependencyNode>()
-        rootCopy.children.forEach { child ->
+        transitiveRoot.children.forEach { child ->
             grandchildren.addAll(child.children)
         }
         // remove all children
-        rootCopy.clearChildren()
+        transitiveRoot.clearChildren()
         // link root to grandchildren
-        rootCopy.addChildren(grandchildren)
-        calculateAllStatistics(rootCopy, artifacts)
+        transitiveRoot.addChildren(grandchildren)
+        calculateAllStatistics(transitiveRoot, artifacts)
 
-        return rootCopy.statContainer
+        return transitiveRoot.statContainer
     }
 
     private fun calculateAllStatistics(
         root: LinkedNode,
         artifacts: List<Artifact>,
     ) {
-
         val aggregateVersionTypeCollection = AggregateVersionTypeCollection(size = root.numberChildren)
-
 
         root.children.forEach { child ->
             val childAggregate = AggregateVersionTypeCollection(size = child.numberChildren)
@@ -151,7 +171,6 @@ internal class TechnicalLagStatisticsService {
         artifacts: List<Artifact>,
         aggregateVersionTypeCollection: AggregateVersionTypeCollection
     ) {
-
         artifactDependency.children.forEach { child ->
             calculateChildStats(child, artifacts, aggregateVersionTypeCollection)
         }
