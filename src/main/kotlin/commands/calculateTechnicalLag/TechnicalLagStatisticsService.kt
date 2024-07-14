@@ -3,7 +3,9 @@ package commands.calculateTechnicalLag
 import commands.calculateTechnicalLag.model.Statistics
 import commands.calculateTechnicalLag.model.TechnicalLagDto
 import commands.calculateTechnicalLag.model.TechnicalLagStatistics
+import commands.calculateTechnicalLag.visualization.Visualizer
 import shared.project.DependencyGraph
+import shared.project.DependencyNode
 import shared.project.IStatisticsContainer
 import shared.project.Project
 import shared.project.artifact.Artifact
@@ -85,6 +87,75 @@ internal class TechnicalLagStatisticsService {
         }
     }
 
+    fun getTechnicalLagExport(project: Project): List<Visualizer.TechnicalLagExport> {
+        return listOf(
+            getAllTechnicalLagExport(project),
+            getDirectTechnicalLagExport(project),
+            getTransitiveTechnicalLagExport(project)
+        ).flatten()
+    }
+
+    private fun getAllTechnicalLagExport(project: Project): List<Visualizer.TechnicalLagExport> {
+        return project.graph.entries.flatMap { (scope, graph) ->
+            graph.nodes.mapNotNull { node ->
+                nodeToTechnicalLagExport(scope, node, project)
+            }
+        }
+    }
+
+
+    fun getDirectTechnicalLagExport(project: Project): List<Visualizer.TechnicalLagExport> {
+        return project.graph.entries.flatMap { (scope, graph) ->
+            graph.rootDependency.children.mapNotNull { child ->
+                nodeToTechnicalLagExport("$scope-direct", child.node, project)
+            }
+        }
+    }
+
+    fun getTransitiveTechnicalLagExport(project: Project): List<Visualizer.TechnicalLagExport> {
+        return project.graph.entries.flatMap { (scope, graph) ->
+            graph.rootDependency.children.flatMap { directChild ->
+                directChild.children.flatMap { grandChild ->
+                    val childData = mutableListOf<Visualizer.TechnicalLagExport>()
+
+                    fun childToTechnicalLagExport(child: LinkedDependencyNode) {
+                        val data = nodeToTechnicalLagExport("$scope-transitive", child.node, project)
+                        if (data != null) childData.add(data)
+                        child.children.forEach { childToTechnicalLagExport(it) }
+                    }
+                    childToTechnicalLagExport(grandChild)
+                    childData
+                }
+            }
+        }
+    }
+
+    private fun nodeToTechnicalLagExport(
+        scope: String,
+        node: DependencyNode,
+        project: Project
+    ): Visualizer.TechnicalLagExport? {
+
+        val technicalLag = node.getAllStats()[VersionType.Major]?.technicalLag ?: return null
+        val artifact = project.artifacts[node.artifactIdx]
+        val ident = "${artifact.groupId}/${artifact.artifactId}"
+
+
+        return Visualizer.TechnicalLagExport(
+            scope = scope,
+            libdays = technicalLag.libDays,
+            distanceMajor = technicalLag.distance.first,
+            distanceMinor = technicalLag.distance.second,
+            distancePatch = technicalLag.distance.third,
+            releaseFrequencyPerMonth = technicalLag.releaseFrequency.releasesPerMonth,
+            numberOfMissedReleases = technicalLag.numberOfMissedReleases,
+            repository = "${project.groupId}/${project.artifactId}",
+            version = node.usedVersion,
+            packageIdent = ident,
+        )
+
+    }
+
     fun getAllDirectLibdays(project: Project): Map<String, List<Long>> {
         return project.graph.entries.associate { (scope, graph) ->
             val directLibdays =
@@ -93,12 +164,22 @@ internal class TechnicalLagStatisticsService {
         }
     }
 
+    private fun collectAllLibdaysFromChildren(child: LinkedDependencyNode, libyears: MutableList<Long>) {
+        val libday = child.node.getAllStats()[VersionType.Major]?.technicalLag?.libDays
+        if (libday != null) {
+            libyears.add(libday)
+        }
+        child.children.forEach { collectAllLibdaysFromChildren(it, libyears) }
+    }
+
     fun getAllTransitiveLibdays(project: Project): Map<String, List<Long>> {
         return project.graph.entries.associate { (scope, graph) ->
-            val transitiveLibdays =
-                graph.rootDependency.children.flatMap { child ->
-                    child.children.mapNotNull { grandChild -> grandChild.node.getAllStats()[VersionType.Major]?.technicalLag?.libDays }
+            val transitiveLibdays = mutableListOf<Long>()
+            graph.rootDependency.children.forEach { child ->
+                child.children.forEach { grandChild ->
+                    collectAllLibdaysFromChildren(grandChild, transitiveLibdays)
                 }
+            }
             scope to transitiveLibdays
         }
     }

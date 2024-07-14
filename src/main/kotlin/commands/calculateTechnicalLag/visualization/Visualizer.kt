@@ -1,6 +1,7 @@
 package commands.calculateTechnicalLag.visualization
 
 import org.jetbrains.kotlinx.dataframe.api.toDataFrame
+import org.jetbrains.kotlinx.dataframe.io.writeCSV
 import org.jetbrains.kotlinx.kandy.dsl.plot
 import org.jetbrains.kotlinx.kandy.letsplot.export.save
 import org.jetbrains.kotlinx.kandy.letsplot.feature.layout
@@ -23,14 +24,36 @@ object Visualizer {
         }.save(outputFilePath)
     }
 
-    data class ScopeLibday(val scope: String, val libday: Long)
-    data class TechnicalLagVisualization(
+    data class ScopeLibday(val scope: String, val libdays: Long)
+
+    data class TechnicalLagExport(
         val scope: String,
-        val libday: Long,
+        val libdays: Long,
+        val distanceMajor: Int,
+        val distanceMinor: Int,
+        val distancePatch: Int,
+        val releaseFrequencyPerMonth: Double,
+        val numberOfMissedReleases: Int,
         val repository: String,
         val packageIdent: String,
         val version: String
     )
+
+    fun createAndStoreBoxplotFromTechLag(data: List<TechnicalLagExport>, outputPath: Path) {
+
+        val df = data.toDataFrame()
+
+        df.writeCSV(outputPath.toAbsolutePath().resolve("${Date().time}-boxpot-data.csv").toString())
+        val outputFilePath = outputPath.toAbsolutePath().resolve("${Date().time}-boxpot.png").toString()
+        df.plot {
+            boxplot("scope", "libdays") {
+                boxes {
+                    borderLine.color = Color.RED
+                }
+            }
+        }.save(outputFilePath)
+    }
+
 
     fun createAndStoreBoxplot(data: Map<String, List<Long>>, outputPath: Path) {
 
@@ -38,9 +61,10 @@ object Visualizer {
             value.map { ScopeLibday(key, it) }
         }.toDataFrame()
 
-        val outputFilePath = outputPath.toAbsolutePath().resolve("${Date().time}-boxpot-test.png").toString()
+        df.writeCSV(outputPath.toAbsolutePath().resolve("${Date().time}-boxpot-data.csv").toString())
+        val outputFilePath = outputPath.toAbsolutePath().resolve("${Date().time}-boxpot.png").toString()
         df.plot {
-            boxplot("scope", "libday") {
+            boxplot("scope", "libdays   ") {
                 boxes {
                     borderLine.color = Color.RED
                 }
