@@ -9,13 +9,18 @@ import org.apache.logging.log4j.kotlin.logger
 import org.ossreviewtoolkit.analyzer.Analyzer
 import org.ossreviewtoolkit.analyzer.PackageManagerFactory
 import org.ossreviewtoolkit.analyzer.determineEnabledPackageManagers
+import org.ossreviewtoolkit.model.OrtResult
 import org.ossreviewtoolkit.model.ResolvedPackageCurations
 import org.ossreviewtoolkit.model.config.AnalyzerConfiguration
 import org.ossreviewtoolkit.model.config.OrtConfiguration
+import org.ossreviewtoolkit.model.config.PluginConfiguration
 import org.ossreviewtoolkit.model.config.RepositoryConfiguration
 import org.ossreviewtoolkit.model.utils.PackageCurationProvider
 import org.ossreviewtoolkit.plugins.packagecurationproviders.api.PackageCurationProviderFactory
 import org.ossreviewtoolkit.plugins.packagecurationproviders.api.SimplePackageCurationProvider
+import org.ossreviewtoolkit.plugins.reporters.cyclonedx.CycloneDxReporter
+import org.ossreviewtoolkit.reporter.ReporterInput
+import org.ossreviewtoolkit.utils.common.Options
 import java.io.File
 
 
@@ -84,8 +89,17 @@ internal class DependencyAnalyzer {
             repositoryConfiguration = config.repositoryConfiguration
         )
 
-        val results = analyzer.analyze(managedFiles, config.enabledCurationProviders)
+        fun CycloneDxReporter.generateReport(result: OrtResult, options: Options): List<File> =
+            generateReport(
+                ReporterInput(result),
+                File("/tmp/depGraphs/"),
+                PluginConfiguration(options)
+            )
 
+        val results = analyzer.analyze(managedFiles, config.enabledCurationProviders)
+        val jsonOptions = mapOf("single.bom" to "true", "output.file.formats" to "json")
+        val sbom = CycloneDxReporter().generateReport(results, jsonOptions)
+        println(sbom)
         return RawAnalyzerResult(
             repositoryInfo = RepositoryInfoDto(
                 url = results.repository.vcs.url,

@@ -39,7 +39,7 @@ kotlin {
 
 
 val exposedVersion = "0.52.0"
-val ortVersion = "25.0.0"
+val ortVersion = "26.0.0"
 val ktorVersion = "2.3.12"
 val kotlinCoroutines = "1.9.0-RC"
 val logback = "1.5.6"
@@ -56,6 +56,7 @@ dependencies {
     implementation("org.ossreviewtoolkit:analyzer:$ortVersion")
     implementation("org.ossreviewtoolkit:model:$ortVersion")
     implementation("org.ossreviewtoolkit:reporter:$ortVersion")
+    implementation("org.ossreviewtoolkit.plugins.reporters:cyclonedx-reporter:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.packagecurationproviders:package-curation-provider-api:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.packageconfigurationproviders:package-configuration-provider-api:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.packageconfigurationproviders:ort-config-package-configuration-provider:$ortVersion")
