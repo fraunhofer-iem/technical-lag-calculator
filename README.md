@@ -15,22 +15,10 @@ run configurations to get started.
 Currently, we support two different commands: \
 `create-dependency-graph`, which creates the dependency graphs for the given projects and annotates the graph's 
 nodes with their version information.\
-`calculate-technical-lag`, which takes a list of annotated dependency graphs as an input and calculates and
-stores their corresponding technical lag. \
+`calculate-technical-lag`, which takes a directory with annotated dependency graphs as an input and calculates and
+stores their corresponding technical lag.
 
-Both commands take an input file in which a list of paths is stored for the projects to analyze or the dependency 
-graph files respectivley. 
-The files format looks as follows:
-```
-{
-  "paths":[
-    "path/to/my/input"
-  ]
-}
 
-```
-
-\
 
 To run the technical lag calculator you can either use the included `Dockerfile` or build it using 
 `./gradlew installDist` and then run the resulting artifact with `./build/install/libyear-ort/bin/technical-lag-calculator`.
