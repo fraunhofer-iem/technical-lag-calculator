@@ -36,7 +36,7 @@ RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg -
 
 RUN curl -fsSL https://get.pnpm.io/install.sh | /bin/bash -
 
-RUN curl https://sh.rustup.rs -sSf | /bin/bash
+RUN curl -y --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 RUN git config --global --add safe.directory '*'
 
@@ -46,5 +46,5 @@ WORKDIR /app
 COPY --from=build /app/build /app/build
 
 # Set the entrypoint and default command
-ENTRYPOINT ["./build/install/libyear-ort/bin/libyear-ort"]
+ENTRYPOINT ["./build/install/technical-lag-calculator/bin/technical-lag-calculator"]
 CMD ["--help"]
