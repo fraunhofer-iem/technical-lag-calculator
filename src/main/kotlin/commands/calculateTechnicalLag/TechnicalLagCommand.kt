@@ -14,8 +14,9 @@ import shared.analyzerResultDtos.ProjectDto
 import shared.project.Project
 import shared.project.ProjectPaths
 import util.StoreResultHelper
-import java.io.File
+import java.nio.file.Files
 import kotlin.io.path.createDirectories
+import kotlin.io.path.extension
 
 
 /**
@@ -23,13 +24,13 @@ import kotlin.io.path.createDirectories
  *
  * Output: Technical lag annotated to the dependency graph
  */
-class TechnicalLag : CliktCommand() {
+class CalculateTechnicalLag : CliktCommand() {
 
-    private val inputPath by option(
+    private val dependencyGraphDirs by option(
         help = "Path to the file containing the Paths of" +
                 "the files to be analyzed."
     )
-        .path(mustExist = true, mustBeReadable = true, canBeFile = true)
+        .path(mustExist = true, mustBeReadable = true, canBeFile = false)
         .required()
 
     private val outputPath by option(
@@ -40,41 +41,55 @@ class TechnicalLag : CliktCommand() {
 
     override fun run(): Unit = runBlocking {
         outputPath.createDirectories()
-        val projectPaths = Json.decodeFromString<ProjectPaths>(inputPath.toFile().readText())
 
         val technicalLagStatisticsService = TechnicalLagStatisticsService()
-        logger.info { "Running libyears for projects in $projectPaths and output path $outputPath" }
+        logger.info { "Running libyears for projects in $dependencyGraphDirs and output path $outputPath" }
 
         outputPath.createDirectories()
 
         val techLagExport = mutableListOf<Visualizer.TechnicalLagExport>()
-        projectPaths.paths.map { File(it) }.forEach { resultFile ->
-            val analyzerResult = Json.decodeFromString<AnalyzerResultDto>(resultFile.readText())
 
-            val projectsWithStats = analyzerResult.projectDtos.map { dependencyGraphsDto ->
-                val project = Project(dependencyGraphsDto)
+        val files = Files.walk(dependencyGraphDirs).toList().toMutableList()
+        // the first element is the base path which we can't analyze
+        files.removeFirst()
+        files.filter { !Files.isDirectory(it) && it.extension == "json" }
+            .map { it.toAbsolutePath().toFile() }
+            .forEach { file ->
 
-                technicalLagStatisticsService.connectDependenciesToStats(project)
-                techLagExport.addAll(technicalLagStatisticsService.getTechnicalLagExport(project))
+                val analyzerResult = try {
+                    Json.decodeFromString<AnalyzerResultDto>(file.readText())
+                } catch (e: Exception) {
+                    null
+                }
+                if(analyzerResult == null) {
+                    return@forEach
+                }
 
-                project
+                val projectsWithStats = analyzerResult.projectDtos.map { dependencyGraphsDto ->
+                    val project = Project(dependencyGraphsDto)
+
+                    technicalLagStatisticsService.connectDependenciesToStats(project)
+                    techLagExport.addAll(technicalLagStatisticsService.getTechnicalLagExport(project))
+
+                    project
+                }
+
+                val result = AnalyzerResultDto(
+                    projectDtos = projectsWithStats.map {
+                        ProjectDto(
+                            project = it,
+                            version = it.version,
+                            artifactId = it.artifactId,
+                            groupId = it.groupId
+                        )
+                    },
+                    repositoryInfo = analyzerResult.repositoryInfo,
+                    environmentInfo = analyzerResult.environmentInfo,
+                )
+                // TODO: store direct and transitive stats for the graph. need to extend the serialization and DTO
+                StoreResultHelper.storeAnalyzerResultInFile(outputPath.toFile(), result)
             }
 
-            val result = AnalyzerResultDto(
-                projectDtos = projectsWithStats.map {
-                    ProjectDto(
-                        project = it,
-                        version = it.version,
-                        artifactId = it.artifactId,
-                        groupId = it.groupId
-                    )
-                },
-                repositoryInfo = analyzerResult.repositoryInfo,
-                environmentInfo = analyzerResult.environmentInfo,
-            )
-            // TODO: store direct and transitive stats for the graph. need to extend the serialization and DTO
-            StoreResultHelper.storeAnalyzerResultInFile(outputPath.toFile(), result)
-        }
         Visualizer.createAndStoreBoxplotFromTechLag(data = techLagExport, outputPath = outputPath)
     }
 

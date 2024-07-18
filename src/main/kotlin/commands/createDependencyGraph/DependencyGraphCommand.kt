@@ -5,13 +5,12 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger
 import shared.analyzerResultDtos.AnalyzerResultDto
 import shared.analyzerResultDtos.ProjectDto
-import shared.project.ProjectPaths
 import util.StoreResultHelper
 import java.io.File
+import java.nio.file.Files
 import kotlin.io.path.createDirectories
 
 
@@ -21,7 +20,7 @@ import kotlin.io.path.createDirectories
  */
 class CreateDependencyGraph : CliktCommand() {
 
-    private val projectListPath by option(
+    private val projectsDir by option(
         help = "Path to the file containing the Paths of" +
                 "the repositories which will be analyzed."
     )
@@ -36,50 +35,56 @@ class CreateDependencyGraph : CliktCommand() {
 
     override fun run(): Unit = runBlocking {
 
-        val projectPaths = Json.decodeFromString<ProjectPaths>(projectListPath.toFile().readText())
-        logger.info { "Running ORT on projects $projectPaths" }
+        logger.info { "Running ORT on projects $projectsDir" }
 
         val dependencyAnalyzer = DependencyAnalyzer()
         val dependencyGraphService = DependencyGraphService()
         outputPath.createDirectories()
 
-        val resultFiles = projectPaths.paths.map { File(it) }.mapNotNull { file ->
-            try {
-                if (!file.exists() || !file.isDirectory) {
-                    logger.error("Given path $file is not a directory or doesn't exist.")
-                    return@mapNotNull null
-                }
-                // TODO: check if we correctly generate the tree if there is no version information for
-                //  intermediate nodes, but for their children. This can happen if intermediate nodes are
-                //  developed internally but use OSS dependencies.
-                val rawResult = dependencyAnalyzer.run(file)
-                val projects = dependencyGraphService.createProjectsFromGraphs(rawResult.dependencyGraphs)
-                val mainProject = rawResult.repositoryInfo.projects.first()
-
-                val result = AnalyzerResultDto(
-                    projectDtos = projects.map {
-                        ProjectDto(
-                            project = it,
-                            version = mainProject.version,
-                            artifactId = mainProject.name,
-                            groupId = mainProject.namespace
-                        )
-                    },
-                    repositoryInfo = rawResult.repositoryInfo,
-                    environmentInfo = rawResult.environmentInfo,
-                )
-
-
-                StoreResultHelper.storeAnalyzerResultInFile(outputPath.toFile(), result)
-
-
-            } catch (error: Exception) {
-                logger.error("Dependency Analyzer failed with error $error")
-                null
+        val subDirs = Files.walk(projectsDir).toList().toMutableList()
+        // the first element is the base path which we can't analyze
+        subDirs.removeFirst()
+        subDirs.filter { Files.isDirectory(it) }
+            .map { it.toAbsolutePath().toFile() }
+            .forEach { subDir ->
+                processProject(subDir, dependencyGraphService, dependencyAnalyzer)
             }
-        }.map { it.path }
 
         dependencyGraphService.close()
-        StoreResultHelper.storeResultFilePathsInFile(outputPath.toFile(), ProjectPaths(resultFiles))
+    }
+
+    private suspend fun processProject(
+        projectDir: File,
+        dependencyGraphService: DependencyGraphService,
+        dependencyAnalyzer: DependencyAnalyzer
+    ) {
+        try {
+            if (!projectDir.exists() || !projectDir.isDirectory) {
+                logger.error("Given path $projectDir is not a directory or doesn't exist.")
+            }
+            // TODO: check if we correctly generate the tree if there is no version information for
+            //  intermediate nodes, but for their children. This can happen if intermediate nodes are
+            //  developed internally but use OSS dependencies.
+            val rawResult = dependencyAnalyzer.run(projectDir)
+            val projects = dependencyGraphService.createProjectsFromGraphs(rawResult.dependencyGraphs)
+            val mainProject = rawResult.repositoryInfo.projects.first()
+
+            val result = AnalyzerResultDto(
+                projectDtos = projects.map {
+                    ProjectDto(
+                        project = it,
+                        version = mainProject.version,
+                        artifactId = mainProject.name,
+                        groupId = mainProject.namespace
+                    )
+                },
+                repositoryInfo = rawResult.repositoryInfo,
+                environmentInfo = rawResult.environmentInfo,
+            )
+
+            StoreResultHelper.storeAnalyzerResultInFile(outputPath.toFile(), result)
+        } catch (error: Exception) {
+            logger.error("Dependency Analyzer failed with error $error")
+        }
     }
 }

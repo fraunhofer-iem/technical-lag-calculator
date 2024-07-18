@@ -1,0 +1,3 @@
+[submodule "technical-lag-benchmark"]
+	path = technical-lag-benchmark
+	url = https://github.com/fraunhofer-iem/technical-lag-benchmark.git

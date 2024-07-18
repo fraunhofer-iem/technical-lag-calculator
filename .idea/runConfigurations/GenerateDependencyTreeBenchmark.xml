@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="GenerateDependencyTreeBenchmark" type="JetRunConfigurationType">
+    <option name="MAIN_CLASS_NAME" value="MainKt" />
+    <module name="technical-lag-calculator.main" />
+    <option name="PROGRAM_PARAMETERS" value="create-dependency-graph --projects-dir technical-lag-benchmark/packageFiles --output-path technical-lag-benchmark/graphs" />
+    <shortenClasspath name="MANIFEST" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

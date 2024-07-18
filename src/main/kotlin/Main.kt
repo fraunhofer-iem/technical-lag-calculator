@@ -6,7 +6,7 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.switch
 import com.github.ajalt.clikt.parameters.types.path
-import commands.calculateTechnicalLag.TechnicalLag
+import commands.calculateTechnicalLag.CalculateTechnicalLag
 import commands.createDependencyGraph.CreateDependencyGraph
 import commands.parseSBOM.ParseSbom
 import org.apache.logging.log4j.kotlin.logger
@@ -65,7 +65,7 @@ class Tool : CliktCommand() {
 fun main(args: Array<String>) {
     val runtime = measureTime {
         val tool = Tool()
-        tool.subcommands(CreateDependencyGraph(), TechnicalLag(), ParseSbom()).main(args)
+        tool.subcommands(CreateDependencyGraph(), CalculateTechnicalLag(), ParseSbom()).main(args)
     }
     println("Tool run took $runtime")
 }

@@ -18,7 +18,7 @@ import kotlin.math.sqrt
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
-class TechnicalLagStatisticsServiceTest {
+class CalculateTechnicalLagStatisticsServiceTest {
 
     private fun setupIdenticalArtifacts(): List<Artifact> {
         val usedVersionDate = LocalDateTime(2024, 1, 1, 0, 0).toInstant(TimeZone.of("UTC+0")).toEpochMilliseconds()

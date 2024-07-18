@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="ParseSbom" type="JetRunConfigurationType">
     <option name="MAIN_CLASS_NAME" value="MainKt" />
-    <module name="libyear-ort.main" />
+    <module name="technical-lag-calculator" />
     <option name="PROGRAM_PARAMETERS" value="parse-sbom --input-path $PROJECT_DIR$/config/vscode_sbom.json --output-path /tmp/depGraphs/stats" />
     <shortenClasspath name="MANIFEST" />
     <method v="2">

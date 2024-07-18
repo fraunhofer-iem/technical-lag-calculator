@@ -10,4 +10,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "libyear-ort"
+rootProject.name = "technical-lag-calculator"

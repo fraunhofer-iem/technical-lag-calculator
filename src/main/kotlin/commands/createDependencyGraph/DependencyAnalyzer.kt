@@ -97,9 +97,9 @@ internal class DependencyAnalyzer {
             )
 
         val results = analyzer.analyze(managedFiles, config.enabledCurationProviders)
-        val jsonOptions = mapOf("single.bom" to "true", "output.file.formats" to "json")
-        val sbom = CycloneDxReporter().generateReport(results, jsonOptions)
-        println(sbom)
+//        val jsonOptions = mapOf("single.bom" to "true", "output.file.formats" to "json")
+//        val sbom = CycloneDxReporter().generateReport(results, jsonOptions)
+//        println(sbom)
         return RawAnalyzerResult(
             repositoryInfo = RepositoryInfoDto(
                 url = results.repository.vcs.url,
