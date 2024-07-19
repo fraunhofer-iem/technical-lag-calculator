@@ -5,9 +5,9 @@ FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /app
 
 # Copy only necessary files for dependency resolution and build
-COPY ../gradle gradle
-COPY ../build.gradle.kts settings.gradle.kts gradle.properties gradlew ./
-COPY ../src src
+COPY gradle gradle
+COPY build.gradle.kts settings.gradle.kts gradle.properties gradlew ./
+COPY src src
 
 # Build the application
 RUN ./gradlew installDist

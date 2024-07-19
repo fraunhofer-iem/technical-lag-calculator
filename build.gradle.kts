@@ -104,9 +104,9 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.0")
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinCoroutines")
-    testImplementation("io.mockk:mockk:1.13.11")
-    testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.1")
-    testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.1")
+    testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2")
+    testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2")
 }
 
 tasks.test {
