@@ -43,8 +43,8 @@ object Visualizer {
 
         val df = data.toDataFrame()
 
-        df.writeCSV(outputPath.toAbsolutePath().resolve("${Date().time}-boxpot-data.csv").toString())
-        val outputFilePath = outputPath.toAbsolutePath().resolve("${Date().time}-boxpot.png").toString()
+        df.writeCSV(outputPath.toAbsolutePath().resolve("boxplot-data.csv").toString())
+        val outputFilePath = outputPath.toAbsolutePath().resolve("${Date().time}-boxplot.png").toString()
         df.plot {
             boxplot("scope", "libdays") {
                 boxes {
