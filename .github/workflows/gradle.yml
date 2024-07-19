@@ -9,9 +9,9 @@ name: Java CI with Gradle
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: [ "main" ]
 
 permissions:
   contents: read
@@ -52,3 +52,9 @@ jobs:
       with:
         name: statistics
         path: technical-lag-benchmark/statistics
+
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: technical-lag-benchmark/statistics
