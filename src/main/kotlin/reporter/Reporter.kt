@@ -23,7 +23,7 @@ class Reporter(outputPath: Path) {
         createFileInOutputPath("${Date().time}-analyzerResult.json")
     }
     private val htmlReportFile by lazy {
-        createFileInOutputPath("htmlReport.html")
+        createFileInOutputPath("index.html")
     }
     private val csvFileName = "csvReport.csv"
     private val csvReportFile by lazy {
