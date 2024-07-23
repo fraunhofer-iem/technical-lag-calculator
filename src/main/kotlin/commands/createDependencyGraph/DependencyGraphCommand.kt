@@ -1,6 +1,7 @@
 package commands.createDependencyGraph
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.path
@@ -33,6 +34,8 @@ class CreateDependencyGraph : CliktCommand() {
         .path(mustExist = false, canBeFile = false)
         .required()
 
+    private val multiFileMode by option().flag(default = false)
+
     override fun run(): Unit = runBlocking {
 
         logger.info { "Running ORT on projects $projectsDir" }
@@ -41,15 +44,18 @@ class CreateDependencyGraph : CliktCommand() {
         val dependencyGraphService = DependencyGraphService()
         outputPath.createDirectories()
 
-        val subDirs = Files.walk(projectsDir).toList().toMutableList()
-        // the first element is the base path which we can't analyze
-        subDirs.removeFirst()
-        subDirs.filter { Files.isDirectory(it) }
-            .map { it.toAbsolutePath().toFile() }
-            .forEach { subDir ->
-                processProject(subDir, dependencyGraphService, dependencyAnalyzer)
-            }
-
+        if(multiFileMode) {
+            val subDirs = Files.walk(projectsDir).toList().toMutableList()
+            // the first element is the base path which we can't analyze
+            subDirs.removeFirst()
+            subDirs.filter { Files.isDirectory(it) }
+                .map { it.toAbsolutePath().toFile() }
+                .forEach { subDir ->
+                    processProject(subDir, dependencyGraphService, dependencyAnalyzer)
+                }
+        } else {
+            processProject(projectsDir.toAbsolutePath().toFile(), dependencyGraphService, dependencyAnalyzer)
+        }
         dependencyGraphService.close()
     }
 
