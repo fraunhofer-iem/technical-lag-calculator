@@ -10,18 +10,18 @@ we theoretically support all ecosystems currently implemented in the ORT and dep
 
 ### Usage
 
-For development purposes, we recommend to import the project into IntelliJ and use one of the preconfigured 
-run configurations to get started.
-Currently, we support two different commands: \
-`create-dependency-graph`, which creates the dependency graphs for the given projects and annotates the graph's 
-nodes with their version information.\
-`calculate-technical-lag`, which takes a directory with annotated dependency graphs as an input and calculates and
-stores their corresponding technical lag.
+Import the project to IntelliJ as a gradle project and add a custom run configuration.
 
-
+For manual use run `./gradlew run` to get a list of all available commands. Run `./gradlew run --args "{{COMMAND_NAME}} --help"` to 
+get usage instructions.
 
 To run the technical lag calculator you can either use the included `Dockerfile` or build it using 
 `./gradlew installDist` and then run the resulting artifact with `./build/install/libyear-ort/bin/technical-lag-calculator`.
+### Display results
+
+The tool results are created in the provided output folder. The results contain a visualization of the output in the 
+form of an HTML report. To display the report locally you need to start a local webserver (e.g. by running `python3 -m http.server`) in the folder containing the 
+files and access the URL (e.g., `localhost:8000/htmlReport.html`).
 
 ### Architecture overview
 

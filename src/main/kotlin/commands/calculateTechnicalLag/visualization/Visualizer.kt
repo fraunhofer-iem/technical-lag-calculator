@@ -1,5 +1,6 @@
 package commands.calculateTechnicalLag.visualization
 
+import org.jetbrains.kotlinx.dataframe.DataFrame
 import org.jetbrains.kotlinx.dataframe.api.toDataFrame
 import org.jetbrains.kotlinx.dataframe.io.writeCSV
 import org.jetbrains.kotlinx.kandy.dsl.plot
@@ -39,11 +40,9 @@ object Visualizer {
         val version: String
     )
 
-    fun createAndStoreBoxplotFromTechLag(data: List<TechnicalLagExport>, outputPath: Path) {
+    fun createAndStoreBoxplotFromTechLag(df: DataFrame<TechnicalLagExport>, outputPath: Path) {
 
-        val df = data.toDataFrame()
 
-        df.writeCSV(outputPath.toAbsolutePath().resolve("boxplot-data.csv").toString())
         val outputFilePath = outputPath.toAbsolutePath().resolve("${Date().time}-boxplot.png").toString()
         df.plot {
             boxplot("scope", "libdays") {

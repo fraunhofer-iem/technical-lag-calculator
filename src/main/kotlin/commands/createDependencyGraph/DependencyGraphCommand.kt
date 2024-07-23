@@ -8,7 +8,7 @@ import kotlinx.coroutines.runBlocking
 import org.apache.logging.log4j.kotlin.logger
 import shared.analyzerResultDtos.AnalyzerResultDto
 import shared.analyzerResultDtos.ProjectDto
-import util.StoreResultHelper
+import reporter.Reporter
 import java.io.File
 import java.nio.file.Files
 import kotlin.io.path.createDirectories
@@ -81,8 +81,8 @@ class CreateDependencyGraph : CliktCommand() {
                 repositoryInfo = rawResult.repositoryInfo,
                 environmentInfo = rawResult.environmentInfo,
             )
-
-            StoreResultHelper.storeAnalyzerResultInFile(outputPath.toFile(), result)
+            val reporter = Reporter(outputPath)
+            reporter.storeAnalyzerResultInFile(result)
         } catch (error: Exception) {
             logger.error("Dependency Analyzer failed with error $error")
         }

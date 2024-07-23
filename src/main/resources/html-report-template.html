@@ -1,0 +1,115 @@
+<head>
+    <!-- Load plotly.js into the DOM -->
+    <script src='https://cdn.plot.ly/plotly-2.32.0.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js'></script>
+</head>
+
+<body>
+<div id='myDiv'><!-- Plotly chart will be drawn inside this DIV --></div>
+</body>
+
+<script>
+
+    d3.csv(
+        {{ PATH_TO_STATISTICS }},
+        function (rows) {
+            function unpack(rows, key) {
+                return rows.map(function (row) {
+                    return row[key];
+                });
+            }
+
+            var directDeps = rows.filter((row) => {
+                return row["scope"] == "dependencies-direct";
+            });
+
+            var traceDirectDeps = {
+                meanline: {
+                    visible: true,
+                },
+                legendgroup: "dependencies-direct",
+                scalegroup: "dependencies-direct",
+                points: "all",
+                pointpos: -1.2,
+                box: {
+                    visible: true,
+                },
+                jitter: 0,
+                scalemode: "count",
+                marker: {
+                    line: {
+                        width: 2,
+                        color: "green",
+                    },
+                    symbol: "line-ns",
+                },
+                showlegend: true,
+                side: "negative",
+                type: "violin",
+                name: "dependencies-direct",
+                line: {
+                    color: "green",
+                },
+                x0: "dependencies-direct-transitive",
+                y: unpack(directDeps, "libdays"),
+            };
+
+            var transDeps = rows.filter((row) => {
+                return row["scope"] == "dependencies-transitive";
+            });
+
+            var traceTransDeps = {
+                meanline: {
+                    visible: true,
+                },
+                legendgroup: "dependencies-transitive",
+                scalegroup: "dependencies-transitive",
+                points: "all",
+                pointpos: 1.2,
+                box: {
+                    visible: true,
+                },
+                jitter: 0,
+                scalemode: "count",
+                marker: {
+                    line: {
+                        width: 2,
+                        color: 'red',
+                    },
+                    symbol: "line-ns",
+                },
+                showlegend: true,
+                side: "positive",
+                type: "violin",
+                name: "dependencies-transitive",
+                line: {
+                    color: "red",
+                },
+                x0: "dependencies-direct-transitive",
+                y: unpack(transDeps, "libdays"),
+            };
+
+            console.log(directDeps);
+            console.log(transDeps);
+            console.log(rows);
+            var data = [traceDirectDeps, traceTransDeps]
+
+            var layout = {
+                hovermode: "closest",
+                yaxis: {
+                    showgrid: true,
+                },
+                title: "Dependency Libyears",
+                legend: {
+                    tracegroupgap: 0,
+                },
+                violingap: 0,
+                violingroupgap: 0,
+                violinmode: "overlay",
+            };
+
+            Plotly.newPlot("myDiv", data, layout);
+        }
+    );
+
+</script>

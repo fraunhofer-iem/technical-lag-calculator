@@ -9,11 +9,11 @@ import commands.calculateTechnicalLag.visualization.Visualizer
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.kotlin.logger
+import org.jetbrains.kotlinx.dataframe.api.toDataFrame
 import shared.analyzerResultDtos.AnalyzerResultDto
 import shared.analyzerResultDtos.ProjectDto
 import shared.project.Project
-import shared.project.ProjectPaths
-import util.StoreResultHelper
+import reporter.Reporter
 import java.nio.file.Files
 import kotlin.io.path.createDirectories
 import kotlin.io.path.extension
@@ -41,11 +41,10 @@ class CalculateTechnicalLag : CliktCommand() {
 
     override fun run(): Unit = runBlocking {
         outputPath.createDirectories()
-
+        val reporter = Reporter(outputPath)
         val technicalLagStatisticsService = TechnicalLagStatisticsService()
         logger.info { "Running libyears for projects in $dependencyGraphDirs and output path $outputPath" }
 
-        outputPath.createDirectories()
 
         val techLagExport = mutableListOf<Visualizer.TechnicalLagExport>()
 
@@ -87,10 +86,13 @@ class CalculateTechnicalLag : CliktCommand() {
                     environmentInfo = analyzerResult.environmentInfo,
                 )
                 // TODO: store direct and transitive stats for the graph. need to extend the serialization and DTO
-                StoreResultHelper.storeAnalyzerResultInFile(outputPath.toFile(), result)
+                reporter.storeAnalyzerResultInFile(result)
             }
 
-        Visualizer.createAndStoreBoxplotFromTechLag(data = techLagExport, outputPath = outputPath)
+        val df = techLagExport.toDataFrame()
+        Visualizer.createAndStoreBoxplotFromTechLag(df, outputPath = outputPath)
+        reporter.storeCsvExport(df)
+        reporter.generateHtmlReport()
     }
 
 
