@@ -95,7 +95,7 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     implementation("io.ktor:ktor-client-apache:$ktorVersion")
     runtimeOnly("org.postgresql:postgresql:42.7.3")
-    runtimeOnly("org.xerial:sqlite-jdbc:3.46.0.0")
+    runtimeOnly("org.xerial:sqlite-jdbc:3.46.0.1")
     runtimeOnly("org.ossreviewtoolkit.plugins.packagecurationproviders:file-package-curation-provider:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.utils:common-utils:$ortVersion")
     runtimeOnly("org.ossreviewtoolkit.utils:ort-utils:$ortVersion")
