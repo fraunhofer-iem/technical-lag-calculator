@@ -72,7 +72,7 @@ dependencies {
     implementation("org.ossreviewtoolkit.plugins.packagemanagers:python-package-manager:$ortVersion")
     implementation("org.ossreviewtoolkit.plugins.versioncontrolsystems:git-version-control-system:$ortVersion")
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.10.0.202406032230-r")
-    implementation("org.jetbrains.kotlinx:kandy-lets-plot:0.6.0")
+    implementation("org.jetbrains.kotlinx:kandy-lets-plot:0.7.1")
     implementation("org.jetbrains.kotlinx:kandy-echarts:0.6.0")
     implementation("org.jetbrains.kotlinx:kotlin-statistics-jvm:0.2.1")
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
